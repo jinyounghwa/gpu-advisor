@@ -1,0 +1,254 @@
+{
+  "date": "2026-02-13",
+  "gpu_data": {
+    "RTX 5060": {
+      "domestic": {
+        "lowest_price": 587850,
+        "seller_count": 0,
+        "manufacturer": "MSI",
+        "product_name": "MSI 지포스 RTX 5060 벤투스 2X OC D7 8GB"
+      },
+      "global": {},
+      "macro": {
+        "usd_krw": 1442.7,
+        "jpy_krw": 943.28
+      },
+      "news": {
+        "article_count": 0,
+        "sentiment_avg": 0.0,
+        "positive_count": 0,
+        "negative_count": 0,
+        "neutral_count": 0
+      }
+    },
+    "RTX 5070 Ti": {
+      "domestic": {
+        "lowest_price": 1559990,
+        "seller_count": 0,
+        "manufacturer": "ZOTAC",
+        "product_name": "ZOTAC GAMING 지포스 RTX 5070 Ti SOLID OC D7 16GB"
+      },
+      "global": {},
+      "macro": {
+        "usd_krw": 1442.7,
+        "jpy_krw": 943.28
+      },
+      "news": {
+        "article_count": 0,
+        "sentiment_avg": 0.0,
+        "positive_count": 0,
+        "negative_count": 0,
+        "neutral_count": 0
+      }
+    },
+    "RTX 5070": {
+      "domestic": {
+        "lowest_price": 1045000,
+        "seller_count": 0,
+        "manufacturer": "MSI",
+        "product_name": "MSI 지포스 RTX 5070 게이밍 트리오 OC D7 12GB 트라이프로져4"
+      },
+      "global": {},
+      "macro": {
+        "usd_krw": 1442.7,
+        "jpy_krw": 943.28
+      },
+      "news": {
+        "article_count": 0,
+        "sentiment_avg": 0.0,
+        "positive_count": 0,
+        "negative_count": 0,
+        "neutral_count": 0
+      }
+    },
+    "RTX 5080": {
+      "domestic": {
+        "lowest_price": 2081190,
+        "seller_count": 0,
+        "manufacturer": "MSI",
+        "product_name": "MSI 지포스 RTX 5080 뱅가드 SOC D7 16GB 하이퍼프로져"
+      },
+      "global": {},
+      "macro": {
+        "usd_krw": 1442.7,
+        "jpy_krw": 943.28
+      },
+      "news": {
+        "article_count": 0,
+        "sentiment_avg": 0.0,
+        "positive_count": 0,
+        "negative_count": 0,
+        "neutral_count": 0
+      }
+    },
+    "RTX 5060 Ti": {
+      "domestic": {
+        "lowest_price": 666490,
+        "seller_count": 0,
+        "manufacturer": "GALAX",
+        "product_name": "갤럭시 GALAX 지포스 RTX 5060 Ti BLACK OC D7 8GB"
+      },
+      "global": {},
+      "macro": {
+        "usd_krw": 1442.7,
+        "jpy_krw": 943.28
+      },
+      "news": {
+        "article_count": 0,
+        "sentiment_avg": 0.0,
+        "positive_count": 0,
+        "negative_count": 0,
+        "neutral_count": 0
+      }
+    },
+    "RX 9070 XT": {
+      "domestic": {
+        "lowest_price": 1070000,
+        "seller_count": 0,
+        "manufacturer": "XFX",
+        "product_name": "XFX 라데온 RX 9070 XT SWIFT D6 16GB"
+      },
+      "global": {},
+      "macro": {
+        "usd_krw": 1442.7,
+        "jpy_krw": 943.28
+      },
+      "news": {
+        "article_count": 0,
+        "sentiment_avg": 0.0,
+        "positive_count": 0,
+        "negative_count": 0,
+        "neutral_count": 0
+      }
+    },
+    "RX 9060 XT": {
+      "domestic": {
+        "lowest_price": 616740,
+        "seller_count": 0,
+        "manufacturer": "XFX",
+        "product_name": "XFX 라데온 RX 9060 XT SWIFT DUAL OC D6 16GB"
+      },
+      "global": {},
+      "macro": {
+        "usd_krw": 1442.7,
+        "jpy_krw": 943.28
+      },
+      "news": {
+        "article_count": 0,
+        "sentiment_avg": 0.0,
+        "positive_count": 0,
+        "negative_count": 0,
+        "neutral_count": 0
+      }
+    },
+    "RX 6600": {
+      "domestic": {
+        "lowest_price": 324950,
+        "seller_count": 0,
+        "manufacturer": "ASRock",
+        "product_name": "ASRock 라데온 RX 6600 CHALLENGER D D6 8GB 대원씨티에스"
+      },
+      "global": {},
+      "macro": {
+        "usd_krw": 1442.7,
+        "jpy_krw": 943.28
+      },
+      "news": {
+        "article_count": 0,
+        "sentiment_avg": 0.0,
+        "positive_count": 0,
+        "negative_count": 0,
+        "neutral_count": 0
+      }
+    },
+    "RTX 5090": {
+      "domestic": {
+        "lowest_price": 6149880,
+        "seller_count": 0,
+        "manufacturer": "PALIT",
+        "product_name": "PALIT 지포스 RTX 5090 GAMEROCK D7 32GB 이엠텍"
+      },
+      "global": {},
+      "macro": {
+        "usd_krw": 1442.7,
+        "jpy_krw": 943.28
+      },
+      "news": {
+        "article_count": 0,
+        "sentiment_avg": 0.0,
+        "positive_count": 0,
+        "negative_count": 0,
+        "neutral_count": 0
+      }
+    },
+    "RX 7600": {
+      "domestic": {
+        "lowest_price": 482820,
+        "seller_count": 0,
+        "manufacturer": "GIGABYTE",
+        "product_name": "GIGABYTE 라데온 RX 7600 GAMING OC D6 8GB 제이씨현"
+      },
+      "global": {},
+      "macro": {
+        "usd_krw": 1442.7,
+        "jpy_krw": 943.28
+      },
+      "news": {
+        "article_count": 0,
+        "sentiment_avg": 0.0,
+        "positive_count": 0,
+        "negative_count": 0,
+        "neutral_count": 0
+      }
+    },
+    "RTX 5050": {
+      "domestic": {
+        "lowest_price": 431290,
+        "seller_count": 0,
+        "manufacturer": "ZOTAC",
+        "product_name": "ZOTAC GAMING 지포스 RTX 5050 Twin Edge D6 8GB"
+      },
+      "global": {},
+      "macro": {
+        "usd_krw": 1442.7,
+        "jpy_krw": 943.28
+      },
+      "news": {
+        "article_count": 0,
+        "sentiment_avg": 0.0,
+        "positive_count": 0,
+        "negative_count": 0,
+        "neutral_count": 0
+      }
+    },
+    "Arc B580": {
+      "domestic": {
+        "lowest_price": 339000,
+        "seller_count": 0,
+        "manufacturer": "Unknown",
+        "product_name": "MAXSUN Arc B580 Milestone D6 12GB 코잇"
+      },
+      "global": {},
+      "macro": {
+        "usd_krw": 1442.7,
+        "jpy_krw": 943.28
+      },
+      "news": {
+        "article_count": 0,
+        "sentiment_avg": 0.0,
+        "positive_count": 0,
+        "negative_count": 0,
+        "neutral_count": 0
+      }
+    }
+  },
+  "metadata": {
+    "integrated_at": "2026-02-13 12:42:25",
+    "sources": {
+      "danawa": 32,
+      "exchange": 2,
+      "stock": 0,
+      "news": 0
+    }
+  }
+}

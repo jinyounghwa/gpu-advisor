@@ -1,0 +1,87 @@
+{
+  "date": "2026-02-15",
+  "source": "google_news_rss",
+  "total_articles": 6,
+  "articles": [
+    {
+      "title": "graphics card 관련 뉴스 1",
+      "url": "https://news.example.com/article/6118",
+      "published_at": "2026-02-15T09:54:59.709523",
+      "sentiment": "neutral",
+      "sentiment_score": -0.12,
+      "keywords": [
+        "graphics card"
+      ]
+    },
+    {
+      "title": "NVIDIA RTX 관련 뉴스 1",
+      "url": "https://news.example.com/article/2833",
+      "published_at": "2026-02-15T09:54:59.709554",
+      "sentiment": "positive",
+      "sentiment_score": 0.97,
+      "keywords": [
+        "NVIDIA RTX"
+      ]
+    },
+    {
+      "title": "AMD Radeon 관련 뉴스 1",
+      "url": "https://news.example.com/article/3703",
+      "published_at": "2026-02-15T09:54:59.709577",
+      "sentiment": "neutral",
+      "sentiment_score": 0.09,
+      "keywords": [
+        "AMD Radeon"
+      ]
+    },
+    {
+      "title": "Intel Arc 관련 뉴스 1",
+      "url": "https://news.example.com/article/4249",
+      "published_at": "2026-02-15T09:54:59.709601",
+      "sentiment": "negative",
+      "sentiment_score": -0.85,
+      "keywords": [
+        "Intel Arc"
+      ]
+    },
+    {
+      "title": "Intel Arc 관련 뉴스 2",
+      "url": "https://news.example.com/article/9136",
+      "published_at": "2026-02-15T09:54:59.709606",
+      "sentiment": "neutral",
+      "sentiment_score": -0.18,
+      "keywords": [
+        "Intel Arc"
+      ]
+    },
+    {
+      "title": "GPU stock 관련 뉴스 1",
+      "url": "https://news.example.com/article/5020",
+      "published_at": "2026-02-15T09:54:59.709631",
+      "sentiment": "positive",
+      "sentiment_score": 0.52,
+      "keywords": [
+        "GPU stock"
+      ]
+    }
+  ],
+  "statistics": {
+    "total": 6,
+    "sentiment_avg": 0.07,
+    "positive_count": 2,
+    "negative_count": 1,
+    "neutral_count": 3
+  },
+  "metadata": {
+    "crawled_at": "2026-02-15T09:54:59.709695",
+    "keywords": [
+      "GPU price",
+      "graphics card",
+      "NVIDIA RTX",
+      "AMD Radeon",
+      "Intel Arc",
+      "GPU shortage",
+      "GPU stock",
+      "graphics card price drop"
+    ]
+  }
+}

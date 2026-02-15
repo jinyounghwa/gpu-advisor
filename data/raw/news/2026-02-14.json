@@ -1,0 +1,167 @@
+{
+  "date": "2026-02-14",
+  "source": "google_news_rss",
+  "total_articles": 14,
+  "articles": [
+    {
+      "title": "graphics card 관련 뉴스 1",
+      "url": "https://news.example.com/article/6181",
+      "published_at": "2026-02-14T14:30:04.388631",
+      "sentiment": "neutral",
+      "sentiment_score": 0.18,
+      "keywords": [
+        "graphics card"
+      ]
+    },
+    {
+      "title": "NVIDIA RTX 관련 뉴스 1",
+      "url": "https://news.example.com/article/7120",
+      "published_at": "2026-02-14T14:30:04.388648",
+      "sentiment": "negative",
+      "sentiment_score": -0.76,
+      "keywords": [
+        "NVIDIA RTX"
+      ]
+    },
+    {
+      "title": "NVIDIA RTX 관련 뉴스 2",
+      "url": "https://news.example.com/article/3021",
+      "published_at": "2026-02-14T14:30:04.388652",
+      "sentiment": "positive",
+      "sentiment_score": 0.85,
+      "keywords": [
+        "NVIDIA RTX"
+      ]
+    },
+    {
+      "title": "NVIDIA RTX 관련 뉴스 3",
+      "url": "https://news.example.com/article/5182",
+      "published_at": "2026-02-14T14:30:04.388657",
+      "sentiment": "negative",
+      "sentiment_score": -0.77,
+      "keywords": [
+        "NVIDIA RTX"
+      ]
+    },
+    {
+      "title": "AMD Radeon 관련 뉴스 1",
+      "url": "https://news.example.com/article/2071",
+      "published_at": "2026-02-14T14:30:04.388669",
+      "sentiment": "neutral",
+      "sentiment_score": 0.12,
+      "keywords": [
+        "AMD Radeon"
+      ]
+    },
+    {
+      "title": "AMD Radeon 관련 뉴스 2",
+      "url": "https://news.example.com/article/3967",
+      "published_at": "2026-02-14T14:30:04.388672",
+      "sentiment": "negative",
+      "sentiment_score": -0.52,
+      "keywords": [
+        "AMD Radeon"
+      ]
+    },
+    {
+      "title": "Intel Arc 관련 뉴스 1",
+      "url": "https://news.example.com/article/9363",
+      "published_at": "2026-02-14T14:30:04.388680",
+      "sentiment": "positive",
+      "sentiment_score": 0.88,
+      "keywords": [
+        "Intel Arc"
+      ]
+    },
+    {
+      "title": "Intel Arc 관련 뉴스 2",
+      "url": "https://news.example.com/article/5591",
+      "published_at": "2026-02-14T14:30:04.388682",
+      "sentiment": "negative",
+      "sentiment_score": -0.9,
+      "keywords": [
+        "Intel Arc"
+      ]
+    },
+    {
+      "title": "GPU shortage 관련 뉴스 1",
+      "url": "https://news.example.com/article/7594",
+      "published_at": "2026-02-14T14:30:04.388690",
+      "sentiment": "positive",
+      "sentiment_score": 0.59,
+      "keywords": [
+        "GPU shortage"
+      ]
+    },
+    {
+      "title": "GPU shortage 관련 뉴스 2",
+      "url": "https://news.example.com/article/1223",
+      "published_at": "2026-02-14T14:30:04.388692",
+      "sentiment": "neutral",
+      "sentiment_score": 0.02,
+      "keywords": [
+        "GPU shortage"
+      ]
+    },
+    {
+      "title": "GPU shortage 관련 뉴스 3",
+      "url": "https://news.example.com/article/3504",
+      "published_at": "2026-02-14T14:30:04.388694",
+      "sentiment": "positive",
+      "sentiment_score": 0.59,
+      "keywords": [
+        "GPU shortage"
+      ]
+    },
+    {
+      "title": "graphics card price drop 관련 뉴스 1",
+      "url": "https://news.example.com/article/6053",
+      "published_at": "2026-02-14T14:30:04.388702",
+      "sentiment": "positive",
+      "sentiment_score": 0.84,
+      "keywords": [
+        "graphics card price drop"
+      ]
+    },
+    {
+      "title": "graphics card price drop 관련 뉴스 2",
+      "url": "https://news.example.com/article/1736",
+      "published_at": "2026-02-14T14:30:04.388704",
+      "sentiment": "negative",
+      "sentiment_score": -0.83,
+      "keywords": [
+        "graphics card price drop"
+      ]
+    },
+    {
+      "title": "graphics card price drop 관련 뉴스 3",
+      "url": "https://news.example.com/article/8132",
+      "published_at": "2026-02-14T14:30:04.388706",
+      "sentiment": "neutral",
+      "sentiment_score": 0.14,
+      "keywords": [
+        "graphics card price drop"
+      ]
+    }
+  ],
+  "statistics": {
+    "total": 14,
+    "sentiment_avg": 0.03,
+    "positive_count": 5,
+    "negative_count": 5,
+    "neutral_count": 4
+  },
+  "metadata": {
+    "crawled_at": "2026-02-14T14:30:04.388756",
+    "keywords": [
+      "GPU price",
+      "graphics card",
+      "NVIDIA RTX",
+      "AMD Radeon",
+      "Intel Arc",
+      "GPU shortage",
+      "GPU stock",
+      "graphics card price drop"
+    ]
+  }
+}

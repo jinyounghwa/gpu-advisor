@@ -1,0 +1,81 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Data files (선택적 - 너무 크면 제외)
+# data/raw/
+# data/processed/
+
+# Credentials & Secrets
+.env
+.env.local
+credentials.json
+secrets.json
+config.secret.json
+
+# Model checkpoints (선택적 - 용량이 크면 제외)
+# backend/models/checkpoints/
+# *.pth
+# *.pt
+# *.ckpt
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Backup files
+*.backup
+*.bak
+*~
+
+# Temporary files
+tmp/
+temp/
+*.tmp

@@ -1,0 +1,12 @@
+{
+  "date": "2026-02-15",
+  "source": "exchange_rate_api",
+  "rates": {
+    "USD/KRW": 1447.43,
+    "JPY/KRW": 951.02,
+    "EUR/KRW": 1568.44
+  },
+  "metadata": {
+    "fetched_at": "2026-02-15T09:54:59.709157"
+  }
+}

@@ -1,0 +1,227 @@
+{
+  "date": "2026-02-14",
+  "source": "danawa",
+  "total_products": 24,
+  "products": [
+    {
+      "product_name": "RTX 5090 샘플 제품",
+      "manufacturer": "ASUS",
+      "chipset": "RTX 5090",
+      "lowest_price": 6395208,
+      "seller_count": 9,
+      "stock_status": "in_stock",
+      "product_url": "https://prod.danawa.com/info/?pcode=10967357"
+    },
+    {
+      "product_name": "RTX 5080 샘플 제품",
+      "manufacturer": "ZOTAC",
+      "chipset": "RTX 5080",
+      "lowest_price": 2134239,
+      "seller_count": 9,
+      "stock_status": "in_stock",
+      "product_url": "https://prod.danawa.com/info/?pcode=42299474"
+    },
+    {
+      "product_name": "RTX 5070 Ti 샘플 제품",
+      "manufacturer": "ZOTAC",
+      "chipset": "RTX 5070 Ti",
+      "lowest_price": 1591595,
+      "seller_count": 19,
+      "stock_status": "out_of_stock",
+      "product_url": "https://prod.danawa.com/info/?pcode=49170842"
+    },
+    {
+      "product_name": "RTX 5070 샘플 제품",
+      "manufacturer": "GIGABYTE",
+      "chipset": "RTX 5070",
+      "lowest_price": 1145421,
+      "seller_count": 19,
+      "stock_status": "out_of_stock",
+      "product_url": "https://prod.danawa.com/info/?pcode=54153965"
+    },
+    {
+      "product_name": "RTX 5060 Ti 샘플 제품",
+      "manufacturer": "PALIT",
+      "chipset": "RTX 5060 Ti",
+      "lowest_price": 762474,
+      "seller_count": 7,
+      "stock_status": "in_stock",
+      "product_url": "https://prod.danawa.com/info/?pcode=66312810"
+    },
+    {
+      "product_name": "RTX 5060 샘플 제품",
+      "manufacturer": "MSI",
+      "chipset": "RTX 5060",
+      "lowest_price": 610986,
+      "seller_count": 22,
+      "stock_status": "low_stock",
+      "product_url": "https://prod.danawa.com/info/?pcode=41389774"
+    },
+    {
+      "product_name": "RTX 5050 샘플 제품",
+      "manufacturer": "MSI",
+      "chipset": "RTX 5050",
+      "lowest_price": 447660,
+      "seller_count": 13,
+      "stock_status": "out_of_stock",
+      "product_url": "https://prod.danawa.com/info/?pcode=39603224"
+    },
+    {
+      "product_name": "RTX 4090 샘플 제품",
+      "manufacturer": "GIGABYTE",
+      "chipset": "RTX 4090",
+      "lowest_price": 2609832,
+      "seller_count": 21,
+      "stock_status": "low_stock",
+      "product_url": "https://prod.danawa.com/info/?pcode=42505605"
+    },
+    {
+      "product_name": "RTX 4080 샘플 제품",
+      "manufacturer": "GIGABYTE",
+      "chipset": "RTX 4080",
+      "lowest_price": 1823831,
+      "seller_count": 25,
+      "stock_status": "in_stock",
+      "product_url": "https://prod.danawa.com/info/?pcode=86032096"
+    },
+    {
+      "product_name": "RTX 4070 Ti 샘플 제품",
+      "manufacturer": "GIGABYTE",
+      "chipset": "RTX 4070 Ti",
+      "lowest_price": 1203172,
+      "seller_count": 14,
+      "stock_status": "out_of_stock",
+      "product_url": "https://prod.danawa.com/info/?pcode=42368991"
+    },
+    {
+      "product_name": "RTX 4070 샘플 제품",
+      "manufacturer": "MSI",
+      "chipset": "RTX 4070",
+      "lowest_price": 867010,
+      "seller_count": 25,
+      "stock_status": "in_stock",
+      "product_url": "https://prod.danawa.com/info/?pcode=50419069"
+    },
+    {
+      "product_name": "RTX 4060 Ti 샘플 제품",
+      "manufacturer": "ZOTAC",
+      "chipset": "RTX 4060 Ti",
+      "lowest_price": 649922,
+      "seller_count": 20,
+      "stock_status": "low_stock",
+      "product_url": "https://prod.danawa.com/info/?pcode=38974966"
+    },
+    {
+      "product_name": "RTX 4060 샘플 제품",
+      "manufacturer": "MSI",
+      "chipset": "RTX 4060",
+      "lowest_price": 503924,
+      "seller_count": 13,
+      "stock_status": "low_stock",
+      "product_url": "https://prod.danawa.com/info/?pcode=60687557"
+    },
+    {
+      "product_name": "RX 9070 XT 샘플 제품",
+      "manufacturer": "GIGABYTE",
+      "chipset": "RX 9070 XT",
+      "lowest_price": 1134530,
+      "seller_count": 25,
+      "stock_status": "low_stock",
+      "product_url": "https://prod.danawa.com/info/?pcode=24046572"
+    },
+    {
+      "product_name": "RX 9060 XT 샘플 제품",
+      "manufacturer": "MSI",
+      "chipset": "RX 9060 XT",
+      "lowest_price": 685712,
+      "seller_count": 29,
+      "stock_status": "low_stock",
+      "product_url": "https://prod.danawa.com/info/?pcode=67517117"
+    },
+    {
+      "product_name": "RX 7900 XTX 샘플 제품",
+      "manufacturer": "MSI",
+      "chipset": "RX 7900 XTX",
+      "lowest_price": 1379967,
+      "seller_count": 20,
+      "stock_status": "out_of_stock",
+      "product_url": "https://prod.danawa.com/info/?pcode=76861384"
+    },
+    {
+      "product_name": "RX 7900 XT 샘플 제품",
+      "manufacturer": "ZOTAC",
+      "chipset": "RX 7900 XT",
+      "lowest_price": 1195495,
+      "seller_count": 8,
+      "stock_status": "in_stock",
+      "product_url": "https://prod.danawa.com/info/?pcode=15413654"
+    },
+    {
+      "product_name": "RX 7800 XT 샘플 제품",
+      "manufacturer": "ASUS",
+      "chipset": "RX 7800 XT",
+      "lowest_price": 894781,
+      "seller_count": 13,
+      "stock_status": "out_of_stock",
+      "product_url": "https://prod.danawa.com/info/?pcode=30946014"
+    },
+    {
+      "product_name": "RX 7700 XT 샘플 제품",
+      "manufacturer": "ZOTAC",
+      "chipset": "RX 7700 XT",
+      "lowest_price": 784809,
+      "seller_count": 8,
+      "stock_status": "out_of_stock",
+      "product_url": "https://prod.danawa.com/info/?pcode=24353240"
+    },
+    {
+      "product_name": "RX 7600 샘플 제품",
+      "manufacturer": "GIGABYTE",
+      "chipset": "RX 7600",
+      "lowest_price": 524261,
+      "seller_count": 28,
+      "stock_status": "in_stock",
+      "product_url": "https://prod.danawa.com/info/?pcode=22973394"
+    },
+    {
+      "product_name": "RX 6600 샘플 제품",
+      "manufacturer": "PALIT",
+      "chipset": "RX 6600",
+      "lowest_price": 334850,
+      "seller_count": 16,
+      "stock_status": "in_stock",
+      "product_url": "https://prod.danawa.com/info/?pcode=27065312"
+    },
+    {
+      "product_name": "Arc B580 샘플 제품",
+      "manufacturer": "PALIT",
+      "chipset": "Arc B580",
+      "lowest_price": 343546,
+      "seller_count": 9,
+      "stock_status": "in_stock",
+      "product_url": "https://prod.danawa.com/info/?pcode=67108838"
+    },
+    {
+      "product_name": "Arc B570 샘플 제품",
+      "manufacturer": "MSI",
+      "chipset": "Arc B570",
+      "lowest_price": 311761,
+      "seller_count": 14,
+      "stock_status": "out_of_stock",
+      "product_url": "https://prod.danawa.com/info/?pcode=25226826"
+    },
+    {
+      "product_name": "Arc A770 샘플 제품",
+      "manufacturer": "GIGABYTE",
+      "chipset": "Arc A770",
+      "lowest_price": 463668,
+      "seller_count": 5,
+      "stock_status": "out_of_stock",
+      "product_url": "https://prod.danawa.com/info/?pcode=67591323"
+    }
+  ],
+  "metadata": {
+    "crawled_at": "2026-02-14T14:30:04.387402",
+    "target_models": 24
+  }
+}

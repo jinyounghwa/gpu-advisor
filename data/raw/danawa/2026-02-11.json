@@ -1,0 +1,275 @@
+{
+  "date": "2026-02-11",
+  "source": "danawa",
+  "total_products": 33,
+  "products": [
+    {
+      "product_name": "MSI 지포스 RTX 5060 벤투스 2X OC D7 8GB",
+      "manufacturer": "MSI",
+      "chipset": "RTX 5060",
+      "lowest_price": 605870,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=90956033&cate=112753"
+    },
+    {
+      "product_name": "ZOTAC GAMING 지포스 RTX 5070 Ti SOLID OC D7 16GB",
+      "manufacturer": "ZOTAC",
+      "chipset": "RTX 5070 Ti",
+      "lowest_price": 1559990,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=76464143&cate=112753"
+    },
+    {
+      "product_name": "MSI 지포스 RTX 5070 게이밍 트리오 OC D7 12GB 트라이프로져4",
+      "manufacturer": "MSI",
+      "chipset": "RTX 5070",
+      "lowest_price": 1116970,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=77379380&cate=112753"
+    },
+    {
+      "product_name": "PALIT 지포스 RTX 5060 DUAL OC D7 8GB 이엠텍",
+      "manufacturer": "PALIT",
+      "chipset": "RTX 5060",
+      "lowest_price": 588240,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=90887879&cate=112753"
+    },
+    {
+      "product_name": "PALIT 지포스 RTX 5060 Ti INFINITY 3 D7 16GB 이엠텍",
+      "manufacturer": "PALIT",
+      "chipset": "RTX 5060 Ti",
+      "lowest_price": 885940,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=81037490&cate=112753"
+    },
+    {
+      "product_name": "PALIT 지포스 RTX 5060 Ti DUAL D7 8GB 이엠텍",
+      "manufacturer": "PALIT",
+      "chipset": "RTX 5060 Ti",
+      "lowest_price": 694550,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=89732453&cate=112753"
+    },
+    {
+      "product_name": "갤럭시 GALAX 지포스 RTX 5060 Ti BLACK OC D7 8GB",
+      "manufacturer": "GALAX",
+      "chipset": "RTX 5060 Ti",
+      "lowest_price": 783410,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=85664150&cate=112753"
+    },
+    {
+      "product_name": "이엠텍 지포스 RTX 5070 Ti MIRACLE WHITE D7 16GB",
+      "manufacturer": "이엠텍",
+      "chipset": "RTX 5070 Ti",
+      "lowest_price": 1580850,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=77020520&cate=112753"
+    },
+    {
+      "product_name": "이엠텍 지포스 RTX 5060 MIRACLE WHITE D7 8GB",
+      "manufacturer": "이엠텍",
+      "chipset": "RTX 5060",
+      "lowest_price": 609990,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=92044253&cate=112753"
+    },
+    {
+      "product_name": "MSI 지포스 RTX 5080 뱅가드 SOC D7 16GB 하이퍼프로져",
+      "manufacturer": "MSI",
+      "chipset": "RTX 5080",
+      "lowest_price": 2440400,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=75541700&cate=112753"
+    },
+    {
+      "product_name": "PALIT 지포스 RTX 5080 GAMINGPRO D7 16GB 이엠텍",
+      "manufacturer": "PALIT",
+      "chipset": "RTX 5080",
+      "lowest_price": 2081570,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=75184250&cate=112753"
+    },
+    {
+      "product_name": "XFX 라데온 RX 9070 XT SWIFT D6 16GB",
+      "manufacturer": "XFX",
+      "chipset": "RX 9070 XT",
+      "lowest_price": 1158270,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=77378288&cate=112753"
+    },
+    {
+      "product_name": "갤럭시 GALAX 지포스 RTX 5060 Ti BLACK OC Classic D7 8GB",
+      "manufacturer": "GALAX",
+      "chipset": "RTX 5060 Ti",
+      "lowest_price": 764950,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=98771447&cate=112753"
+    },
+    {
+      "product_name": "XFX 라데온 RX 9060 XT SWIFT DUAL OC D6 16GB",
+      "manufacturer": "XFX",
+      "chipset": "RX 9060 XT",
+      "lowest_price": 651000,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=92892695&cate=112753"
+    },
+    {
+      "product_name": "GIGABYTE 지포스 RTX 5080 GAMING OC D7 16GB 제이씨현",
+      "manufacturer": "GIGABYTE",
+      "chipset": "RTX 5080",
+      "lowest_price": 2216690,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=75184268&cate=112753"
+    },
+    {
+      "product_name": "ASUS PRIME 라데온 RX 9070 XT OC D6 16GB 대원씨티에스",
+      "manufacturer": "ASUS",
+      "chipset": "RX 9070 XT",
+      "lowest_price": 1080000,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=77461292&cate=112753"
+    },
+    {
+      "product_name": "GIGABYTE 지포스 RTX 5070 WINDFORCE OC SFF D7 12GB 제이씨현",
+      "manufacturer": "GIGABYTE",
+      "chipset": "RTX 5070",
+      "lowest_price": 1022700,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=77319545&cate=112753"
+    },
+    {
+      "product_name": "PowerColor 라데온 RX 9060 XT Reaper White D6 8GB 대원씨티에스",
+      "manufacturer": "PowerColor",
+      "chipset": "RX 9060 XT",
+      "lowest_price": 599890,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=91909043&cate=112753"
+    },
+    {
+      "product_name": "MSI 지포스 RTX 5070 Ti 게이밍 트리오 OC D7 16GB 트라이프로져4",
+      "manufacturer": "MSI",
+      "chipset": "RTX 5070 Ti",
+      "lowest_price": 1728840,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=90160715&cate=112753"
+    },
+    {
+      "product_name": "PALIT 지포스 RTX 5090 GAMEROCK D7 32GB 이엠텍",
+      "manufacturer": "PALIT",
+      "chipset": "RTX 5090",
+      "lowest_price": 6089990,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=75376490&cate=112753"
+    },
+    {
+      "product_name": "GIGABYTE 지포스 RTX 5060 Ti WINDFORCE MAX OC D7 8GB 제이씨현",
+      "manufacturer": "GIGABYTE",
+      "chipset": "RTX 5060 Ti",
+      "lowest_price": 698300,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=94028864&cate=112753"
+    },
+    {
+      "product_name": "SAPPHIRE 라데온 RX 9060 XT PULSE OC D6 16GB",
+      "manufacturer": "Sapphire",
+      "chipset": "RX 9060 XT",
+      "lowest_price": 795280,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=91909571&cate=112753"
+    },
+    {
+      "product_name": "ASRock 라데온 RX 6600 CHALLENGER D D6 8GB 대원씨티에스",
+      "manufacturer": "ASRock",
+      "chipset": "RX 6600",
+      "lowest_price": 324950,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=17420300&cate=112753"
+    },
+    {
+      "product_name": "GIGABYTE 라데온 RX 7600 GAMING OC D6 8GB 제이씨현",
+      "manufacturer": "GIGABYTE",
+      "chipset": "RX 7600",
+      "lowest_price": 482830,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=20350115&cate=112753"
+    },
+    {
+      "product_name": "MSI 지포스 RTX 5090 슈프림 SOC D7 32GB 하이퍼프로져",
+      "manufacturer": "MSI",
+      "chipset": "RTX 5090",
+      "lowest_price": 6437230,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=76550939&cate=112753"
+    },
+    {
+      "product_name": "이엠텍 지포스 RTX 5080 MIRACLE WHITE D7 16GB",
+      "manufacturer": "이엠텍",
+      "chipset": "RTX 5080",
+      "lowest_price": 2135780,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=76074971&cate=112753"
+    },
+    {
+      "product_name": "SAPPHIRE 라데온 RX 9070 XT NITRO+ OC D6 16GB",
+      "manufacturer": "Sapphire",
+      "chipset": "RX 9070 XT",
+      "lowest_price": 1422200,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=77378093&cate=112753"
+    },
+    {
+      "product_name": "MAXSUN Arc B580 Milestone D6 12GB 코잇",
+      "manufacturer": "Unknown",
+      "chipset": "Arc B580",
+      "lowest_price": 339000,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=74051723&cate=112753"
+    },
+    {
+      "product_name": "GIGABYTE 라데온 RX 9070 XT GAMING OC D6 16GB 피씨디렉트",
+      "manufacturer": "GIGABYTE",
+      "chipset": "RX 9070 XT",
+      "lowest_price": 1138990,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=77382845&cate=112753"
+    },
+    {
+      "product_name": "GIGABYTE 지포스 RTX 5060 WINDFORCE MAX OC D7 8GB 제이씨현",
+      "manufacturer": "GIGABYTE",
+      "chipset": "RTX 5060",
+      "lowest_price": 604970,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=94028963&cate=112753"
+    },
+    {
+      "product_name": "갤럭시 GALAX 지포스 RTX 5060 Ti BLACK OC D7 16GB",
+      "manufacturer": "GALAX",
+      "chipset": "RTX 5060 Ti",
+      "lowest_price": 1044990,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=81715421&cate=112753"
+    },
+    {
+      "product_name": "GIGABYTE AORUS 지포스 RTX 5080 MASTER ICE D7 16GB 제이씨현",
+      "manufacturer": "GIGABYTE",
+      "chipset": "RTX 5080",
+      "lowest_price": 2543000,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=75184262&cate=112753"
+    },
+    {
+      "product_name": "PALIT 지포스 RTX 5070 INFINITY 3 D7 12GB 이엠텍",
+      "manufacturer": "PALIT",
+      "chipset": "RTX 5070",
+      "lowest_price": 1070540,
+      "seller_count": 0,
+      "product_url": "https://prod.danawa.com/info/?pcode=79402577&cate=112753"
+    }
+  ],
+  "metadata": {
+    "crawled_at": "2026-02-11",
+    "target_models": 37
+  }
+}
