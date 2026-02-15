@@ -10,6 +10,12 @@ This system helps answer the question: **"Should I buy this GPU now or wait?"**
 
 Just like AlphaGo calculates win probabilities in Go, this system calculates **purchase profitability scores (0-100%)** to determine the best time to buy GPUs.
 
+### 💡 Project Motivation
+
+As a researcher and developer, I found myself constantly facing the dilemma of GPU purchase timing. Graphics card prices fluctuate dramatically based on market conditions, new releases, and global supply chains. This project was born from a simple need: **to bring AI-powered decision intelligence to everyday purchase decisions**.
+
+By applying the same Monte Carlo Tree Search (MCTS) principles that power AlphaGo to the GPU market, this system transforms complex market signals into actionable recommendations. This is part of my **"0.1B AI Project"** series - demonstrating that sophisticated AI applications don't always require billions of parameters, but rather smart architecture and thoughtful feature engineering.
+
 ### Key Features
 
 - 🤖 **AlphaZero Architecture**: 18.9M parameters (Representation, Dynamics, Prediction networks + MCTS)
@@ -17,6 +23,22 @@ Just like AlphaGo calculates win probabilities in Go, this system calculates **p
 - 🧠 **256-Dimensional Features**: Rich feature engineering from 11D to 256D
 - 📈 **Real-time Predictions**: REST API for instant purchase timing recommendations
 - ⏰ **Cron Automation**: Fully automated daily data collection
+
+### 🎮 Core Principle: Game Theory Meets Market Analysis
+
+The fundamental insight behind this project is simple yet powerful: **purchasing decisions can be modeled as a sequential decision-making game**, similar to Go.
+
+**The Analogy:**
+- In Go, AlphaGo evaluates "Should I play this move?" → Win probability (0-100%)
+- In GPU Market, our system evaluates "Should I buy this GPU?" → Purchase profitability score (0-100%)
+
+**How It Works:**
+1. **State Representation**: Market conditions (prices, trends, news sentiment) are encoded into a 256-dimensional latent state
+2. **MCTS Simulation**: The system simulates 50 possible future scenarios (price drops, new releases, market crashes)
+3. **Value Prediction**: Each scenario is evaluated for purchase timing optimality
+4. **Final Recommendation**: The best action (Buy Now / Wait) is selected based on simulated outcomes
+
+Unlike traditional price prediction models that try to forecast exact future prices (which is nearly impossible), this system focuses on **decision quality** - answering "Is now a good time?" rather than "What will the price be?"
 
 ## 📋 Architecture
 
@@ -180,6 +202,16 @@ gpu-advisor/
 - **Crawling**: Requests, BeautifulSoup4
 - **Automation**: Cron
 
+## 🤖 Development Tools & AI Assistance
+
+This project was developed with assistance from multiple AI tools, demonstrating the collaborative future of software development:
+
+- **GLM (GLM-4-Plus)**: Used for initial architecture design and Korean documentation
+- **Antigravity**: Assisted with code generation and feature engineering implementation
+- **Claude Code**: Provided development assistance, code review, and documentation refinement
+
+**Transparency Note**: As part of the 0.1B AI Project philosophy, I believe in honest disclosure of development tools. This project showcases human-AI collaboration, where AI assists in accelerating development while the core design decisions, architecture, and problem-solving approach remain human-driven.
+
 ## 📊 Model Specifications
 
 - **Total Parameters**: 18.9M
@@ -205,7 +237,10 @@ This project is for educational and research purposes.
 
 ## 👤 Author
 
-Built with Claude Code CLI
+**Jin Younghwa**
+Email: timotolkie@gmail.com
+
+Creator of the 0.1B AI Project series, exploring how thoughtful architecture and smart feature engineering can deliver powerful AI solutions without requiring billions of parameters.
 
 ## 🤝 Contributing
 
@@ -213,5 +248,6 @@ This is a personal research project. Feel free to fork and experiment!
 
 ---
 
-**Last Updated**: 2026-02-14
+**Last Updated**: 2026-02-15
 **Version**: 1.0.0
+**Project Type**: 0.1B AI Project
