@@ -45,16 +45,16 @@ AI는 단순히 신경망의 출력값만 믿지 않습니다. 수십 번의 **�
 
 ### [Phase 1] 데이터 수집 (Daily)
 - `crawlers/run_daily.py`가 작동하며 `data/raw/`에 매일의 데이터를 쌓습니다.
-- `feature_engineer.py`가 이 데이터를 256차원 벡터로 가공하여 `data/processed/`에 저장합니다.
+- `crawlers/feature_engineer.py`가 이 데이터를 256차원 벡터로 가공하여 `data/processed/`에 저장합니다.
 
 ### [Phase 2] 백엔드 서비스 (FastAPI)
 - `backend/simple_server.py`가 실행될 때 `alphazero_model.pth` 파일을 로드합니다.
-- **예측 API (`/api/predict`):** 사용자가 모델을 요청하면 MCTS 엔진이 가동되어 50번의 시뮬레이션을 돌린 후 최적의 '구매 적정도'를 계산합니다.
-- **지표 API (`/api/metrics`):** 서버에서 AI가 학습 중인 경우, 실시간으로 TPS(초당 처리량)와 에러율을 브라우저에 전송(SSE)합니다.
+- **예측 API (`/api/ask`):** 사용자가 모델을 요청하면 MCTS 엔진이 가동되어 구매/대기 액션과 신뢰도, 근거를 반환합니다.
+- **지표 API (`/api/training/metrics`, `/api/training/metrics/stream`):** 서버에서 AI가 학습 중인 경우, 지표 조회 및 SSE 스트리밍을 제공합니다.
 
 ### [Phase 3] 프론트엔드 (Next.js)
 - `frontend/app/page.tsx`는 사용자의 입력을 백엔드로 전달합니다.
-- `TrainingDashboard.tsx`는 백엔드에서 보내주는 실시간 지표를 받아 `Chart.js` 등을 이용해 동적인 그래프로 그려냅니다.
+- `frontend/app/components/TrainingDashboard.tsx`는 백엔드에서 보내주는 실시간 지표를 받아 동적인 그래프로 그려냅니다.
 
 ---
 

@@ -18,7 +18,7 @@
 ## 📁 2. 백엔드 및 서비스 (`backend/`)
 AI 모델을 가동하고, 프론트엔드와 통신하며, 학습 프로세스를 관리하는 서버입니다.
 
-- **`simple_server.py`**: FastAPI 기반의 메인 서버 파일입니다. 검색 API(`/api/ask`)와 대시보드용 학습 시뮬레이션 API들을 정의합니다.
+- **`simple_server.py`**: FastAPI 기반의 메인 서버 파일입니다. 검색 API(`/api/ask`)와 학습/릴리즈 점검 API(`/api/training/*`, `/api/agent/*`)를 정의합니다.
 - **`train_alphazero_v2.py`**: MuZero 스타일의 자가 학습(Self-play) 과정을 구현한 파일입니다. MCTS를 통해 생성된 데이터를 바탕으로 신경망을 업데이트합니다.
 - **`requirements.txt`**: PyTorch, FastAPI, uvicorn 등 백엔드 실행에 필요한 파이썬 패키지 목록입니다.
 

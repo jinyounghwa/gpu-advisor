@@ -205,24 +205,47 @@ gpu-advisor/
 
 ## 📖 Documentation
 
-### Learning Guides (English / Korean)
+### Root Documents
+
+- [`README.md`](README.md): 프로젝트 개요, 아키텍처, 실행 방법, API 사용법
+- [`종합_프로젝트_보고서.md`](종합_프로젝트_보고서.md): 전체 시스템을 한 번에 보는 한국어 종합 보고서
+- [`GPU_PURCHASE_ADVISOR_REPORT.md`](GPU_PURCHASE_ADVISOR_REPORT.md): 성능/평가 결과 중심의 한국어 평가 보고서
+- [`CRAWLER_GUIDE.md`](CRAWLER_GUIDE.md): 일일 데이터 수집 파이프라인 및 cron 운영 가이드
+- [`architecture_spec.md`](architecture_spec.md): AlphaZero/MuZero 기반 트레이딩 아키텍처 상세 명세
+- [`feasibility_report.md`](feasibility_report.md): AlphaZero/MCTS 적용 타당성 및 단계별 구현 로드맵
+- [`frontend/README.md`](frontend/README.md): 프론트엔드(Next.js) 실행/개발 가이드
+
+### `docs/` Core Guides
+
+- [`docs/STUDY_GUIDE.md`](docs/STUDY_GUIDE.md): 학습 순서 중심의 스터디 가이드
+- [`docs/IMPLEMENTATION_GUIDE.md`](docs/IMPLEMENTATION_GUIDE.md): 단계별 구현 절차 가이드
+- [`docs/FILE_GUIDE.md`](docs/FILE_GUIDE.md): 파일/모듈 단위 역할 설명서
+- [`docs/PROJECT_PRINCIPLES.md`](docs/PROJECT_PRINCIPLES.md): AI 설계 철학과 핵심 원리 해설
+- [`docs/AI_CODE_DEEP_DIVE.md`](docs/AI_CODE_DEEP_DIVE.md): AI 핵심 코드 분석 인덱스
+- [`docs/AI_COMPONENTS_AND_IMPLEMENTATION_KR.md`](docs/AI_COMPONENTS_AND_IMPLEMENTATION_KR.md): AI 구성요소와 현재 구현 상태(한국어)
+- [`docs/FINAL_DEVELOPMENT_REPORT_KR.md`](docs/FINAL_DEVELOPMENT_REPORT_KR.md): 최종 개발 결과 정리(한국어)
+
+### `docs/` Learning Pairs (EN/KR)
 
 | Topic | English | Korean |
 |-------|---------|--------|
-| Hyperparameter Design | [HYPERPARAMETER_GUIDE.md](docs/HYPERPARAMETER_GUIDE.md) | [KR](docs/HYPERPARAMETER_GUIDE_KR.md) |
-| MCTS Numerical Walkthrough | [MCTS_WALKTHROUGH.md](docs/MCTS_WALKTHROUGH.md) | [KR](docs/MCTS_WALKTHROUGH_KR.md) |
-| Safety Mechanisms | [SAFETY_MECHANISMS.md](docs/SAFETY_MECHANISMS.md) | [KR](docs/SAFETY_MECHANISMS_KR.md) |
-| Inference Walkthrough | [INFERENCE_WALKTHROUGH.md](docs/INFERENCE_WALKTHROUGH.md) | [KR](docs/INFERENCE_WALKTHROUGH_KR.md) |
-| Glossary | [GLOSSARY.md](docs/GLOSSARY.md) | [KR](docs/GLOSSARY_KR.md) |
+| Hyperparameter Design | [docs/HYPERPARAMETER_GUIDE.md](docs/HYPERPARAMETER_GUIDE.md) | [docs/HYPERPARAMETER_GUIDE_KR.md](docs/HYPERPARAMETER_GUIDE_KR.md) |
+| MCTS Numerical Walkthrough | [docs/MCTS_WALKTHROUGH.md](docs/MCTS_WALKTHROUGH.md) | [docs/MCTS_WALKTHROUGH_KR.md](docs/MCTS_WALKTHROUGH_KR.md) |
+| Safety Mechanisms | [docs/SAFETY_MECHANISMS.md](docs/SAFETY_MECHANISMS.md) | [docs/SAFETY_MECHANISMS_KR.md](docs/SAFETY_MECHANISMS_KR.md) |
+| Inference Walkthrough | [docs/INFERENCE_WALKTHROUGH.md](docs/INFERENCE_WALKTHROUGH.md) | [docs/INFERENCE_WALKTHROUGH_KR.md](docs/INFERENCE_WALKTHROUGH_KR.md) |
+| Glossary | [docs/GLOSSARY.md](docs/GLOSSARY.md) | [docs/GLOSSARY_KR.md](docs/GLOSSARY_KR.md) |
 
-### Project Documentation
+### `docs/models/` Deep Dives
 
-- `종합_프로젝트_보고서.md` - Complete system guide (Korean)
-- `CRAWLER_GUIDE.md` - Crawler usage guide (Korean)
-- `GPU_PURCHASE_ADVISOR_REPORT.md` - System evaluation report (Korean)
-- `docs/STUDY_GUIDE.md` - 4-week learning curriculum
-- `docs/IMPLEMENTATION_GUIDE.md` - Step-by-step implementation
-- `docs/PROJECT_PRINCIPLES.md` - Core design principles
+- [`docs/models/01_representation_network.md`](docs/models/01_representation_network.md): Representation Network (`h`) 구조/역할 분석
+- [`docs/models/02_dynamics_network.md`](docs/models/02_dynamics_network.md): Dynamics Network (`g`) 상태전이/보상 예측 분석
+- [`docs/models/03_prediction_network.md`](docs/models/03_prediction_network.md): Prediction Network (`f`) 정책/가치 출력 분석
+- [`docs/models/04_mcts_engine.md`](docs/models/04_mcts_engine.md): MCTS 탐색 엔진 구현 상세 분석
+- [`docs/models/05_transformer_model.md`](docs/models/05_transformer_model.md): Transformer 모듈 구조 및 사용 방식 분석
+
+### `docs/reports/` Release Reports
+
+- [`docs/reports/release_report_*.md`](docs/reports): 릴리즈 판정 자동 생성 보고서 모음 (시점별 pass/blocked 판정, 지표, 게이트 결과)
 
 ## 🔄 Roadmap
 
