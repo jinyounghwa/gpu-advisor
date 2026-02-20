@@ -242,9 +242,10 @@ gpu-advisor/
 
 This project was developed with assistance from multiple AI tools, demonstrating the collaborative future of software development:
 
-- **GLM (GLM-4-Plus)**: Used for initial architecture design and Korean documentation
+- **GLM (GLM-4.7)**: Used for initial architecture design and Korean documentation
 - **Antigravity**: Assisted with code generation and feature engineering implementation
 - **Claude Code**: Provided development assistance, code review, and documentation refinement
+- **Codex**: Provided development assistance, code review, and documentation refinement
 
 **Transparency Note**: As part of the 0.1B AI Project philosophy, I believe in honest disclosure of development tools. This project showcases human-AI collaboration, where AI assists in accelerating development while the core design decisions, architecture, and problem-solving approach remain human-driven.
 
