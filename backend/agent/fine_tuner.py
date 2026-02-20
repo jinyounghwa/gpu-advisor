@@ -334,6 +334,7 @@ class AgentFineTuner:
                 "saved_at": time.time(),
                 "train_config": train_config or {},
                 "dataset_summary": self.dataset_summary,
+                "action_prior": [float(x) for x in self.action_prior.detach().cpu().numpy().tolist()],
                 "schema_version": "agent-v1",
             },
         }

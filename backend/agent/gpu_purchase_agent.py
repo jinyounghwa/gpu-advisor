@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import difflib
+import hashlib
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Dict, List, Tuple, Any
@@ -78,6 +79,7 @@ class GPUPurchaseAgent:
         self.prediction_network: PredictionNetwork | None = None
         self.mcts: MCTSEngine | None = None
         self.model_meta: Dict[str, Any] = {}
+        self.action_prior: np.ndarray | None = None
 
         self._dataset_mtime_ns: int = -1
         self._dataset_rows: List[Dict[str, Any]] = []
@@ -94,6 +96,11 @@ class GPUPurchaseAgent:
             self.checkpoint_path, map_location=self.device, weights_only=False
         )
         self.model_meta = checkpoint.get("meta", {})
+        prior = self.model_meta.get("action_prior")
+        if isinstance(prior, list) and len(prior) > 0:
+            arr = np.asarray(prior, dtype=np.float32)
+            if arr.sum() > 0:
+                self.action_prior = arr / arr.sum()
 
         h_state = checkpoint["h_state_dict"]
         g_state = checkpoint["g_state_dict"]
@@ -181,6 +188,13 @@ class GPUPurchaseAgent:
         arr[action_id] = 1.0
         return torch.tensor(arr, dtype=torch.float32, device=self.device).unsqueeze(0)
 
+    def _deterministic_sample(self, probs: np.ndarray, key: str) -> int:
+        h = hashlib.sha256(key.encode("utf-8")).hexdigest()
+        u = (int(h[:12], 16) % 10_000_000) / 10_000_000.0
+        cdf = np.cumsum(probs)
+        idx = int(np.searchsorted(cdf, u, side="right"))
+        return min(max(idx, 0), len(probs) - 1)
+
     def decide_from_state(
         self,
         gpu_model: str,
@@ -203,7 +217,7 @@ class GPUPurchaseAgent:
             ).unsqueeze(0)
             latent = self.representation_network(state_tensor).squeeze(0).cpu().numpy()
 
-            action_probs_np, root_value, _ = self.mcts.search(
+            mcts_probs_np, root_value, _ = self.mcts.search(
                 root_state=latent,
                 policy_network=self.prediction_network,
                 dynamics_network=self.dynamics_network,
@@ -214,7 +228,7 @@ class GPUPurchaseAgent:
             latent_tensor = torch.tensor(
                 latent, dtype=torch.float32, device=self.device
             ).unsqueeze(0)
-            action_dim = len(action_probs_np)
+            action_dim = len(mcts_probs_np)
             for action_id in range(action_dim):
                 action_tensor = self._one_hot_action(action_id, action_dim)
                 _, reward_mean, _ = self.dynamics_network(latent_tensor, action_tensor)
@@ -222,10 +236,75 @@ class GPUPurchaseAgent:
                     ACTION_LABELS.get(action_id, f"ACTION_{action_id}")
                 ] = float(reward_mean.item())
 
-        best_action_idx = int(np.argmax(action_probs_np))
+        # Policy calibration: blend MCTS policy + reward-based policy + learned prior
+        reward_arr = np.asarray(
+            [
+                expected_rewards[ACTION_LABELS.get(i, f"ACTION_{i}")]
+                for i in range(len(mcts_probs_np))
+            ],
+            dtype=np.float32,
+        )
+        reward_centered = reward_arr - reward_arr.mean()
+        reward_scale = max(float(reward_centered.std()), 1e-6)
+        reward_scaled = reward_centered / reward_scale
+        reward_policy = np.exp(reward_scaled / 1.2)
+        reward_policy = reward_policy / reward_policy.sum()
+
+        if self.action_prior is not None and len(self.action_prior) == len(mcts_probs_np):
+            prior_policy = self.action_prior.copy()
+        else:
+            prior_policy = np.ones_like(mcts_probs_np, dtype=np.float32) / len(mcts_probs_np)
+
+        # Sanity layer from observable features (feature_engineer index convention).
+        # [0]=price_norm, [1]=ma7, [2]=ma14, [4]=change_1d, [5]=change_7d
+        p = float(state_vec[0]) if len(state_vec) > 0 else 0.0
+        ma7 = float(state_vec[1]) if len(state_vec) > 1 else p
+        ma14 = float(state_vec[2]) if len(state_vec) > 2 else p
+        ch1 = float(state_vec[4]) if len(state_vec) > 4 else 0.0
+        ch7 = float(state_vec[5]) if len(state_vec) > 5 else 0.0
+        over_ma = max((p - 0.5 * (ma7 + ma14)), -0.2)
+        trend_up = max(ch1 + 0.5 * ch7, 0.0)
+        trend_down = max(-(ch1 + 0.5 * ch7), 0.0)
+
+        utility_bias = np.zeros_like(mcts_probs_np, dtype=np.float32)
+        if len(utility_bias) >= 5:
+            utility_bias[0] = +1.0 * trend_down - 1.2 * max(over_ma, 0.0) - 0.7 * trend_up  # BUY_NOW
+            utility_bias[1] = +0.6 * max(over_ma, 0.0) + 0.5 * trend_up  # WAIT_SHORT
+            utility_bias[2] = +0.9 * max(over_ma - 0.02, 0.0) + 0.4 * trend_up  # WAIT_LONG
+            utility_bias[3] = +0.2 * (trend_up + trend_down)  # HOLD
+            utility_bias[4] = +0.8 * max(over_ma - 0.05, 0.0)  # SKIP
+        util_policy = np.exp(utility_bias / 0.8)
+        util_policy = util_policy / util_policy.sum()
+
+        calibrated = (
+            0.45 * mcts_probs_np
+            + 0.25 * reward_policy
+            + 0.15 * prior_policy
+            + 0.15 * util_policy
+        )
+        calibrated = np.maximum(calibrated, 0.02)
+        calibrated = calibrated / calibrated.sum()
+
+        # Anti-collapse regularizer: enforce minimum action entropy.
+        min_entropy_target = 0.65
+        ent_now = float(-(calibrated * np.log(calibrated + 1e-10)).sum())
+        if ent_now < min_entropy_target:
+            alpha = min(0.55, (min_entropy_target - ent_now) / max(min_entropy_target, 1e-6))
+            calibrated = (1.0 - alpha) * calibrated + alpha * prior_policy
+            calibrated = np.maximum(calibrated, 0.02)
+            calibrated = calibrated / calibrated.sum()
+
+        argmax_idx = int(np.argmax(calibrated))
+        argmax_conf = float(calibrated[argmax_idx])
+        if argmax_conf < 0.75:
+            sampled_idx = self._deterministic_sample(calibrated, f"{gpu_model}|{data_date}")
+            best_action_idx = sampled_idx
+        else:
+            best_action_idx = argmax_idx
+
         raw_action = ACTION_LABELS.get(best_action_idx, f"ACTION_{best_action_idx}")
-        confidence = float(action_probs_np[best_action_idx])
-        entropy = float(-(action_probs_np * np.log(action_probs_np + 1e-10)).sum())
+        confidence = float(calibrated[best_action_idx])
+        entropy = float(-(calibrated * np.log(calibrated + 1e-10)).sum())
         safe_mode = False
         safe_reason = None
         action = raw_action
@@ -240,8 +319,8 @@ class GPUPurchaseAgent:
             action = "HOLD"
 
         action_probs = {
-            ACTION_LABELS.get(i, f"ACTION_{i}"): float(action_probs_np[i])
-            for i in range(len(action_probs_np))
+            ACTION_LABELS.get(i, f"ACTION_{i}"): float(calibrated[i])
+            for i in range(len(calibrated))
         }
 
         return AgentDecision(
