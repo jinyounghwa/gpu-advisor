@@ -236,6 +236,24 @@ This project was developed with assistance from multiple AI tools, demonstrating
 | `/api/system/status` | GET | System status |
 | `/docs` | GET | Swagger UI documentation |
 
+## ✅ One-Click Release (After 30 Days)
+
+When 30-day crawling is complete, run the full release flow from CLI:
+
+```bash
+python3 backend/run_release_ready.py
+```
+
+Options:
+
+```bash
+# Validate gates without forcing 30-day window (for dry run)
+python3 backend/run_release_ready.py --allow-short-window --no-train --lookback-days 7
+
+# On pass, create and push release tag
+python3 backend/run_release_ready.py --tag --push-tag
+```
+
 ## 📝 License
 
 This project is for educational and research purposes.
