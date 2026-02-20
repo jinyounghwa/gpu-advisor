@@ -43,6 +43,10 @@ logs/
 # Data files (선택적 - 너무 크면 제외)
 # data/raw/
 # data/processed/
+data/raw/danawa/20*.json
+data/raw/exchange/20*.json
+data/raw/news/20*.json
+data/processed/dataset/training_data_20*.json
 
 # Credentials & Secrets
 .env
@@ -56,6 +60,11 @@ config.secret.json
 # *.pth
 # *.pt
 # *.ckpt
+alphazero_model_agent_latest.pth
+
+# Auto-generated release reports
+docs/reports/release_report_*.json
+docs/reports/release_report_*.md
 
 # Jupyter Notebook
 .ipynb_checkpoints
