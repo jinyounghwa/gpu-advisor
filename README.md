@@ -1,8 +1,8 @@
 # GPU Advisor
 
-**AI-Powered GPU Purchase Timing Prediction System**
+**Planning-based AI Agent for GPU Purchase Timing**
 
-A sophisticated AI system that predicts optimal GPU purchase timing using AlphaZero/MuZero architecture, mimicking the win-rate calculation approach used in Go.
+A planning-based AI agent that decides optimal GPU purchase timing using AlphaZero/MuZero-style world model and Monte Carlo Tree Search (MCTS). The agent observes market data, simulates future scenarios, and recommends actions — mimicking how AlphaGo evaluates win rates in Go.
 
 ## 🎯 Overview
 
@@ -75,8 +75,9 @@ Output: Purchase Score 75% → "Buy Now!"
 ### Prerequisites
 
 ```bash
-# Python 3.8+
-pip install -r requirements.txt
+# Python 3.10+
+pip install -r backend/requirements.txt
+pip install -e ".[dev]"  # dev dependencies (pytest, httpx)
 ```
 
 ### Setup
@@ -84,7 +85,6 @@ pip install -r requirements.txt
 1. **Configure Automated Data Collection**
 
 ```bash
-cd /Users/younghwa.jin/Documents/gpu-advisor
 ./setup_cron.sh
 ```
 
@@ -105,6 +105,20 @@ python3 simple_server.py
 
 Access the API at: `http://localhost:8000`
 Swagger UI: `http://localhost:8000/docs`
+
+### Docker (Alternative)
+
+```bash
+docker compose up --build
+```
+
+Backend: `http://localhost:8000` / Frontend: `http://localhost:3000`
+
+### Running Tests
+
+```bash
+python3 -m pytest tests/ -v
+```
 
 ### Making Predictions
 
@@ -148,45 +162,67 @@ Purchase Predictions
 
 ```
 gpu-advisor/
+├── backend/                       # AI & API backend
+│   ├── simple_server.py           # FastAPI server
+│   ├── agent/                     # Agent pipeline
+│   │   ├── gpu_purchase_agent.py  # MCTS planning agent
+│   │   ├── fine_tuner.py          # Model fine-tuning
+│   │   ├── evaluator.py           # Backtest evaluator
+│   │   └── release_pipeline.py    # Release quality gates
+│   └── models/                    # AlphaZero networks
+│       ├── representation_network.py  # h(s): State encoder
+│       ├── dynamics_network.py        # g(s,a): World model
+│       ├── prediction_network.py      # f(s): Policy-value
+│       └── mcts_engine.py             # MCTS tree search
+│
 ├── crawlers/                      # Data collection modules
 │   ├── danawa_crawler.py          # GPU price crawler
 │   ├── exchange_rate_crawler.py   # Exchange rate fetcher
 │   ├── news_crawler.py            # News crawler
 │   ├── feature_engineer.py        # 256D feature generation
-│   └── run_daily.py               # Daily orchestration script
+│   └── run_daily.py               # Daily orchestration
 │
-├── backend/                       # AI & API backend
-│   ├── simple_server.py           # FastAPI server
-│   ├── models/                    # AlphaZero networks
-│   │   ├── representation_network.py
-│   │   ├── dynamics_network.py
-│   │   ├── prediction_network.py
-│   │   └── mcts.py
-│   └── data/                      # Data processing
+├── frontend/                      # Next.js React UI
+│   └── app/page.tsx               # Advisor + Training dashboard
+│
+├── tests/                         # Pytest test suite
+│   ├── test_networks.py           # Neural network tests
+│   ├── test_mcts.py               # MCTS engine tests
+│   ├── test_feature_engineer.py   # Feature pipeline tests
+│   └── test_api.py                # API endpoint tests
 │
 ├── data/                          # Data storage
 │   ├── raw/                       # Raw collected data
-│   │   ├── danawa/
-│   │   ├── exchange/
-│   │   └── news/
-│   └── processed/                 # Processed features
-│       └── dataset/
+│   └── processed/                 # 256D feature vectors
 │
-├── logs/                          # System logs
-│
-├── setup_cron.sh                  # Cron automation setup
-├── CRAWLER_GUIDE.md               # Crawler documentation (Korean)
-├── GPU_PURCHASE_ADVISOR_REPORT.md # System report (Korean)
-└── 종합_프로젝트_보고서.md          # Complete guide (Korean)
+├── docs/                          # Technical documentation
+├── .github/workflows/ci.yml       # CI/CD pipeline
+├── Dockerfile                     # Backend container
+├── docker-compose.yml             # Multi-service orchestration
+├── pyproject.toml                 # Python project config
+└── .env.example                   # Environment template
 ```
 
 ## 📖 Documentation
 
-- **English**: This README
-- **Korean**:
-  - `종합_프로젝트_보고서.md` - Complete system guide
-  - `CRAWLER_GUIDE.md` - Crawler usage guide
-  - `GPU_PURCHASE_ADVISOR_REPORT.md` - System evaluation report
+### Learning Guides (English / Korean)
+
+| Topic | English | Korean |
+|-------|---------|--------|
+| Hyperparameter Design | [HYPERPARAMETER_GUIDE.md](docs/HYPERPARAMETER_GUIDE.md) | [KR](docs/HYPERPARAMETER_GUIDE_KR.md) |
+| MCTS Numerical Walkthrough | [MCTS_WALKTHROUGH.md](docs/MCTS_WALKTHROUGH.md) | [KR](docs/MCTS_WALKTHROUGH_KR.md) |
+| Safety Mechanisms | [SAFETY_MECHANISMS.md](docs/SAFETY_MECHANISMS.md) | [KR](docs/SAFETY_MECHANISMS_KR.md) |
+| Inference Walkthrough | [INFERENCE_WALKTHROUGH.md](docs/INFERENCE_WALKTHROUGH.md) | [KR](docs/INFERENCE_WALKTHROUGH_KR.md) |
+| Glossary | [GLOSSARY.md](docs/GLOSSARY.md) | [KR](docs/GLOSSARY_KR.md) |
+
+### Project Documentation
+
+- `종합_프로젝트_보고서.md` - Complete system guide (Korean)
+- `CRAWLER_GUIDE.md` - Crawler usage guide (Korean)
+- `GPU_PURCHASE_ADVISOR_REPORT.md` - System evaluation report (Korean)
+- `docs/STUDY_GUIDE.md` - 4-week learning curriculum
+- `docs/IMPLEMENTATION_GUIDE.md` - Step-by-step implementation
+- `docs/PROJECT_PRINCIPLES.md` - Core design principles
 
 ## 🔄 Roadmap
 
@@ -254,9 +290,9 @@ python3 backend/run_release_ready.py --allow-short-window --no-train --lookback-
 python3 backend/run_release_ready.py --tag --push-tag
 ```
 
-## 📝 License
+## 📝 Disclaimer
 
-This project is for educational and research purposes.
+This project is for **educational and research purposes only**. It uses algorithms inspired by AlphaGo Zero / MuZero (DeepMind) for studying reinforcement learning applications in market analysis. Not intended for commercial use or financial advice.
 
 ## 👤 Author
 
@@ -271,6 +307,6 @@ This is a personal research project. Feel free to fork and experiment!
 
 ---
 
-**Last Updated**: 2026-02-15
-**Version**: 1.0.0
+**Last Updated**: 2026-02-21
+**Version**: 0.2.0
 **Project Type**: 0.1B AI Project
