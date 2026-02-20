@@ -7,10 +7,28 @@ import logging
 import asyncio
 import json
 import time
-import math
-import random
 import psutil
 import os
+from typing import Optional
+from pathlib import Path
+from datetime import datetime
+
+try:
+    from agent import (
+        GPUPurchaseAgent,
+        AgentFineTuner,
+        AgentEvaluator,
+        AgentReleasePipeline,
+        PipelineConfig,
+    )
+except ModuleNotFoundError:  # pragma: no cover
+    from backend.agent import (
+        GPUPurchaseAgent,
+        AgentFineTuner,
+        AgentEvaluator,
+        AgentReleasePipeline,
+        PipelineConfig,
+    )
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
@@ -36,6 +54,24 @@ class TrainingConfig(BaseModel):
     num_steps: int = 500
     learning_rate: float = 1e-4
     batch_size: int = 32
+    seed: int = 42
+
+
+class PipelineRequest(BaseModel):
+    target_days: int = 30
+    lookback_days: int = 30
+    num_steps: int = 500
+    batch_size: int = 32
+    learning_rate: float = 1e-4
+    seed: int = 42
+    min_accuracy: float = 0.55
+    min_avg_reward: float = 0.0
+    max_abstain_ratio: float = 0.85
+    max_safe_override_ratio: float = 0.90
+    min_action_entropy: float = 0.25
+    min_uplift_vs_buy: float = 0.0
+    require_30d: bool = True
+    run_training: bool = True
 
 
 # Training state
@@ -58,98 +94,56 @@ class TrainingState:
 
 
 training_state = TrainingState()
+gpu_agent: Optional[GPUPurchaseAgent] = None
 
 
-def simulate_training_step(step: int, total_steps: int) -> dict:
-    """Simulate realistic training metrics"""
-    progress = step / max(total_steps, 1)
+def get_gpu_agent() -> GPUPurchaseAgent:
+    global gpu_agent
+    if gpu_agent is None:
+        gpu_agent = GPUPurchaseAgent()
+    return gpu_agent
 
-    # Loss: starts high, decreases with noise
-    base_loss = 2.5 * math.exp(-3.0 * progress) + 0.15
-    noise = random.gauss(0, 0.08 * (1 - progress * 0.5))
-    loss = max(0.01, base_loss + noise)
 
-    # Reward: starts low, increases
-    base_reward = -1.0 + 3.5 * (1 - math.exp(-2.5 * progress))
-    reward_noise = random.gauss(0, 0.15)
-    reward = base_reward + reward_noise
+def _data_readiness() -> dict:
+    project_root = Path(__file__).resolve().parents[1]
+    targets = {
+        "danawa": project_root / "data" / "raw" / "danawa",
+        "exchange": project_root / "data" / "raw" / "exchange",
+        "news": project_root / "data" / "raw" / "news",
+        "dataset": project_root / "data" / "processed" / "dataset",
+    }
+    details = {}
+    min_days = None
 
-    # TPS: fluctuates around a base value
-    base_tps = 145 + random.gauss(0, 15)
-    tps = max(50, base_tps)
+    for name, root in targets.items():
+        dates = []
+        for f in sorted(root.glob("*.json")):
+            stem = f.stem.replace("training_data_", "")
+            try:
+                dates.append(datetime.strptime(stem, "%Y-%m-%d").date())
+            except ValueError:
+                continue
+        dates = sorted(set(dates))
+        range_days = (dates[-1] - dates[0]).days + 1 if dates else 0
+        details[name] = {
+            "dated_files": len(dates),
+            "range_days": range_days,
+            "first_date": str(dates[0]) if dates else None,
+            "last_date": str(dates[-1]) if dates else None,
+        }
+        if min_days is None:
+            min_days = range_days
+        else:
+            min_days = min(min_days, range_days)
 
-    # VRAM usage: increases slightly over training
-    vram_base = 1200 + progress * 800
-    vram_mb = vram_base + random.gauss(0, 50)
-
-    # RAM usage
-    process = psutil.Process(os.getpid())
-    ram_mb = process.memory_info().rss / (1024 * 1024)
-
-    # Policy loss and value loss components
-    policy_loss = loss * 0.6 + random.gauss(0, 0.02)
-    value_loss = loss * 0.4 + random.gauss(0, 0.01)
-
-    # Entropy: decreases as policy becomes more certain
-    entropy = 1.5 * math.exp(-1.5 * progress) + 0.1 + random.gauss(0, 0.05)
-
-    # Learning rate with warmup and decay
-    if progress < 0.1:
-        lr = 1e-4 * (progress / 0.1)
-    else:
-        lr = 1e-4 * math.cos(math.pi / 2 * (progress - 0.1) / 0.9)
-
-    # Gradient norm
-    grad_norm = 2.0 * math.exp(-progress) + 0.5 + random.gauss(0, 0.3)
-    grad_norm = max(0.1, grad_norm)
-
-    # Win rate: increases over time
-    win_rate = 0.3 + 0.5 * (1 - math.exp(-3.0 * progress)) + random.gauss(0, 0.03)
-    win_rate = max(0, min(1, win_rate))
-
-    # Episode length
-    episode_length = int(50 + 150 * progress + random.gauss(0, 10))
-    episode_length = max(10, episode_length)
-
-    # Action distribution (5 actions)
-    action_probs = [random.random() for _ in range(5)]
-    total = sum(action_probs)
-    # Make action distribution more peaked as training progresses
-    temperature = max(0.3, 1.0 - progress * 0.7)
-    action_probs = [p ** (1.0 / temperature) for p in action_probs]
-    total = sum(action_probs)
-    action_probs = [p / total for p in action_probs]
-
-    # CPU usage
-    cpu_percent = psutil.cpu_percent(interval=None)
-
-    elapsed = time.time() - training_state.start_time if training_state.start_time else 0
-
+    min_days = min_days or 0
+    target_days = 30
     return {
-        "step": step,
-        "episode": step // 50,
-        "timestamp": time.time(),
-        "elapsed_time": elapsed,
-        # Core metrics
-        "loss": round(loss, 4),
-        "policy_loss": round(max(0.01, policy_loss), 4),
-        "value_loss": round(max(0.01, value_loss), 4),
-        "reward": round(reward, 4),
-        "entropy": round(max(0.01, entropy), 4),
-        # Performance
-        "tps": round(tps, 1),
-        "vram_mb": round(vram_mb, 1),
-        "ram_mb": round(ram_mb, 1),
-        "cpu_percent": round(cpu_percent, 1),
-        # Training details
-        "learning_rate": round(lr, 8),
-        "grad_norm": round(grad_norm, 4),
-        "win_rate": round(win_rate, 4),
-        "episode_length": episode_length,
-        # Action distribution
-        "action_probs": [round(p, 4) for p in action_probs],
-        # Progress
-        "progress": round(progress * 100, 1),
+        "target_days": target_days,
+        "current_min_days": min_days,
+        "remaining_days": max(target_days - min_days, 0),
+        "ready_for_30d_training": min_days >= target_days,
+        "details": details,
     }
 
 
@@ -160,54 +154,127 @@ def health_check():
     return {"status": "ok", "message": "Server is running"}
 
 
+@app.get("/api/agent/readiness")
+def agent_readiness():
+    readiness = _data_readiness()
+    status = (
+        "production_candidate"
+        if readiness["ready_for_30d_training"]
+        else "collect_more_data"
+    )
+    return {"status": status, **readiness}
+
+
+@app.get("/api/agent/model-info")
+def agent_model_info():
+    agent = get_gpu_agent()
+    return agent.get_model_info()
+
+
+@app.get("/api/agent/evaluate")
+def agent_evaluate(lookback_days: int = 30):
+    project_root = Path(__file__).resolve().parents[1]
+    agent = get_gpu_agent()
+    evaluator = AgentEvaluator(project_root=project_root, agent=agent)
+    return evaluator.run(lookback_days=lookback_days)
+
+
+@app.get("/api/agent/release-check")
+def agent_release_check():
+    readiness = _data_readiness()
+    result = {"readiness": readiness}
+    if not readiness["ready_for_30d_training"]:
+        result["status"] = "blocked"
+        result["reason"] = "insufficient_data_window"
+        return result
+
+    try:
+        metrics = agent_evaluate(lookback_days=30)
+    except Exception as e:
+        result["status"] = "blocked"
+        result["reason"] = f"evaluation_failed: {e}"
+        return result
+
+    gates = {
+        "accuracy_raw": metrics["directional_accuracy_buy_vs_wait_raw"] >= 0.55,
+        "reward_raw": metrics["avg_reward_per_decision_raw"] > 0.0,
+        "abstain": metrics["abstain_ratio"] <= 0.85,
+        "safe_override": metrics.get("safe_override_ratio", 1.0) <= 0.90,
+        "action_entropy_raw": metrics.get("action_entropy_raw", 0.0) >= 0.25,
+        "uplift_raw_vs_buy": metrics.get("uplift_raw_vs_always_buy", -1e9) >= 0.0,
+        "no_mode_collapse_raw": not bool(metrics.get("mode_collapse_raw", True)),
+    }
+    result["evaluation"] = metrics
+    result["gates"] = gates
+    result["status"] = "pass" if all(gates.values()) else "blocked"
+    return result
+
+
+@app.post("/api/agent/pipeline/run")
+def run_agent_pipeline(req: PipelineRequest):
+    project_root = Path(__file__).resolve().parents[1]
+    pipeline = AgentReleasePipeline(project_root=project_root)
+    cfg = PipelineConfig(
+        target_days=req.target_days,
+        lookback_days=req.lookback_days,
+        num_steps=req.num_steps,
+        batch_size=req.batch_size,
+        learning_rate=req.learning_rate,
+        seed=req.seed,
+        min_accuracy=req.min_accuracy,
+        min_avg_reward=req.min_avg_reward,
+        max_abstain_ratio=req.max_abstain_ratio,
+        max_safe_override_ratio=req.max_safe_override_ratio,
+        min_action_entropy=req.min_action_entropy,
+        min_uplift_vs_buy=req.min_uplift_vs_buy,
+        require_30d=req.require_30d,
+        run_training=req.run_training,
+    )
+    return pipeline.run(cfg)
+
+
 @app.post("/api/ask")
 def ask_gpu(query: GPUQuery):
     logger.info(f"Received query: {query.model_name}")
-    name = query.model_name.lower().strip()
-
-    if not name:
+    if not query.model_name.strip():
         raise HTTPException(status_code=400, detail="모델명을 입력해주세요.")
+    try:
+        agent = get_gpu_agent()
+        decision = agent.decide(query.model_name)
+        explanation = agent.explain(decision)
 
-    if "4090" in name:
+        action_probs_compact = ", ".join(
+            f"{k}:{v * 100:.1f}%" for k, v in decision.action_probs.items()
+        )
+        reward_compact = ", ".join(
+            f"{k}:{v:.3f}" for k, v in decision.expected_rewards.items()
+        )
+
         return {
-            "title": "NVIDIA GeForce RTX 4090",
-            "summary": "현존 소비자용 최강의 GPU입니다.",
-            "specs": "24GB VRAM, 16384 CUDA Cores",
-            "usage": "대규모 AI 학습, 4K 게이밍, 3D 렌더링",
-            "recommendation": "가격이 문제되지 않는다면 최고의 선택입니다. LLM 로컬 구동에 최적입니다.",
+            "title": decision.gpu_model,
+            "summary": f"AI Agent Decision: {decision.action}",
+            "specs": f"Confidence {decision.confidence * 100:.1f}% | Value {decision.value:.3f}",
+            "usage": f"MCTS {decision.simulations}회 계획 탐색 | 데이터 기준일 {decision.date}",
+            "recommendation": explanation,
+            "agent_trace": {
+                "selected_action": decision.action,
+                "raw_action": decision.raw_action,
+                "confidence": decision.confidence,
+                "entropy": decision.entropy,
+                "value": decision.value,
+                "safe_mode": decision.safe_mode,
+                "safe_reason": decision.safe_reason,
+                "action_probs": decision.action_probs,
+                "expected_rewards": decision.expected_rewards,
+                "action_probs_text": action_probs_compact,
+                "expected_rewards_text": reward_compact,
+            },
         }
-    elif "4080" in name:
-        return {
-            "title": "NVIDIA GeForce RTX 4080",
-            "summary": "하이엔드급 성능을 보여줍니다.",
-            "specs": "16GB VRAM",
-            "usage": "고사양 게이밍, 중규모 AI 작업",
-            "recommendation": "4090이 부담스럽지만 고성능이 필요할 때 좋습니다.",
-        }
-    elif "h100" in name:
-        return {
-            "title": "NVIDIA H100 Tensor Core",
-            "summary": "데이터센터/엔터프라이즈 전용 괴물 칩셋입니다.",
-            "specs": "80GB HBM3",
-            "usage": "초대규모 AI 모델 학습 (ChatGPT급)",
-            "recommendation": "개인용이 아닙니다. 서버실이나 클라우드 환경에 적합합니다.",
-        }
-    elif "m4" in name or "mac" in name:
-        return {
-            "title": "Apple M4 Chip",
-            "summary": "Apple Silicon의 최신 프로세서입니다.",
-            "specs": "Unified Memory Architecture",
-            "usage": "온디바이스 AI, 영상 편집, 효율적인 작업",
-            "recommendation": "전성비가 매우 뛰어나며, PyTorch MPS 가속을 통해 학습도 가능합니다.",
-        }
-    else:
-        return {
-            "title": f"Unknown GPU: {query.model_name}",
-            "summary": "정보를 찾을 수 없습니다.",
-            "specs": "-",
-            "usage": "-",
-            "recommendation": "정확한 모델명을 입력해 주세요 (예: RTX 4090, H100)",
-        }
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.exception("Agent inference failed")
+        raise HTTPException(status_code=500, detail=f"AI agent error: {e}")
 
 
 # ===== Training Endpoints =====
@@ -224,17 +291,37 @@ async def start_training(config: TrainingConfig):
     training_state.start_time = time.time()
     training_state.config = config
 
-    # Background training loop
+    # Background training loop (real data fine-tuning)
     async def training_loop():
-        for step in range(config.num_steps):
-            if not training_state.is_training:
-                break
-            metrics = simulate_training_step(step, config.num_steps)
-            training_state.metrics_history.append(metrics)
-            training_state.current_step = step + 1
-            await asyncio.sleep(0.1)  # ~10 steps/sec simulation speed
+        global gpu_agent
+        try:
+            project_root = Path(__file__).resolve().parents[1]
+            trainer = AgentFineTuner(project_root=project_root)
 
-        training_state.is_training = False
+            def on_step(metric: dict) -> None:
+                training_state.metrics_history.append(metric)
+                training_state.current_step = metric["step"]
+
+            def should_stop() -> bool:
+                return not training_state.is_training
+
+            await asyncio.to_thread(
+                trainer.run,
+                config.num_steps,
+                config.batch_size,
+                config.learning_rate,
+                on_step,
+                should_stop,
+                config.seed,
+            )
+            gpu_agent = None
+        except Exception as e:
+            logger.exception("Training loop failed")
+            training_state.metrics_history.append(
+                {"type": "error", "message": str(e), "timestamp": time.time()}
+            )
+        finally:
+            training_state.is_training = False
 
     asyncio.create_task(training_loop())
 
@@ -301,7 +388,9 @@ async def training_summary():
     if not training_state.metrics_history:
         return {"message": "No training data available"}
 
-    history = training_state.metrics_history
+    history = [m for m in training_state.metrics_history if isinstance(m, dict) and "loss" in m]
+    if not history:
+        return {"message": "No numeric training metrics available yet"}
     recent = history[-50:] if len(history) > 50 else history
 
     return {

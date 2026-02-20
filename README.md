@@ -109,9 +109,9 @@ Swagger UI: `http://localhost:8000/docs`
 ### Making Predictions
 
 ```bash
-curl -X POST http://localhost:8000/api/predict \
+curl -X POST http://localhost:8000/api/ask \
   -H "Content-Type: application/json" \
-  -d '{"model_name": "RTX 5060", "action": "query"}'
+  -d '{"model_name": "RTX 5060"}'
 ```
 
 ## 📊 Data Pipeline
@@ -224,10 +224,15 @@ This project was developed with assistance from multiple AI tools, demonstrating
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/predict` | POST | Get purchase timing prediction |
+| `/api/ask` | POST | Get agent decision for GPU model |
 | `/api/training/start` | POST | Start AI training |
 | `/api/training/stop` | POST | Stop training |
-| `/api/training/metrics` | GET | Get training metrics stream |
+| `/api/training/metrics` | GET | Get training metrics |
+| `/api/agent/readiness` | GET | Check 30-day data readiness |
+| `/api/agent/evaluate` | GET | Run backtest evaluation |
+| `/api/agent/release-check` | GET | Run release quality gates |
+| `/api/agent/model-info` | GET | Check loaded model metadata |
+| `/api/agent/pipeline/run` | POST | Run full release pipeline (readiness→train→evaluate→report) |
 | `/api/system/status` | GET | System status |
 | `/docs` | GET | Swagger UI documentation |
 

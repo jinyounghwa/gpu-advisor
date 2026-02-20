@@ -1,0 +1,84 @@
+{
+  "config": {
+    "target_days": 30,
+    "lookback_days": 7,
+    "num_steps": 500,
+    "batch_size": 32,
+    "learning_rate": 0.0001,
+    "seed": 42,
+    "min_accuracy": 0.55,
+    "min_avg_reward": 0.0,
+    "max_abstain_ratio": 0.85,
+    "min_action_entropy": 0.25,
+    "min_uplift_vs_buy": 0.0,
+    "require_30d": false,
+    "run_training": false
+  },
+  "readiness": {
+    "target_days": 30,
+    "current_min_days": 8,
+    "remaining_days": 22,
+    "ready_for_target": false,
+    "details": {
+      "danawa": {
+        "dated_files": 11,
+        "range_days": 11,
+        "first_date": "2026-02-11",
+        "last_date": "2026-02-21"
+      },
+      "exchange": {
+        "dated_files": 8,
+        "range_days": 8,
+        "first_date": "2026-02-14",
+        "last_date": "2026-02-21"
+      },
+      "news": {
+        "dated_files": 11,
+        "range_days": 11,
+        "first_date": "2026-02-11",
+        "last_date": "2026-02-21"
+      },
+      "dataset": {
+        "dated_files": 8,
+        "range_days": 8,
+        "first_date": "2026-02-14",
+        "last_date": "2026-02-21"
+      }
+    }
+  },
+  "status": "blocked",
+  "evaluation": {
+    "samples": 168,
+    "date_from": "2026-02-14",
+    "date_to": "2026-02-21",
+    "avg_reward_per_decision": -0.0014636468159362776,
+    "directional_accuracy_buy_vs_wait": 0.4880952380952381,
+    "abstain_ratio": 0.0,
+    "avg_confidence": 0.62,
+    "action_distribution": {
+      "BUY_NOW": 168
+    },
+    "action_entropy": -0.0,
+    "mode_collapse": true,
+    "std_reward": 0.042404302331322814,
+    "baseline": {
+      "always_buy_reward": -0.0014636468159362778,
+      "always_wait_reward": 0.0014636468159362778,
+      "always_hold_reward": -0.003523862190862325,
+      "always_buy_accuracy": 0.4880952380952381,
+      "always_wait_accuracy": 0.5119047619047619
+    },
+    "uplift_vs_always_buy": 2.168404344971009e-19,
+    "uplift_vs_always_wait": -0.0029272936318725552,
+    "uplift_vs_always_hold": 0.0020602153749260475
+  },
+  "gates": {
+    "accuracy": false,
+    "reward": false,
+    "abstain": true,
+    "action_entropy": false,
+    "uplift_vs_buy": true,
+    "no_mode_collapse": false
+  },
+  "reason": "quality_gates_failed"
+}

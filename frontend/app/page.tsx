@@ -14,6 +14,17 @@ interface GPUResult {
   specs: string;
   usage: string;
   recommendation: string;
+  agent_trace?: {
+    selected_action: string;
+    raw_action?: string;
+    confidence: number;
+    entropy?: number;
+    value: number;
+    safe_mode?: boolean;
+    safe_reason?: string | null;
+    action_probs_text: string;
+    expected_rewards_text: string;
+  };
 }
 
 const QUICK_CHIPS = ["RTX 4090", "RTX 4080", "H100", "M4 Mac"];
@@ -398,6 +409,27 @@ export default function Home() {
                     <p className="text-sm leading-relaxed text-[#cbd5e1]">
                       {result.recommendation}
                     </p>
+                    {result.agent_trace && (
+                      <div className="mt-4 rounded-xl border border-[#2a2e39] bg-[#0f1218] p-3">
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-[#94a3b8]">
+                          Agent Trace
+                        </p>
+                        <p className="mt-1 text-xs text-[#cbd5e1]">
+                          Action: {result.agent_trace.selected_action} | Confidence: {(result.agent_trace.confidence * 100).toFixed(1)}% | Value: {result.agent_trace.value.toFixed(3)}
+                        </p>
+                        {result.agent_trace.safe_mode && (
+                          <p className="mt-1 text-[11px] text-amber-300">
+                            Safety Gate: {result.agent_trace.safe_reason || "enabled"} (raw: {result.agent_trace.raw_action})
+                          </p>
+                        )}
+                        <p className="mt-1 text-[11px] text-[#94a3b8]">
+                          Policy: {result.agent_trace.action_probs_text}
+                        </p>
+                        <p className="mt-1 text-[11px] text-[#94a3b8]">
+                          Expected Reward: {result.agent_trace.expected_rewards_text}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

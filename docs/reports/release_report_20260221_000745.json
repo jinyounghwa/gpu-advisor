@@ -1,0 +1,49 @@
+{
+  "config": {
+    "target_days": 30,
+    "lookback_days": 7,
+    "num_steps": 500,
+    "batch_size": 32,
+    "learning_rate": 0.0001,
+    "seed": 42,
+    "min_accuracy": 0.55,
+    "min_avg_reward": 0.0,
+    "max_abstain_ratio": 0.85,
+    "require_30d": true,
+    "run_training": false
+  },
+  "readiness": {
+    "target_days": 30,
+    "current_min_days": 8,
+    "remaining_days": 22,
+    "ready_for_target": false,
+    "details": {
+      "danawa": {
+        "dated_files": 11,
+        "range_days": 11,
+        "first_date": "2026-02-11",
+        "last_date": "2026-02-21"
+      },
+      "exchange": {
+        "dated_files": 8,
+        "range_days": 8,
+        "first_date": "2026-02-14",
+        "last_date": "2026-02-21"
+      },
+      "news": {
+        "dated_files": 11,
+        "range_days": 11,
+        "first_date": "2026-02-11",
+        "last_date": "2026-02-21"
+      },
+      "dataset": {
+        "dated_files": 8,
+        "range_days": 8,
+        "first_date": "2026-02-14",
+        "last_date": "2026-02-21"
+      }
+    }
+  },
+  "status": "blocked",
+  "reason": "insufficient_data_window"
+}
