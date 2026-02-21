@@ -4,6 +4,7 @@
 > **역할:** `h`, `g`, `f` 세 네트워크를 조합하여 최적의 행동을 결정하는 **최종 의사결정 엔진**
 > **입력:** `RepresentationNetwork(h)` 가 생성한 Root Latent State
 > **출력:** GPU 구매 추천 점수 (Action Probability Distribution)
+> **운영 기준 참고:** 실제 서비스 경로는 `backend/agent/gpu_purchase_agent.py`에서 `mcts_engine.py`를 사용합니다. `mcts.py`는 간결한 레퍼런스/실험용 구현입니다.
 
 ---
 
@@ -13,19 +14,19 @@ Monte Carlo Tree Search는 **트리 구조로 가능한 미래를 탐색**하는
 
 ```
 현재 시장 상태 (Root)
-    ├── [BUY_SMALL]  →  미래 상태 A
-    │       ├── [BUY_FULL]  →  미래 A-1
-    │       ├── [HOLD]      →  미래 A-2  ← 여기가 좋았다!
-    │       └── [SELL]      →  미래 A-3
-    ├── [BUY_FULL]   →  미래 상태 B  ← 가장 많이 방문됨
-    │       ├── [HOLD]      →  미래 B-1
-    │       └── [SELL]      →  미래 B-2
-    ├── [SELL_SMALL] →  미래 상태 C
-    ├── [SELL_FULL]  →  미래 상태 D
-    └── [HOLD]       →  미래 상태 E
+    ├── [ACTION_0]  →  미래 상태 A
+    │       ├── [ACTION_1]  →  미래 A-1
+    │       ├── [ACTION_4]  →  미래 A-2  ← 여기가 좋았다!
+    │       └── [ACTION_2]  →  미래 A-3
+    ├── [ACTION_1]  →  미래 상태 B  ← 가장 많이 방문됨
+    │       ├── [ACTION_4]  →  미래 B-1
+    │       └── [ACTION_3]  →  미래 B-2
+    ├── [ACTION_2]  →  미래 상태 C
+    ├── [ACTION_3]  →  미래 상태 D
+    └── [ACTION_4]  →  미래 상태 E
 ```
 
-50번의 시뮬레이션 중 BUY_FULL 가지가 28번 방문되었다면 → **BUY_FULL 추천 확률 = 28/50 = 56%**
+50번의 시뮬레이션 중 ACTION_1 가지가 28번 방문되었다면 → **ACTION_1 추천 확률 = 28/50 = 56%**
 
 ---
 
@@ -38,11 +39,11 @@ Monte Carlo Tree Search는 **트리 구조로 가능한 미래를 탐색**하는
 | UCB 공식 | PUCT (AlphaZero 스타일) | 전통 UCB + prior |
 | Rollout | 없음 (1단계 확장) | 5단계 롤아웃 |
 | Self-play | 미포함 | `MCTSTrainer` 클래스 포함 |
-| 주 용도 | 추론(Inference) | 학습 데이터 생성(Training) |
+| 주 용도 | 레퍼런스/실험 | 운영 추론 + 학습 데이터 생성 |
 
 ---
 
-## 3. `mcts.py` 상세 분석 (추론용)
+## 3. `mcts.py` 상세 분석 (레퍼런스/개념용)
 
 ### 3.1 데이터 구조: `MCTSConfig` 와 `Node`
 
@@ -90,7 +91,7 @@ def search(self, root_state, dynamics_model, prediction_model):
     # f 네트워크로 루트의 자식 노드들에 prior 할당
     self._expand_node(root, prediction_model)
     # → root.children[0~4] 에 각각 prior가 설정됨
-    # 예: children[1].prior = 0.56 (BUY_FULL이 유력)
+# 예: children[1].prior = 0.56 (ACTION_1이 유력)
 
     # ━━━ 2단계: 50번의 시뮬레이션 ━━━
     for _ in range(self.config.num_simulations):  # 50번 반복
@@ -155,7 +156,7 @@ def search(self, root_state, dynamics_model, prediction_model):
     # 예시: [3, 28, 2, 1, 16] / 50 = [0.06, 0.56, 0.04, 0.02, 0.32]
 
     best_action = torch.argmax(visit_counts).item()
-    # → 1 (BUY_FULL)
+    # → 1 (ACTION_1)
 
     return best_action, policy_target
 ```
@@ -200,16 +201,16 @@ score = child.value + 1.5 * child.prior * √(parent.visits) / (1 + child.visits
      "이미 알려진 가치"    "f가 좋다고 한 정도"       "아직 덜 방문했을수록 보너스"
 
 예시 - 시뮬레이션 20번째:
-  BUY_FULL (방문 12번, 평균 가치 0.4, prior 0.56):
+  ACTION_1 (방문 12번, 평균 가치 0.4, prior 0.56):
     score = 0.4 + 1.5 * 0.56 * √20 / (1+12) = 0.4 + 0.29 = 0.69
   
-  HOLD (방문 3번, 평균 가치 0.3, prior 0.18):
+  ACTION_4 (방문 3번, 평균 가치 0.3, prior 0.18):
     score = 0.3 + 1.5 * 0.18 * √20 / (1+3) = 0.3 + 0.30 = 0.60
   
-  BUY_SMALL (방문 0번, prior 0.06):
+  ACTION_0 (방문 0번, prior 0.06):
     score = 0.0 + 1.5 * 0.06 * √20 / (1+0) = 0.0 + 0.40 = 0.40
 ```
-→ BUY_FULL(0.69) 선택. 하지만 방문이 많아지면 u_score가 줄어들어 다른 노드도 탐색하게 됩니다.
+→ ACTION_1(0.69) 선택. 하지만 방문이 많아지면 u_score가 줄어들어 다른 노드도 탐색하게 됩니다.
 
 ---
 
@@ -224,12 +225,12 @@ def _backpropagate(self, search_path: List[Node], value: float):
 ```
 
 ```
-시뮬레이션 경로: Root → BUY_FULL → HOLD
+시뮬레이션 경로: Root → ACTION_1 → ACTION_4
 리프 가치: +0.42
 
 전파 과정:
-  HOLD 노드:      visits 3→4,  total_reward 1.05→1.47
-  BUY_FULL 노드:  visits 12→13, total_reward 5.20→5.62
+  ACTION_4 노드:  visits 3→4,  total_reward 1.05→1.47
+  ACTION_1 노드:  visits 12→13, total_reward 5.20→5.62
   Root 노드:      visits 20→21, total_reward 7.80→8.22
 ```
 
@@ -256,7 +257,7 @@ def _simulate(self, node, policy_network, dynamics_network, device="cpu"):
 
         # ② 확률에 따라 행동 샘플링 (확률적 선택)
         action = torch.multinomial(policy_probs, num_samples=1).item()
-        # 예: BUY_FULL(56%)이 가장 자주 선택되지만 HOLD(32%)도 가능
+        # 예: ACTION_1(56%)이 가장 자주 선택되지만 ACTION_4(32%)도 가능
 
         # ③ g 네트워크로 미래 상태와 보상 예측
         action_onehot = np.zeros(5)
@@ -315,7 +316,7 @@ class MCTSTrainer:
 
             # ② 확률에 따라 실제 행동 선택
             action = np.random.choice(len(action_probs), p=action_probs)
-            # 예: 2 (BUY_FULL이 56%로 자주 선택됨)
+            # 예: 2 (ACTION_2가 높은 비율로 선택됨)
 
             # ③ g 네트워크로 다음 상태 생성
             with torch.no_grad():
@@ -359,7 +360,7 @@ episode_data[0]:
 
 # 1. 원시 데이터 로드
 market_data = load_market_features("RTX_5090")
-# → [가격변동, 환율, 뉴스감정, ...] 22차원 벡터
+# → [state_vector ...] 체크포인트/데이터셋 기준 state_dim 벡터 (현재 운영 256)
 
 # 2. h 네트워크: 관측 → 잠재 상태
 root_latent = h(market_data)
@@ -374,10 +375,10 @@ best_action, policy = tree.search(root_latent, g, f)
 #   g() 호출 ~50회  (시뮬레이션마다 1회)
 
 # 4. 결과 해석
-action_names = ['소량구매', '전량구매', '소량판매', '전량판매', '관망']
+action_names = ['ACTION_0', 'ACTION_1', 'ACTION_2', 'ACTION_3', 'ACTION_4']
 print(f"추천: {action_names[best_action]}")
 print(f"확률 분포: {policy}")
-# 추천: 전량구매
+# 추천: ACTION_1
 # 확률 분포: [0.06, 0.56, 0.04, 0.02, 0.32]
 # → "지금 전량 구매가 56%로 가장 유력합니다"
 ```
@@ -387,15 +388,15 @@ print(f"확률 분포: {policy}")
 ## 6. 실행 테스트
 
 ```python
-# mcts.py 하단의 테스트 코드
-h = RepresentationNetwork(state_dim=22, latent_dim=256).to(device)
+# mcts.py 하단의 레퍼런스 테스트 코드
+h = RepresentationNetwork(state_dim=256, latent_dim=256).to(device)
 g = DynamicsNetwork(latent_dim=256, action_dim=5).to(device)
 f = PredictionNetwork(latent_dim=256, action_dim=5).to(device)
 
 config = MCTSConfig(num_simulations=50)
 tree = MCTSTree(config, action_dim=5)
 
-root_observation = torch.randn(1, 22).to(device)
+root_observation = torch.randn(1, 256).to(device)
 root_latent = h(root_observation)
 
 best_action, policy_target = tree.search(root_latent, g, f)
@@ -404,7 +405,7 @@ best_action, policy_target = tree.search(root_latent, g, f)
 **출력 결과:**
 ```
 Starting MCTS search...
-Best action: 1                                    ← BUY_FULL
+Best action: 1                                    ← ACTION_1
 Policy target: tensor([0.04, 0.48, 0.06, 0.02, 0.40])  ← 방문 비율
 MCTS Search completed successfully!
 ```

@@ -4,6 +4,7 @@
 > **역할:** 현재 상태 + 행동 → 미래 상태 + 보상을 예측하는 **월드 모델(World Model)**
 > **입력 출처:** `RepresentationNetwork(h)` 가 생성한 Latent State
 > **출력 전달:** `MCTS 엔진`이 미래 시나리오를 시뮬레이션할 때 반복 호출됨
+> **운영 기준 참고:** 행동 라벨은 에이전트 계층(`backend/agent/gpu_purchase_agent.py`)에서 관리되며, Dynamics는 `action_dim` 크기의 벡터만 처리합니다.
 
 ---
 
@@ -52,23 +53,19 @@
 
 ---
 
-## 2. Action (행동) 정의
+## 2. Action (행동) 표현
 
-이 네트워크는 **5가지 행동**을 이해합니다:
+이 네트워크는 **`action_dim` 길이의 행동 벡터**를 입력으로 받습니다.
 
-| 인덱스 | Action 이름 | One-hot 인코딩 | 의미 |
-|--------|------------|----------------|------|
-| 0 | `BUY_SMALL` | `[1,0,0,0,0]` | 소량 구매 |
-| 1 | `BUY_FULL` | `[0,1,0,0,0]` | 전량 구매 |
-| 2 | `SELL_SMALL` | `[0,0,1,0,0]` | 소량 판매 |
-| 3 | `SELL_FULL` | `[0,0,0,1,0]` | 전량 판매 |
-| 4 | `HOLD` | `[0,0,0,0,1]` | 관망 (아무것도 안 함) |
+| 인덱스 | 벡터 예시 | 설명 |
+|--------|-----------|------|
+| 0~4 | `[1,0,0,0,0]` 등 | 인덱스별 의미는 에이전트/정책 계층에서 정의 |
 
 **사용 예시:**
 ```python
-# "1주 대기(HOLD)" 행동을 One-hot으로 인코딩
+# 특정 행동(예: index=4)을 One-hot으로 인코딩
 action = torch.zeros(1, 5)
-action[0, 4] = 1.0  # HOLD = index 4
+action[0, 4] = 1.0  # index 4
 ```
 
 ---
@@ -137,7 +134,7 @@ def forward(self, s_t: torch.Tensor, a_t: torch.Tensor):
 
     # ① 현재 상태(256D)와 행동(5D)을 하나로 결합
     x = torch.cat([s_t, a_t], dim=-1)  # (batch, 256+5) = (batch, 261)
-    # 예시: s_t=[0.12, -0.34, ...256개] + a_t=[0,0,0,0,1] → 261차원 벡터
+# 예시: s_t=[0.12, -0.34, ...256개] + a_t=[0,0,0,0,1] → 261차원 벡터(256+5)
 
     # ② 입력 처리: 261차원 → 512차원으로 확장
     x = self.input_layer(x)            # (batch, 512)
@@ -170,7 +167,7 @@ a_t = [0, 0, 0, 0, 1]           # 5개 값 (HOLD 행동)
 # cat 결과:
 x   = [0.12, -0.34, 0.56, ..., 0, 0, 0, 0, 1]  # 261개 값
 ```
-→ "현재 이 시장 상태에서 HOLD를 선택했을 때"라는 맥락을 하나의 벡터로 만듭니다.
+→ "현재 이 시장 상태에서 특정 행동을 선택했을 때"라는 맥락을 하나의 벡터로 만듭니다.
 
 ---
 
@@ -178,7 +175,7 @@ x   = [0.12, -0.34, 0.56, ..., 0, 0, 0, 0, 1]  # 261개 값
 
 ### 4.1 `s_tp1` (다음 상태)
 ```python
-# 현재 상태에서 HOLD를 하면 미래 시장은 이렇게 된다
+# 현재 상태에서 특정 행동을 하면 미래 시장은 이렇게 된다
 s_tp1.shape  # (batch, 256) — 미래의 Latent State
 # 이 값은 다시 g()에 넣어 더 먼 미래를 예측할 수 있음
 ```
@@ -205,14 +202,14 @@ reward_logvar = 0.50  # → 확실하지 않음 (변동성 큼)
 ## 5. MCTS에서 반복 호출되는 과정
 
 ```python
-# mcts.py 내부의 시뮬레이션 과정에서 g()가 반복 호출됨
+# MCTS 시뮬레이션 과정에서 g()가 반복 호출됨 (운영 경로: `mcts_engine.py`)
 
-# Step 1: "지금 BUY_FULL을 하면?"
-action_buy = torch.tensor([[0,1,0,0,0]])     # BUY_FULL
+# Step 1: "지금 action index=1을 하면?"
+action_buy = torch.tensor([[0,1,0,0,0]])     # index 1
 s_1, r_1, _ = g(current_state, action_buy)   # → 1주 후 상태 + 보상
 
-# Step 2: "그 상태에서 HOLD를 하면?"
-action_hold = torch.tensor([[0,0,0,0,1]])     # HOLD
+# Step 2: "그 상태에서 action index=4를 하면?"
+action_hold = torch.tensor([[0,0,0,0,1]])     # index 4
 s_2, r_2, _ = g(s_1, action_hold)            # → 2주 후 상태 + 보상
 
 # Step 3: "그 상태에서 또 HOLD를 하면?"
@@ -231,7 +228,7 @@ s_3, r_3, _ = g(s_2, action_hold)            # → 3주 후 상태 + 보상
 model = DynamicsNetwork().to(device)
 
 s_t = torch.randn(4, 256).to(device)       # 4개 GPU의 현재 상태
-a_t = torch.zeros(4, 5).to(device)          # 4개 모두 BUY_SMALL 선택
+a_t = torch.zeros(4, 5).to(device)          # 4개 모두 action index=0 선택
 a_t[:, 0] = 1.0
 
 s_tp1, reward_mean, reward_logvar = model(s_t, a_t)

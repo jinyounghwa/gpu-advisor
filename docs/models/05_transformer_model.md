@@ -1,9 +1,9 @@
-# Transformer Model 완전 해부
+# Transformer Model 구조 해설
 
 > **파일 위치:** `backend/models/transformer_model.py`
-> **역할:** Multi-Head Attention과 KV Cache를 갖춘 0.1B급 Transformer 엔진
-> **특징:** Mac M4의 MPS(Metal Performance Shaders) 가속에 최적화된 온디바이스 추론 모델
-> **용도:** 시계열 시장 데이터를 처리하는 최상위 Policy-Value 네트워크
+> **역할:** Multi-Head Attention과 KV Cache 옵션을 갖춘 Transformer 기반 Policy-Value 모델 구현
+> **운영 기준 참고:** 현재 GPU 구매 에이전트의 주 경로는 `h/g/f + mcts_engine`이며, 이 파일은 독립 실험/보조 추론 경로에서 사용됩니다.
+> **모델 규모 참고:** 기본 설정(`input_dim=11, d_model=256, num_layers=6, num_actions=2`) 기준 약 **5.27M parameters**입니다.
 
 ---
 
@@ -325,7 +325,7 @@ if self.use_kv_cache and kv_cache is not None:
 
 ---
 
-## 4. MPS(Metal Performance Shaders) 가속
+## 4. 디바이스 가속(MPS/CPU)
 
 ```python
 def create_model(config: dict) -> PolicyValueNetwork:
@@ -342,13 +342,8 @@ def create_model(config: dict) -> PolicyValueNetwork:
     return model
 ```
 
-**MPS vs CPU 성능 비교 (approximate):**
-```
-CPU (M4):   ~120 TPS (Tokens Per Second)
-MPS (M4):   ~850 TPS
-CUDA (4090): ~2,400 TPS
-```
-→ MPS 사용 시 CPU 대비 **약 7배 빠른 추론**이 가능합니다.
+성능 수치는 하드웨어/배치 크기/시퀀스 길이/드라이버 버전에 따라 크게 달라지므로, 본 문서에서는 고정 TPS를 단정하지 않습니다.
+실측이 필요하면 동일 입력 조건으로 `backend/inference/engine.py`의 벤치마크 경로에서 측정해야 합니다.
 
 ---
 
@@ -373,10 +368,10 @@ policy, value, _ = model(x)
 
 **출력 결과:**
 ```
-Model created with 7,087,874 parameters  ← 약 709만 개 (0.007B)
+Model created with 5,271,043 parameters  ← 기본 설정 기준 약 527만 개
 Device: mps                               ← Mac GPU 가속 활성화
 
-Policy shape: torch.Size([4, 2])          ← 4개 GPU에 대한 [구매, 대기] 확률
+Policy shape: torch.Size([4, 2])          ← 4개 샘플에 대한 2개 행동 확률
 Value shape:  torch.Size([4, 1])          ← 4개 GPU의 상태 가치
 ```
 
@@ -394,7 +389,7 @@ Value shape:  torch.Size([4, 1])          ← 4개 GPU의 상태 가치
 이 모델 (transformer_model.py):
   시계열 데이터를 직접 입력받아 한 번에 Policy + Value를 출력
   Attention으로 시간적 관계를 자동으로 학습
-  더 빠른 추론, 더 큰 모델 용량 (0.1B 목표)
+  Attention 기반 시계열 정책/가치 추론 실험 경로
 ```
 
-→ 프로젝트가 발전하면 h/g/f 내부를 이 Transformer 구조로 교체할 수 있으며, 이 파일은 그를 위한 **고성능 엔진 프로토타입**입니다.
+→ 이 파일은 독립 Transformer 경로를 위한 구현이며, 운영 경로와는 별도로 검증/실험할 수 있습니다.

@@ -11,7 +11,7 @@
 - **`exchange_rate_crawler.py`**: 주요 환율(USD, JPY, EUR)을 수집합니다. 수입 부품인 GPU 가격 결정의 핵심 요인을 파악합니다.
 - **`news_crawler.py`**: GPU 관련 뉴스를 수집하고, 간단한 텍스트 분석을 통해 시장의 긍정/부정 감정(Sentiment)을 점수화합니다.
 - **`feature_engineer.py`**: 수집된 원본 데이터를 256차원의 AI 입력용 벡터로 변환합니다. 이동평균, RSI, 변동성 등 기술적 지표 계산 로직이 들어있습니다.
-- **`run_daily.py`**: 위의 4개 모듈을 순차적으로 가동시키는 오케스트레이터입니다. `cron`에 의해 매일 호출됩니다.
+- **`run_daily.py`**: 위의 4개 모듈을 순차적으로 가동시키는 오케스트레이터입니다. `cron`에 의해 매일 호출되며, 실행 결과를 `docs/reports/YYYY-MM-DD/data_status_*.{json,md}`로 자동 기록합니다.
 
 ---
 
@@ -30,7 +30,8 @@ AlphaZero/MuZero 아키텍처를 구성하는 신경망들입니다.
 - **`representation_network.py` (h)**: 원시 입력을 256차원의 잠재 상태(Latent State)로 변환합니다. 시장 상황을 AI만의 언어로 요약하는 단계입니다.
 - **`dynamics_network.py` (g)**: '가상 세계 모델'입니다. 특정 행동 후의 미래 상태와 예상 보상을 상상합니다.
 - **`prediction_network.py` (f)**: 정책(어떤 행동을 할지)과 가치(현재 얼마나 유리한지)를 예측합니다.
-- **`mcts.py`**: Monte Carlo Tree Search의 구현체입니다. 위의 세 신경망을 조합하여 수십 번의 시나리오를 시뮬레이션합니다.
+- **`mcts_engine.py`**: 운영 경로에서 사용하는 Monte Carlo Tree Search 구현체입니다. 위의 세 신경망을 조합하여 수십 번의 시나리오를 시뮬레이션합니다.
+- **`mcts.py`**: 학습/실험 참고용 MCTS 구현 파일입니다.
 - **`transformer_model.py`**: 신경망 내부에서 시퀀스 데이터를 처리하기 위한 Transformer 블록 구현이 포함되어 있습니다.
 
 ---

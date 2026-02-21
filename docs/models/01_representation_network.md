@@ -3,6 +3,7 @@
 > **파일 위치:** `backend/models/representation_network.py`
 > **역할:** 원시 시장 데이터를 AI가 이해할 수 있는 잠재 상태(Latent State)로 변환
 > **연결:** 이 네트워크의 출력은 → `PredictionNetwork(f)` 와 `DynamicsNetwork(g)` 의 입력으로 전달됩니다.
+> **운영 기준 참고:** 실제 운영에서는 체크포인트에 저장된 입력 차원(`state_dim`)을 로드해 사용하며, 기본값 22는 레거시 기본 설정입니다.
 
 ---
 
@@ -11,12 +12,12 @@
 ```
 [다나와 가격, 환율, 뉴스 감정 점수 등]
         ↓
-  22차원 원시 벡터 (state_dim=22)
+  입력 차원 `state_dim` 원시 벡터 (체크포인트/설정에 따라 가변)
         ↓
 ┌─────────────────────────────────┐
 │   RepresentationNetwork (h)     │
 │                                 │
-│  input_embedding (22 → 256)     │
+│  input_embedding (state_dim → latent_dim) │
 │        ↓                        │
 │  LayerNorm                      │
 │        ↓                        │
@@ -118,7 +119,7 @@ class FeedForward(nn.Module):
 class RepresentationNetwork(nn.Module):
     def __init__(
         self,
-        state_dim: int = 22,      # 입력 차원 (시장 지표 수)
+        state_dim: int = 22,      # 코드 기본값(레거시). 운영은 체크포인트 값 사용
         latent_dim: int = 256,     # 출력 차원 (AI 내부 표현 크기)
         d_ff: int = 512,           # FeedForward 확장 차원
         dropout: float = 0.1,      # 드롭아웃 비율
@@ -129,7 +130,7 @@ class RepresentationNetwork(nn.Module):
         # [레이어 1] Positional Encoding
         self.pos_encoding = PositionalEncoding(latent_dim, max_seq_len)
 
-        # [레이어 2] Input embedding: 22차원 → 256차원으로 확장
+        # [레이어 2] Input embedding: state_dim → latent_dim
         self.input_embedding = nn.Linear(state_dim, latent_dim)
         self.layer_norm1 = nn.LayerNorm(latent_dim)
 
@@ -148,7 +149,7 @@ class RepresentationNetwork(nn.Module):
 
 | 순서 | 레이어 | 입력 shape | 출력 shape | 역할 |
 |------|--------|-----------|-----------|------|
-| 1 | `input_embedding` | `(batch, 22)` | `(batch, 256)` | 저차원 → 고차원 매핑 |
+| 1 | `input_embedding` | `(batch, state_dim)` | `(batch, 256)` | 저차원 → 고차원 매핑 |
 | 2 | `layer_norm1` | `(batch, 256)` | `(batch, 256)` | 값의 분포를 표준화 |
 | 3 | `pos_encoding` | `(batch, 1, 256)` | `(batch, 1, 256)` | 시간적 위치 정보 추가 |
 | 4 | `ff1 → ff2 → ff3` | `(batch, 1, 256)` | `(batch, 1, 256)` | 특징 추출 3단계 반복 |
@@ -163,11 +164,11 @@ class RepresentationNetwork(nn.Module):
 def forward(self, state_tensor: torch.Tensor) -> torch.Tensor:
     # ① 2D 텐서이면 시퀀스 차원을 추가
     if state_tensor.dim() == 2:
-        x = state_tensor.unsqueeze(1)  # (batch, 22) → (batch, 1, 22)
+        x = state_tensor.unsqueeze(1)  # (batch, state_dim) → (batch, 1, state_dim)
     else:
         x = state_tensor
 
-    # ② 22차원 → 256차원으로 임베딩
+    # ② state_dim → latent_dim으로 임베딩
     x = self.input_embedding(x)        # (batch, 1, 256)
     x = self.layer_norm1(x)            # 수치 안정화
 
@@ -193,20 +194,21 @@ def forward(self, state_tensor: torch.Tensor) -> torch.Tensor:
 ```python
 # 테스트 코드 (파일 하단의 if __name__ == "__main__"에 해당)
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-model = RepresentationNetwork(state_dim=22).to(device)
+state_dim = 256  # 운영 체크포인트/데이터셋 기준 예시
+model = RepresentationNetwork(state_dim=state_dim).to(device)
 
-# 가상 데이터: 4개의 GPU에 대한 22차원 시장 지표
-dummy_input = torch.randn(4, 22).to(device)
+# 가상 데이터: 4개의 GPU에 대한 state_dim 시장 지표
+dummy_input = torch.randn(4, state_dim).to(device)
 
 s_0 = model(dummy_input)
 ```
 
 **출력 결과:**
 ```
-Input shape:        torch.Size([4, 22])     ← 4개 GPU, 각 22개 지표
+Input shape:        torch.Size([4, 256])    ← 4개 GPU, 각 256개 지표(예시)
 Latent State shape: torch.Size([4, 256])    ← 4개 GPU, 각 256차원 잠재 상태
 Latent State mean:  -0.0023                 ← 평균이 0 근처 (LayerNorm 효과)
-Total parameters:   921,600                 ← 약 92만 개의 학습 가능 파라미터
+Total parameters:   921,344                 ← state_dim=256 예시 기준 학습 가능 파라미터
 ```
 
 ---
@@ -216,8 +218,8 @@ Total parameters:   921,600                 ← 약 92만 개의 학습 가능 �
 이 네트워크가 생성한 `s_0` (256차원 Latent State)는 두 곳에서 사용됩니다:
 
 ```python
-# mcts.py 에서의 사용 예시
-root_observation = torch.randn(1, 22).to(device)  # 원시 시장 데이터
+# 레거시 예시 코드 (운영 경로는 `backend/agent/gpu_purchase_agent.py`)
+root_observation = torch.randn(1, state_dim).to(device)  # 원시 시장 데이터
 
 # ① h 네트워크로 Latent State 생성
 root_latent = h(root_observation)                  # → (1, 256)

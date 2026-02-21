@@ -115,8 +115,8 @@
   - `backend/agent/release_pipeline.py`
   - `backend/run_release_pipeline.py` (CLI)
 - 산출물:
-  - `docs/reports/release_report_*.json`
-  - `docs/reports/release_report_*.md`
+  - `docs/reports/YYYY-MM-DD/release_report_*.json`
+  - `docs/reports/YYYY-MM-DD/release_report_*.md`
 
 ## 6. API 계층에서의 구현 방식
 
@@ -180,4 +180,3 @@
 - 서버 통합: `backend/simple_server.py`
 - 프론트 표시: `frontend/app/page.tsx`
 - 최종 개발 보고서: `docs/FINAL_DEVELOPMENT_REPORT_KR.md`
-

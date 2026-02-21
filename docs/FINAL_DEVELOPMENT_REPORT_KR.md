@@ -50,11 +50,11 @@
 
 ### 3.4 릴리즈 파이프라인(최종 단계 자동화)
 - 파일: `backend/agent/release_pipeline.py`
-- 기능:
-  - 단계: 준비도 확인 -> 학습(옵션) -> 평가 -> 게이트 판정 -> 보고서 생성
+  - 기능:
+    - 단계: 준비도 확인 -> 학습(옵션) -> 평가 -> 게이트 판정 -> 보고서 생성
   - 산출물:
-    - `docs/reports/release_report_*.json`
-    - `docs/reports/release_report_*.md`
+    - `docs/reports/YYYY-MM-DD/release_report_*.json`
+    - `docs/reports/YYYY-MM-DD/release_report_*.md`
   - 게이트:
     - 정확도(raw) 최소치
     - 평균보상(raw) 최소치
@@ -125,7 +125,7 @@
 4. 결과 확인  
    `GET /api/agent/release-check`
 5. 보고서 확인  
-   `docs/reports/release_report_*.md`
+   `docs/reports/YYYY-MM-DD/release_report_*.md`
 
 ## 8. 변경 파일 목록 (크롤러 제외)
 - `backend/agent/__init__.py`
@@ -139,8 +139,8 @@
 - `README.md`
 - `docs/FINAL_DEVELOPMENT_REPORT_KR.md` (본 문서)
 
-## 9. 크롤러 무변경 확인
-`crawlers/` 경로의 파일은 본 개발에서 수정하지 않았습니다.
+## 9. 크롤러 관련 참고
+본 문서 작성 시점의 변경 범위는 에이전트/서버 중심이었으며, 이후 운영 단계에서 `crawlers/`는 실데이터 수집 및 리포트 자동화 방향으로 추가 개선되었습니다.
 
 ## 10. 최종 판단
 아키텍처/운영 기능 기준으로는 공개 가능한 완성형 수준에 필요한 요소를 구현 완료했습니다.  

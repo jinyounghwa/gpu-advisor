@@ -4,6 +4,7 @@
 > **역할:** 현재 상태를 보고 즉시 "최선의 행동(Policy)"과 "상황의 유리함(Value)"을 판단하는 직관 네트워크
 > **입력 출처:** `RepresentationNetwork(h)` 또는 `DynamicsNetwork(g)` 가 생성한 Latent State
 > **출력 전달:** `MCTS 엔진`에서 탐색 방향을 결정하고, 리프 노드의 가치를 평가하는 데 사용됨
+> **운영 기준 참고:** 실제 운영 호출 경로는 `backend/agent/gpu_purchase_agent.py` + `backend/models/mcts_engine.py`이며, 행동 라벨 의미는 에이전트 계층(`ACTION_LABELS`)에서 관리됩니다.
 
 ---
 
@@ -186,13 +187,13 @@ policy_logits = torch.tensor([1.23, 3.45, -0.67, 0.12, 2.34])
 action_probs = F.softmax(policy_logits, dim=-1)
 # 결과: [0.06, 0.56, 0.01, 0.02, 0.18]
 #         ↑      ↑     ↑     ↑     ↑
-#      BUY_S  BUY_F  SELL_S SELL_F HOLD
+#      ACTION_0 ACTION_1 ACTION_2 ACTION_3 ACTION_4
 ```
 
 **해석:**
-- `BUY_FULL = 56%` → "전량 구매가 가장 유력한 행동"
-- `HOLD = 18%` → "대기도 나쁘지 않음"
-- `SELL_SMALL = 1%` → "지금 파는 건 매우 불리"
+- `ACTION_1 = 56%` → "index 1 행동이 가장 유력"
+- `ACTION_4 = 18%` → "index 4 행동도 후보"
+- `ACTION_2 = 1%` → "index 2 행동은 우선순위 낮음"
 
 **왜 forward()에서 softmax를 적용하지 않는가?**
 - 학습 시 `CrossEntropyLoss`가 내부적으로 softmax를 적용하므로 중복 적용을 방지합니다.
@@ -216,7 +217,7 @@ value = 0.42  # Tanh 출력
 ### 5.1 노드 확장 시 — Prior(사전 확률) 결정
 
 ```python
-# mcts.py의 _expand_node() 메서드
+# MCTS 구현의 노드 확장 메서드 예시 (`mcts.py`/`mcts_engine.py` 개념 공통)
 def _expand_node(self, node: Node, prediction_model: nn.Module):
     with torch.no_grad():
         # f 네트워크를 호출하여 policy와 value를 얻음
@@ -232,18 +233,18 @@ def _expand_node(self, node: Node, prediction_model: nn.Module):
             prior=probs[a].item()  # ← f 네트워크가 알려준 확률
         )
     # 결과:
-    # children[0] (BUY_SMALL)  prior=0.06  ← 별로 추천 안 함
-    # children[1] (BUY_FULL)   prior=0.56  ← 강력 추천!
-    # children[2] (SELL_SMALL) prior=0.01  ← 거의 탐색 안 함
-    # children[3] (SELL_FULL)  prior=0.02  ← 거의 탐색 안 함
-    # children[4] (HOLD)       prior=0.18  ← 어느 정도 탐색
+    # children[0] (ACTION_0) prior=0.06
+    # children[1] (ACTION_1) prior=0.56
+    # children[2] (ACTION_2) prior=0.01
+    # children[3] (ACTION_3) prior=0.02
+    # children[4] (ACTION_4) prior=0.18
 ```
 → prior가 높은 노드가 MCTS에서 더 자주 방문되므로, **f 네트워크의 직관이 탐색 방향을 가이드**합니다.
 
 ### 5.2 리프 노드 도달 시 — Value로 평가
 
 ```python
-# mcts.py의 search() 내부
+# MCTS search() 내부 예시
 with torch.no_grad():
     _, value = prediction_model(next_state)
     leaf_value = value.item()
@@ -274,11 +275,11 @@ Policy logits shape: (4, 5)     ← 4개 GPU에 대한 5가지 행동 raw 점수
 Value shape:         (4,)       ← 4개 GPU의 상태 가치 점수
 
 Action probabilities (GPU #1):
-  BUY_SMALL:  12.3%
-  BUY_FULL:   45.6%   ← 최고
-  SELL_SMALL:  3.2%
-  SELL_FULL:   1.8%
-  HOLD:       37.1%
+  ACTION_0: 12.3%
+  ACTION_1: 45.6%   ← 최고
+  ACTION_2:  3.2%
+  ACTION_3:  1.8%
+  ACTION_4: 37.1%
 
 Value (GPU #1): +0.34   ← "약간 유리한 상황"
 
