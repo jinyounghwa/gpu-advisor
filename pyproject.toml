@@ -22,6 +22,10 @@ dev = [
     "pytest-cov>=4.0",
     "httpx>=0.24.0",
 ]
+production = [
+    "psycopg[binary]>=3.2.0",
+    "transformers>=4.40.0",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

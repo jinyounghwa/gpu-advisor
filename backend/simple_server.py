@@ -1,42 +1,64 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-import uvicorn
-import logging
+from __future__ import annotations
+
 import asyncio
 import json
-import time
-import psutil
+import logging
 import os
-from typing import Optional
-from pathlib import Path
+import time
+from collections import defaultdict
 from datetime import datetime
+from pathlib import Path
+from threading import Lock
+from typing import Optional
+
+import numpy as np
+import psutil
+import uvicorn
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import BaseModel
 
 try:
     from agent import (
-        GPUPurchaseAgent,
-        AgentFineTuner,
         AgentEvaluator,
+        AgentFineTuner,
         AgentReleasePipeline,
+        GPUPurchaseAgent,
         PipelineConfig,
     )
 except ModuleNotFoundError:  # pragma: no cover
     from backend.agent import (
-        GPUPurchaseAgent,
-        AgentFineTuner,
         AgentEvaluator,
+        AgentFineTuner,
         AgentReleasePipeline,
+        GPUPurchaseAgent,
         PipelineConfig,
     )
 
-# 로깅 설정
+try:
+    from storage import RepositoryProtocol, create_repository
+except ModuleNotFoundError:  # pragma: no cover
+    from backend.storage import RepositoryProtocol, create_repository
+
+try:
+    from api.sentiment import NewsSentimentAnalyzer
+except ModuleNotFoundError:  # pragma: no cover
+    from backend.api.sentiment import NewsSentimentAnalyzer
+
+try:
+    from security import AuthMode, SecurityConfig
+except ModuleNotFoundError:  # pragma: no cover
+    from backend.security import AuthMode, SecurityConfig
+
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="GPU Advisor + AI Training Dashboard")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-# CORS 설정 (프론트엔드 통신 허용)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -74,7 +96,6 @@ class PipelineRequest(BaseModel):
     run_training: bool = True
 
 
-# Training state
 class TrainingState:
     def __init__(self):
         self.is_training = False
@@ -93,8 +114,37 @@ class TrainingState:
         self.config = None
 
 
+class RateLimiter:
+    def __init__(self, per_minute: int):
+        self.per_minute = per_minute
+        self._lock = Lock()
+        self._bucket: dict[tuple[str, int], int] = defaultdict(int)
+
+    @staticmethod
+    def _current_minute() -> int:
+        return int(time.time() // 60)
+
+    def is_allowed(self, client_ip: str) -> tuple[bool, int]:
+        minute = self._current_minute()
+        with self._lock:
+            key = (client_ip, minute)
+            self._bucket[key] += 1
+            current = self._bucket[key]
+            stale = [k for k in self._bucket.keys() if k[1] < minute - 2]
+            for k in stale:
+                self._bucket.pop(k, None)
+        remaining = max(self.per_minute - current, 0)
+        return current <= self.per_minute, remaining
+
+
 training_state = TrainingState()
+security_config = SecurityConfig()
+rate_limiter = RateLimiter(per_minute=security_config.rate_limit_per_minute)
+
+PUBLIC_API_PATHS = {"/api/auth/token"}
+
 gpu_agent: Optional[GPUPurchaseAgent] = None
+repository: Optional[RepositoryProtocol] = None
 
 
 def get_gpu_agent() -> GPUPurchaseAgent:
@@ -104,13 +154,52 @@ def get_gpu_agent() -> GPUPurchaseAgent:
     return gpu_agent
 
 
+def get_repository() -> RepositoryProtocol:
+    global repository
+    if repository is None:
+        backend = os.getenv("GPU_ADVISOR_DB_BACKEND", "sqlite").strip().lower()
+        db_path_env = os.getenv("GPU_ADVISOR_DB_PATH", "").strip()
+        sqlite_path = Path(db_path_env) if db_path_env else (PROJECT_ROOT / "data" / "processed" / "gpu_advisor.db")
+        postgres_dsn = os.getenv("GPU_ADVISOR_POSTGRES_DSN", "").strip() or None
+        repository = create_repository(backend=backend, sqlite_path=sqlite_path, postgres_dsn=postgres_dsn)
+        repository.initialize()
+    return repository
+
+
+def _load_latest_news_snapshot(project_root: Path) -> Optional[dict]:
+    news_dir = project_root / "data" / "raw" / "news"
+    if not news_dir.exists():
+        return None
+    files = sorted(news_dir.glob("*.json"))
+    if not files:
+        return None
+    return NewsSentimentAnalyzer().analyze_news_file(files[-1])
+
+
+def _apply_realtime_news_to_state(state_vec: np.ndarray, project_root: Path) -> tuple[np.ndarray, dict]:
+    snapshot = _load_latest_news_snapshot(project_root)
+    if snapshot is None:
+        return state_vec, {"applied": False, "reason": "news_snapshot_not_found"}
+
+    vec = np.asarray(state_vec, dtype=np.float32).copy()
+    news_start = 80  # price60 + exchange20
+    if len(vec) < news_start + 4:
+        return vec, {"applied": False, "reason": "state_vector_too_short", "news": snapshot}
+
+    vec[news_start + 0] = float((float(snapshot.get("sentiment_avg", 0.0)) + 1.0) / 2.0)
+    vec[news_start + 1] = float(min(float(snapshot.get("total", 0)) / 100.0, 1.0))
+    vec[news_start + 2] = float(min(float(snapshot.get("positive_count", 0)) / 50.0, 1.0))
+    vec[news_start + 3] = float(min(float(snapshot.get("negative_count", 0)) / 50.0, 1.0))
+
+    return vec, {"applied": True, "feature_start_index": news_start, "news": snapshot}
+
+
 def _data_readiness() -> dict:
-    project_root = Path(__file__).resolve().parents[1]
     targets = {
-        "danawa": project_root / "data" / "raw" / "danawa",
-        "exchange": project_root / "data" / "raw" / "exchange",
-        "news": project_root / "data" / "raw" / "news",
-        "dataset": project_root / "data" / "processed" / "dataset",
+        "danawa": PROJECT_ROOT / "data" / "raw" / "danawa",
+        "exchange": PROJECT_ROOT / "data" / "raw" / "exchange",
+        "news": PROJECT_ROOT / "data" / "raw" / "news",
+        "dataset": PROJECT_ROOT / "data" / "processed" / "dataset",
     }
     details = {}
     min_days = None
@@ -147,21 +236,101 @@ def _data_readiness() -> dict:
     }
 
 
-# ===== GPU Advisor Endpoints =====
+def _validate_auth(request: Request) -> tuple[bool, str]:
+    mode = security_config.auth_mode
+    if mode == AuthMode.NONE:
+        return True, "anonymous"
+
+    auth_header = request.headers.get("authorization", "")
+    if security_config.allows_jwt() and auth_header.lower().startswith("bearer "):
+        token = auth_header.split(" ", 1)[1].strip()
+        if token:
+            payload = security_config.jwt.verify_token(token)
+            return True, str(payload.get("sub", "unknown"))
+
+    if security_config.allows_api_key() and security_config.authenticate_api_key(request.headers.get("x-api-key")):
+        return True, "api_key"
+
+    return False, ""
+
+
+@app.middleware("http")
+async def security_and_logging_middleware(request: Request, call_next):
+    started = time.time()
+    client_ip = request.client.host if request.client else "unknown"
+    path = request.url.path
+
+    remaining = rate_limiter.per_minute
+    auth_subject = "anonymous"
+
+    if path.startswith("/api/"):
+        allowed, remaining = rate_limiter.is_allowed(client_ip)
+        if not allowed:
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Rate limit exceeded"},
+                headers={
+                    "X-RateLimit-Limit": str(rate_limiter.per_minute),
+                    "X-RateLimit-Remaining": "0",
+                },
+            )
+
+        if path not in PUBLIC_API_PATHS and security_config.requires_auth():
+            try:
+                ok, auth_subject = _validate_auth(request)
+            except Exception as e:
+                return JSONResponse(status_code=401, content={"detail": f"Unauthorized: {e}"})
+            if not ok:
+                return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
+
+    response = await call_next(request)
+    response.headers["X-RateLimit-Limit"] = str(rate_limiter.per_minute)
+    response.headers["X-RateLimit-Remaining"] = str(remaining)
+
+    elapsed_ms = (time.time() - started) * 1000.0
+    logger.info(
+        json.dumps(
+            {
+                "event": "http_request",
+                "method": request.method,
+                "path": path,
+                "status_code": response.status_code,
+                "latency_ms": round(elapsed_ms, 2),
+                "client_ip": client_ip,
+                "auth_subject": auth_subject,
+            },
+            ensure_ascii=False,
+        )
+    )
+    return response
+
 
 @app.get("/")
 def health_check():
     return {"status": "ok", "message": "Server is running"}
 
 
+@app.post("/api/auth/token")
+async def issue_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    if not security_config.allows_jwt():
+        raise HTTPException(status_code=400, detail="JWT auth mode is disabled")
+
+    if not security_config.authenticate_password(form_data.username, form_data.password):
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+
+    token = security_config.jwt.issue_token(subject=form_data.username)
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "expires_in": security_config.jwt_expiry_seconds,
+        "auth_mode": security_config.auth_mode.value,
+    }
+
+
 @app.get("/api/agent/readiness")
 def agent_readiness():
     readiness = _data_readiness()
-    status = (
-        "production_candidate"
-        if readiness["ready_for_30d_training"]
-        else "collect_more_data"
-    )
+    status = "production_candidate" if readiness["ready_for_30d_training"] else "collect_more_data"
     return {"status": status, **readiness}
 
 
@@ -173,9 +342,8 @@ def agent_model_info():
 
 @app.get("/api/agent/evaluate")
 def agent_evaluate(lookback_days: int = 30):
-    project_root = Path(__file__).resolve().parents[1]
     agent = get_gpu_agent()
-    evaluator = AgentEvaluator(project_root=project_root, agent=agent)
+    evaluator = AgentEvaluator(project_root=PROJECT_ROOT, agent=agent)
     return evaluator.run(lookback_days=lookback_days)
 
 
@@ -212,8 +380,7 @@ def agent_release_check():
 
 @app.post("/api/agent/pipeline/run")
 def run_agent_pipeline(req: PipelineRequest):
-    project_root = Path(__file__).resolve().parents[1]
-    pipeline = AgentReleasePipeline(project_root=project_root)
+    pipeline = AgentReleasePipeline(project_root=PROJECT_ROOT)
     cfg = PipelineConfig(
         target_days=req.target_days,
         lookback_days=req.lookback_days,
@@ -240,15 +407,36 @@ def ask_gpu(query: GPUQuery):
         raise HTTPException(status_code=400, detail="모델명을 입력해주세요.")
     try:
         agent = get_gpu_agent()
-        decision = agent.decide(query.model_name)
+
+        resolve_state = getattr(agent, "resolve_state", None)
+        decide_from_state = getattr(agent, "decide_from_state", None)
+        resolved = None
+        if callable(resolve_state) and callable(decide_from_state):
+            resolved = resolve_state(query.model_name)
+
+        if isinstance(resolved, tuple) and len(resolved) == 3:
+            resolved_model, state_vec, data_date = resolved
+            enriched_state_vec, news_context = _apply_realtime_news_to_state(state_vec, PROJECT_ROOT)
+            decision = decide_from_state(resolved_model, enriched_state_vec, data_date)
+
+            repo = get_repository()
+            if news_context.get("applied"):
+                repo.save_market_sentiment(news_context["news"])
+            repo.save_agent_decision(
+                query_model=query.model_name,
+                resolved_model=resolved_model,
+                data_date=data_date,
+                decision=decision,
+                news_context=news_context,
+            )
+        else:
+            decision = agent.decide(query.model_name)
+            news_context = {"applied": False, "reason": "legacy_agent_interface"}
+
         explanation = agent.explain(decision)
 
-        action_probs_compact = ", ".join(
-            f"{k}:{v * 100:.1f}%" for k, v in decision.action_probs.items()
-        )
-        reward_compact = ", ".join(
-            f"{k}:{v:.3f}" for k, v in decision.expected_rewards.items()
-        )
+        action_probs_compact = ", ".join(f"{k}:{v * 100:.1f}%" for k, v in decision.action_probs.items())
+        reward_compact = ", ".join(f"{k}:{v:.3f}" for k, v in decision.expected_rewards.items())
 
         return {
             "title": decision.gpu_model,
@@ -268,6 +456,7 @@ def ask_gpu(query: GPUQuery):
                 "expected_rewards": decision.expected_rewards,
                 "action_probs_text": action_probs_compact,
                 "expected_rewards_text": reward_compact,
+                "news_context": news_context,
             },
         }
     except ValueError as e:
@@ -277,11 +466,8 @@ def ask_gpu(query: GPUQuery):
         raise HTTPException(status_code=500, detail=f"AI agent error: {e}")
 
 
-# ===== Training Endpoints =====
-
 @app.post("/api/training/start")
 async def start_training(config: TrainingConfig):
-    """학습 시작"""
     if training_state.is_training:
         raise HTTPException(status_code=400, detail="Training already running")
 
@@ -291,12 +477,10 @@ async def start_training(config: TrainingConfig):
     training_state.start_time = time.time()
     training_state.config = config
 
-    # Background training loop (real data fine-tuning)
     async def training_loop():
         global gpu_agent
         try:
-            project_root = Path(__file__).resolve().parents[1]
-            trainer = AgentFineTuner(project_root=project_root)
+            trainer = AgentFineTuner(project_root=PROJECT_ROOT)
 
             def on_step(metric: dict) -> None:
                 training_state.metrics_history.append(metric)
@@ -317,9 +501,7 @@ async def start_training(config: TrainingConfig):
             gpu_agent = None
         except Exception as e:
             logger.exception("Training loop failed")
-            training_state.metrics_history.append(
-                {"type": "error", "message": str(e), "timestamp": time.time()}
-            )
+            training_state.metrics_history.append({"type": "error", "message": str(e), "timestamp": time.time()})
         finally:
             training_state.is_training = False
 
@@ -334,14 +516,12 @@ async def start_training(config: TrainingConfig):
 
 @app.post("/api/training/stop")
 async def stop_training():
-    """학습 중지"""
     training_state.is_training = False
     return {"status": "stopped", "steps_completed": training_state.current_step}
 
 
 @app.get("/api/training/status")
 async def training_status():
-    """현재 학습 상태"""
     latest = training_state.metrics_history[-1] if training_state.metrics_history else None
     return {
         "is_training": training_state.is_training,
@@ -354,7 +534,6 @@ async def training_status():
 
 @app.get("/api/training/metrics")
 async def get_metrics(last_n: int = 50):
-    """최근 N개 메트릭 반환"""
     history = training_state.metrics_history
     if last_n > 0:
         history = history[-last_n:]
@@ -363,18 +542,17 @@ async def get_metrics(last_n: int = 50):
 
 @app.get("/api/training/metrics/stream")
 async def stream_metrics():
-    """SSE 스트리밍 메트릭"""
     async def event_generator():
         last_index = 0
         while True:
             if last_index < len(training_state.metrics_history):
                 new_metrics = training_state.metrics_history[last_index:]
                 for metric in new_metrics:
-                    yield f"data: {json.dumps(metric)}\n\n"
+                    yield f"data: {json.dumps(metric)}\\n\\n"
                 last_index = len(training_state.metrics_history)
 
             if not training_state.is_training and last_index >= len(training_state.metrics_history):
-                yield f"data: {json.dumps({'type': 'done'})}\n\n"
+                yield f"data: {json.dumps({'type': 'done'})}\\n\\n"
                 break
 
             await asyncio.sleep(0.2)
@@ -384,7 +562,6 @@ async def stream_metrics():
 
 @app.get("/api/training/summary")
 async def training_summary():
-    """학습 결과 요약"""
     if not training_state.metrics_history:
         return {"message": "No training data available"}
 
@@ -409,7 +586,6 @@ async def training_summary():
 
 @app.get("/api/system/status")
 async def system_status():
-    """시스템 상태"""
     process = psutil.Process(os.getpid())
     memory = process.memory_info()
 
@@ -421,6 +597,13 @@ async def system_status():
         "disk_percent": round(psutil.disk_usage("/").percent, 1),
         "is_training": training_state.is_training,
         "uptime": round(time.time() - (training_state.start_time or time.time()), 1),
+        "security": {
+            "auth_mode": security_config.auth_mode.value,
+            "jwt_enabled": security_config.allows_jwt(),
+            "api_key_enabled": security_config.allows_api_key(),
+            "rate_limit_per_minute": rate_limiter.per_minute,
+        },
+        "persistence": get_repository().health(),
     }
 
 

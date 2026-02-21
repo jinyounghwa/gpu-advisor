@@ -120,6 +120,44 @@ Backend: `http://localhost:8000` / Frontend: `http://localhost:3000`
 python3 -m pytest tests/ -v
 ```
 
+### Production Auth & Persistence
+
+`simple_server.py` now supports JWT auth (OAuth2 password flow), API key auth, hybrid mode, and pluggable DB backends.
+
+```bash
+# Auth mode: none | api_key | jwt | hybrid
+export GPU_ADVISOR_AUTH_MODE=jwt
+export GPU_ADVISOR_AUTH_DEFAULT_USER=admin
+export GPU_ADVISOR_AUTH_DEFAULT_PASSWORD=change-me
+export GPU_ADVISOR_JWT_SECRET='replace-with-long-random-secret'
+export GPU_ADVISOR_JWT_EXP_SECONDS=3600
+
+# Optional for api_key or hybrid mode
+export GPU_ADVISOR_API_KEYS='key1,key2'
+
+# Rate limit
+export GPU_ADVISOR_RATE_LIMIT_PER_MINUTE=60
+
+# Persistence backend: sqlite | postgres
+export GPU_ADVISOR_DB_BACKEND=sqlite
+export GPU_ADVISOR_DB_PATH='data/processed/gpu_advisor.db'
+# If postgres:
+# export GPU_ADVISOR_DB_BACKEND=postgres
+# export GPU_ADVISOR_POSTGRES_DSN='postgresql://user:pass@localhost:5432/gpu_advisor'
+
+# Sentiment backend: auto | transformers | rule
+export GPU_ADVISOR_SENTIMENT_BACKEND=auto
+export GPU_ADVISOR_SENTIMENT_MODEL='distilbert-base-uncased-finetuned-sst-2-english'
+```
+
+Token issuance endpoint:
+
+```bash
+curl -X POST http://localhost:8000/api/auth/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=admin&password=change-me"
+```
+
 ### Making Predictions
 
 ```bash

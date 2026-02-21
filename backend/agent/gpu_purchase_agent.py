@@ -339,9 +339,14 @@ class GPUPurchaseAgent:
         )
 
     def decide(self, query_model: str) -> AgentDecision:
+        resolved_model, state_vec, data_date = self.resolve_state(query_model)
+        return self.decide_from_state(resolved_model, state_vec, data_date)
+
+    def resolve_state(self, query_model: str) -> Tuple[str, np.ndarray, str]:
+        """Resolve query model and load the latest persisted state vector."""
         resolved_model = self._resolve_gpu_model(query_model)
         state_vec, data_date = self._get_state_vector(resolved_model)
-        return self.decide_from_state(resolved_model, state_vec, data_date)
+        return resolved_model, state_vec, data_date
 
     def explain(self, decision: AgentDecision) -> str:
         if decision.action == "BUY_NOW":
