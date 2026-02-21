@@ -197,6 +197,12 @@ class AgentReleasePipeline:
             "status": "blocked",
         }
 
+        # 최소 2일 전이는 있어야 평가 자체가 의미 있음(상태 전이/보상 계산 불가 방지)
+        if readiness["current_min_days"] < 2:
+            result["reason"] = "insufficient_data_window"
+            result["reports"] = self.write_report(result)
+            return result
+
         if cfg.require_30d and not readiness["ready_for_target"]:
             result["reason"] = "insufficient_data_window"
             result["reports"] = self.write_report(result)

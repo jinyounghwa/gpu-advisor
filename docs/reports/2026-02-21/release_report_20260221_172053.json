@@ -1,7 +1,7 @@
 {
   "config": {
     "target_days": 30,
-    "lookback_days": 7,
+    "lookback_days": 30,
     "num_steps": 500,
     "batch_size": 32,
     "learning_rate": 0.0001,
@@ -9,6 +9,9 @@
     "min_accuracy": 0.55,
     "min_avg_reward": 0.0,
     "max_abstain_ratio": 0.85,
+    "max_safe_override_ratio": 0.9,
+    "min_action_entropy": 0.25,
+    "min_uplift_vs_buy": 0.0,
     "require_30d": true,
     "run_training": false
   },
@@ -45,5 +48,5 @@
     }
   },
   "status": "blocked",
-  "reason": "insufficient_data_window_current_filesystem"
+  "reason": "insufficient_data_window"
 }

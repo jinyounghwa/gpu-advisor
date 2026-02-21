@@ -105,8 +105,8 @@ class TestTechnicalIndicators:
     def test_short_history(self):
         features = self.eng.calculate_technical_indicators([500000])
         assert len(features) == 106
-        # RSI default
-        assert features[0] == 0.5
+        # RSI unavailable -> 0 + mask(결측 처리)
+        assert features[0] == 0.0
 
     def test_rsi_bounded(self):
         prices = list(range(500000, 530000, 1000))

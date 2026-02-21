@@ -17,38 +17,38 @@
   },
   "readiness": {
     "target_days": 30,
-    "current_min_days": 8,
-    "remaining_days": 22,
+    "current_min_days": 1,
+    "remaining_days": 29,
     "ready_for_target": false,
     "details": {
       "danawa": {
-        "dated_files": 11,
+        "dated_files": 4,
         "range_days": 11,
         "first_date": "2026-02-11",
         "last_date": "2026-02-21"
       },
       "exchange": {
-        "dated_files": 8,
-        "range_days": 8,
-        "first_date": "2026-02-14",
+        "dated_files": 1,
+        "range_days": 1,
+        "first_date": "2026-02-21",
         "last_date": "2026-02-21"
       },
       "news": {
-        "dated_files": 11,
-        "range_days": 11,
-        "first_date": "2026-02-11",
+        "dated_files": 1,
+        "range_days": 1,
+        "first_date": "2026-02-21",
         "last_date": "2026-02-21"
       },
       "dataset": {
-        "dated_files": 8,
-        "range_days": 8,
-        "first_date": "2026-02-14",
+        "dated_files": 1,
+        "range_days": 1,
+        "first_date": "2026-02-21",
         "last_date": "2026-02-21"
       }
     }
   },
-  "status": "pass",
-  "evaluation": {
+  "status": "blocked",
+  "archived_evaluation_snapshot": {
     "samples": 168,
     "date_from": "2026-02-14",
     "date_to": "2026-02-21",
@@ -90,7 +90,7 @@
     "uplift_vs_always_hold": 0.0040628755612604275,
     "uplift_raw_vs_always_hold": 0.006932947208620496
   },
-  "gates": {
+  "archived_gates_snapshot": {
     "accuracy_raw": true,
     "reward_raw": true,
     "abstain": true,
@@ -98,5 +98,6 @@
     "action_entropy_raw": true,
     "uplift_raw_vs_buy": true,
     "no_mode_collapse_raw": true
-  }
+  },
+  "reason": "insufficient_data_window_current_filesystem"
 }
