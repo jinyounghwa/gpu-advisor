@@ -32,6 +32,7 @@ from crawlers.danawa_crawler import DanawaCrawler
 from crawlers.exchange_rate_crawler import ExchangeRateCrawler
 from crawlers.news_crawler import NewsCrawler
 from crawlers.feature_engineer import FeatureEngineer
+from crawlers.status_report import generate_daily_status_report
 logger = logging.getLogger(__name__)
 
 
@@ -49,8 +50,9 @@ def run_step(name: str, fn):
 
 def main():
     """메인 실행 함수"""
+    run_started_at = datetime.now().isoformat()
     logger.info("=" * 80)
-    logger.info(f"일일 데이터 수집 시작 - {datetime.now()}")
+    logger.info(f"일일 데이터 수집 시작 - {run_started_at}")
     logger.info(f"프로젝트 경로: {PROJECT_ROOT}")
     logger.info("=" * 80)
 
@@ -102,6 +104,21 @@ def main():
         logger.info(f"  {'✓' if success else '✗'} {step}")
     if feature_file:
         logger.info(f"  Feature 파일: {feature_file}")
+
+    try:
+        reports = generate_daily_status_report(
+            project_root=PROJECT_ROOT,
+            step_results=results,
+            feature_file=feature_file,
+            run_started_at=run_started_at,
+        )
+        logger.info(f"  상태 리포트(JSON): {reports['json_report']}")
+        logger.info(f"  상태 리포트(MD): {reports['markdown_report']}")
+        logger.info(f"  최신 리포트(JSON): {reports['latest_json']}")
+        logger.info(f"  최신 리포트(MD): {reports['latest_markdown']}")
+    except Exception as e:
+        logger.error(f"상태 리포트 생성 실패: {e}")
+
     logger.info(f"  완료 시각: {datetime.now()}")
     logger.info("=" * 80)
 

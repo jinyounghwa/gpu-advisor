@@ -284,6 +284,8 @@ gpu-advisor/
 ### `docs/reports/` Release Reports
 
 - [`docs/reports/release_report_*.md`](docs/reports): 릴리즈 판정 자동 생성 보고서 모음 (시점별 pass/blocked 판정, 지표, 게이트 결과)
+- [`docs/reports/data_status_*.md`](docs/reports): 일일 크롤링 후 실제 데이터 파일 기준 자동 상태 보고서
+- [`docs/reports/latest_data_status.md`](docs/reports/latest_data_status.md): 최신 일일 데이터 상태 요약(자동 갱신)
 
 ## 🔄 Roadmap
 

@@ -1,0 +1,43 @@
+# GPU Advisor 일일 데이터 상태 보고서
+
+- 생성시각: 2026-02-21T15:38:27.805680
+- 실행기준일: 2026-02-21
+- 30일 학습 준비 여부: **collect_more_data**
+
+## 1) 실행 결과
+- danawa: ✓
+- exchange: ✓
+- news: ✓
+- feature: ✓
+- feature 파일: data/processed/dataset/training_data_2026-02-21.json
+
+## 2) 당일 파일 존재 여부
+- danawa: True
+- exchange: True
+- news: True
+- dataset: True
+
+## 3) 누적 커버리지
+### danawa
+- dated_files: 4
+- range_days: 11
+- first_date: 2026-02-11
+- last_date: 2026-02-21
+
+### exchange
+- dated_files: 1
+- range_days: 1
+- first_date: 2026-02-21
+- last_date: 2026-02-21
+
+### news
+- dated_files: 1
+- range_days: 1
+- first_date: 2026-02-21
+- last_date: 2026-02-21
+
+### dataset
+- dated_files: 1
+- range_days: 1
+- first_date: 2026-02-21
+- last_date: 2026-02-21
