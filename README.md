@@ -65,10 +65,11 @@ Output: Purchase Score 75% → "Buy Now!"
    - MCTS: Simulates future scenarios for optimal decisions
 
 3. **Backend Server**
-   - FastAPI REST API
+   - FastAPI REST API (`backend/simple_server.py`)
    - Real-time predictions
    - Training dashboard
    - Swagger UI documentation
+   - Release/readiness pipeline on real crawled data
 
 ## 🚀 Quick Start
 
@@ -96,11 +97,10 @@ This sets up daily automatic data collection at midnight (00:00).
 python3 crawlers/run_daily.py
 ```
 
-3. **Start Backend Server**
+3. **Start Backend Server (Production Path)**
 
 ```bash
-cd backend
-python3 simple_server.py
+python3 backend/simple_server.py
 ```
 
 Access the API at: `http://localhost:8000`
@@ -122,7 +122,7 @@ python3 -m pytest tests/ -v
 
 ### Production Auth & Persistence
 
-`simple_server.py` now supports JWT auth (OAuth2 password flow), API key auth, hybrid mode, and pluggable DB backends.
+`backend/simple_server.py` supports JWT auth (OAuth2 password flow), API key auth, hybrid mode, and pluggable DB backends.
 
 ```bash
 # Auth mode: none | api_key | jwt | hybrid
@@ -184,6 +184,10 @@ AlphaZero Training
   ↓
 Purchase Predictions
 ```
+
+Operational note:
+- Production data/agent path uses `crawlers/run_daily.py` + `backend/simple_server.py` + `backend/agent/*`.
+- Legacy synthetic benchmark modules under `backend/main.py` and `backend/api/*` are not used for production decisions.
 
 ## 🧠 Feature Engineering (256 Dimensions)
 
@@ -291,7 +295,7 @@ gpu-advisor/
 ## 🔄 Roadmap
 
 - **Day 1** (Current): System setup, initial data collection
-- **Day 30**: 720 samples collected → Begin AI training
+- **Day 30**: 30-day real-data window secured across raw/dataset → Begin release-ready training flow
 - **Day 60+**: Production-ready predictions
 
 ## 🛠️ Technology Stack
