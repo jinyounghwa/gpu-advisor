@@ -24,7 +24,7 @@ interface ChartProps {
 
 export default function Chart({ data, dataKey, color, title, unit = "" }: ChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -206,7 +206,7 @@ export default function Chart({ data, dataKey, color, title, unit = "" }: ChartP
     animate();
 
     return () => {
-      if (animationRef.current) {
+      if (animationRef.current !== null) {
         cancelAnimationFrame(animationRef.current);
       }
     };

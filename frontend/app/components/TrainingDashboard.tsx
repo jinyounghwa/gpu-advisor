@@ -38,9 +38,6 @@ const ActivityIcon = () => (
 const CpuIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
 );
-const MemoryIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="18" x2="6" y2="21"/><line x1="10" y1="18" x2="10" y2="21"/><line x1="14" y1="18" x2="14" y2="21"/><line x1="18" y1="18" x2="18" y2="21"/><line x1="6" y1="3" x2="6" y2="6"/><line x1="10" y1="3" x2="10" y2="6"/><line x1="14" y1="3" x2="14" y2="6"/><line x1="18" y1="3" x2="18" y2="6"/></svg>
-);
 const TrendUpIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
 );
@@ -576,33 +573,6 @@ export default function TrainingDashboard() {
   const [numSteps, setNumSteps] = useState(500);
   const eventSourceRef = useRef<EventSource | null>(null);
 
-  // Check server on mount
-  useEffect(() => {
-    fetch("http://localhost:8000/")
-      .then(() => setIsConnected(true))
-      .catch(() => setIsConnected(false));
-
-    // Check for already running training
-    fetch("http://localhost:8000/api/training/status")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.is_training) {
-          setIsTraining(true);
-          connectStream();
-        } else if (data.history_length > 0) {
-          // Load existing metrics
-          fetch("http://localhost:8000/api/training/metrics?last_n=0")
-            .then((r) => r.json())
-            .then((d) => setMetricsHistory(d.metrics || []));
-        }
-      })
-      .catch(() => {});
-
-    return () => {
-      if (eventSourceRef.current) eventSourceRef.current.close();
-    };
-  }, []);
-
   const connectStream = useCallback(() => {
     if (eventSourceRef.current) eventSourceRef.current.close();
 
@@ -628,6 +598,33 @@ export default function TrainingDashboard() {
       es.close();
     };
   }, []);
+
+  // Check server on mount
+  useEffect(() => {
+    fetch("http://localhost:8000/")
+      .then(() => setIsConnected(true))
+      .catch(() => setIsConnected(false));
+
+    // Check for already running training
+    fetch("http://localhost:8000/api/training/status")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.is_training) {
+          setIsTraining(true);
+          connectStream();
+        } else if (data.history_length > 0) {
+          // Load existing metrics
+          fetch("http://localhost:8000/api/training/metrics?last_n=0")
+            .then((r) => r.json())
+            .then((d) => setMetricsHistory(d.metrics || []));
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      if (eventSourceRef.current) eventSourceRef.current.close();
+    };
+  }, [connectStream]);
 
   const startTraining = async () => {
     try {

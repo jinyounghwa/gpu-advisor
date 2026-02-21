@@ -47,6 +47,7 @@ data/raw/danawa/20*.json
 data/raw/exchange/20*.json
 data/raw/news/20*.json
 data/processed/dataset/training_data_20*.json
+data/processed/*.db
 
 # Credentials & Secrets
 .env
