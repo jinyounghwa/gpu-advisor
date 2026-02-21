@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
 interface MetricCardProps {
   title: string;
   value: string;
@@ -55,12 +53,6 @@ export default function MetricCard({
   icon,
   color,
 }: MetricCardProps) {
-  const [animate, setAnimate] = useState(false);
-
-  useEffect(() => {
-    setAnimate(true);
-  }, [value]);
-
   const config = colorConfig[color];
 
   return (
@@ -75,7 +67,8 @@ export default function MetricCard({
       </div>
       <div className="flex items-baseline gap-2">
         <span
-          className={`text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r ${config.text} transition-all duration-300 ${animate ? "scale-105" : ""}`}
+          key={`${title}-${value}`}
+          className={`text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r ${config.text} transition-all duration-300 motion-safe:animate-[pulse_400ms_ease-out_1]`}
         >
           {value}
         </span>

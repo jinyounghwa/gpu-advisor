@@ -74,6 +74,41 @@ class DummyAgent:
 
 def test_e2e_crawler_to_api(monkeypatch, tmp_path: Path):
     monkeypatch.setattr("time.sleep", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        DanawaCrawler,
+        "crawl_all",
+        lambda self: [
+            {
+                "product_name": "MSI GeForce RTX 4090",
+                "manufacturer": "MSI",
+                "chipset": "RTX 4090",
+                "lowest_price": 2190000,
+                "seller_count": 7,
+                "stock_status": "in_stock",
+                "product_url": "https://example.com/rtx4090",
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        ExchangeRateCrawler,
+        "fetch_exchange_rates",
+        lambda self: {"USD/KRW": 1420.1, "JPY/KRW": 950.2, "EUR/KRW": 1538.4},
+    )
+    monkeypatch.setattr(
+        NewsCrawler,
+        "crawl_all",
+        lambda self: [
+            {
+                "title": "GPU price drop expected",
+                "url": "https://example.com/news1",
+                "source": "Example",
+                "published_at": "Sat, 21 Feb 2026 09:00:00 GMT",
+                "sentiment": "positive",
+                "sentiment_score": 0.8,
+                "keywords": ["GPU price"],
+            }
+        ],
+    )
 
     raw_root = tmp_path / "data" / "raw"
     processed_root = tmp_path / "data" / "processed"

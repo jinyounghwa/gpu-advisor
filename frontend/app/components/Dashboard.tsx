@@ -63,6 +63,7 @@ export default function Dashboard({
 
   useEffect(() => {
     if (metrics) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHistory((prev) => {
         const newHistory = [...prev, metrics];
         return newHistory.slice(-100);
