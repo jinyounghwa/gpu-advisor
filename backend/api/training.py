@@ -1,6 +1,9 @@
 """
-학습 및 벤치마킹 로직
-TPS, VRAM 사용량, 학습 시간 측정
+레거시 벤치마크 학습 로직.
+
+운영 경로(실데이터 기반):
+- backend/agent/*
+- backend/simple_server.py
 """
 
 import torch
@@ -14,7 +17,7 @@ from typing import Dict, List
 from dataclasses import dataclass, asdict
 from datetime import datetime
 
-from environment.gym_env import DummyMarketEnv
+from environment.gym_env import SyntheticMarketEnv
 from models.transformer_model import PolicyValueNetwork
 
 
@@ -37,7 +40,7 @@ class TrainingMetrics:
 class Trainer:
     """학습 및 벤치마킹 클래스"""
 
-    def __init__(self, model: PolicyValueNetwork, env: DummyMarketEnv, config: Dict):
+    def __init__(self, model: PolicyValueNetwork, env: SyntheticMarketEnv, config: Dict):
         self.model = model
         self.env = env
         self.config = config

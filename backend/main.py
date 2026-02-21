@@ -1,5 +1,10 @@
 """
-메인 진입점 - 학습 루프 실행
+레거시 벤치마크 진입점.
+
+운영 경로(실데이터 기반):
+- 수집: crawlers/run_daily.py
+- 서버/추론: backend/simple_server.py
+- 릴리즈 파이프라인: backend/run_release_ready.py
 """
 
 import asyncio
@@ -8,7 +13,7 @@ import os
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from environment.gym_env import DummyMarketEnv
+from environment.gym_env import SyntheticMarketEnv
 from models.transformer_model import create_model
 from api.training import Trainer
 
@@ -28,7 +33,7 @@ def main():
 
     env_config = {"data_path": data_path, "total_days": 200}
 
-    env = DummyMarketEnv(**env_config)
+    env = SyntheticMarketEnv(**env_config)
 
     print(f"\nEnvironment created:")
     print(f"  Total days: {env.total_days}")

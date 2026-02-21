@@ -1,6 +1,9 @@
 """
-더미 환경 (Dummy Environment)
-3일치 실제 데이터를 기반으로 200일 분량으로 시뮬레이션
+합성 시뮬레이션 환경 (Synthetic Environment)
+
+주의:
+- 본 모듈은 레거시 벤치마크용입니다.
+- 운영 경로(실데이터 기반 에이전트)는 backend/simple_server.py + backend/agent/* 를 사용합니다.
 """
 
 import numpy as np
@@ -16,8 +19,8 @@ class EnvironmentState:
     total_steps: int
 
 
-class DummyMarketEnv:
-    """더미 시장 환경 - Gym 인터페이스"""
+class SyntheticMarketEnv:
+    """합성 시장 환경 - Gym 인터페이스 (레거시 벤치마크 전용)"""
 
     def __init__(self, data_path: str, total_days: int = 200):
         """
@@ -134,3 +137,7 @@ class DummyMarketEnv:
     @property
     def action_space(self):
         return self.action_dim
+
+
+# Backward compatibility for legacy imports.
+DummyMarketEnv = SyntheticMarketEnv

@@ -1,5 +1,7 @@
 """
-FastAPI 서버 - 학습 제어 및 상태 조회
+레거시 학습 벤치마크용 FastAPI 라우트.
+
+운영 경로(실데이터 기반)는 backend/simple_server.py 입니다.
 """
 
 from fastapi import FastAPI, HTTPException
@@ -14,7 +16,7 @@ import os
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from environment.gym_env import DummyMarketEnv
+from environment.gym_env import SyntheticMarketEnv
 from models.transformer_model import create_model
 from api.training import Trainer, TrainingMetrics
 from api.alphazero_routes import router as alphazero_router
@@ -90,7 +92,7 @@ async def init_training(config: TrainingConfig):
 
         env_config = {"data_path": data_path, "total_days": config.total_days}
 
-        env = DummyMarketEnv(**env_config)
+        env = SyntheticMarketEnv(**env_config)
 
         model_config = {
             "input_dim": 11,
