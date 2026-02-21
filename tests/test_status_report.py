@@ -1,4 +1,5 @@
 from pathlib import Path
+from datetime import datetime
 
 from crawlers.status_report import generate_daily_status_report
 
@@ -28,8 +29,10 @@ def test_generate_daily_status_report(tmp_path: Path):
 
     assert Path(reports["json_report"]).exists()
     assert Path(reports["markdown_report"]).exists()
+    assert Path(reports["report_dir"]).exists()
     assert Path(reports["latest_json"]).exists()
     assert Path(reports["latest_markdown"]).exists()
+    assert Path(reports["report_dir"]).name == datetime.now().strftime("%Y-%m-%d")
 
     latest_json_text = Path(reports["latest_json"]).read_text(encoding="utf-8")
     assert '"ready_for_30d_training": false' in latest_json_text

@@ -60,8 +60,9 @@ gpu-advisor/
 │   └── daily_crawl.log            # 상세 로그
 │
 ├── docs/reports/                  # 자동 보고서
-│   ├── data_status_*.json         # 일일 데이터 상태(시점별)
-│   ├── data_status_*.md           # 일일 데이터 상태(시점별)
+│   ├── YYYY-MM-DD/                # 일자별 폴더
+│   │   ├── data_status_*.json     # 일일 데이터 상태(시점별)
+│   │   └── data_status_*.md       # 일일 데이터 상태(시점별)
 │   ├── latest_data_status.json    # 최신 상태(고정 파일)
 │   └── latest_data_status.md      # 최신 상태(고정 파일)
 │
@@ -230,6 +231,9 @@ tail -n 100 logs/daily_crawl.log
 # 최신 자동 상태 보고서
 cat docs/reports/latest_data_status.json | python3 -m json.tool
 cat docs/reports/latest_data_status.md
+
+# 일자별 보고서 목록
+ls -la docs/reports/$(date +%Y-%m-%d)
 ```
 
 ### 데이터 확인

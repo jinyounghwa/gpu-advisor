@@ -41,12 +41,15 @@ def generate_daily_status_report(
     run_started_at: str,
 ) -> Dict[str, str]:
     """Generate daily status reports from real crawled files."""
-    today = datetime.now().strftime("%Y-%m-%d")
-    now_iso = datetime.now().isoformat()
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    now = datetime.now()
+    today = now.strftime("%Y-%m-%d")
+    now_iso = now.isoformat()
+    ts = now.strftime("%Y%m%d_%H%M%S")
 
     reports_dir = project_root / "docs" / "reports"
     reports_dir.mkdir(parents=True, exist_ok=True)
+    report_day_dir = reports_dir / today
+    report_day_dir.mkdir(parents=True, exist_ok=True)
 
     targets = {
         "danawa": project_root / "data" / "raw" / "danawa",
@@ -84,8 +87,8 @@ def generate_daily_status_report(
         "ready_for_30d_training": ready_for_30d,
     }
 
-    json_path = reports_dir / f"data_status_{ts}.json"
-    md_path = reports_dir / f"data_status_{ts}.md"
+    json_path = report_day_dir / f"data_status_{ts}.json"
+    md_path = report_day_dir / f"data_status_{ts}.md"
     latest_json = reports_dir / "latest_data_status.json"
     latest_md = reports_dir / "latest_data_status.md"
 
@@ -134,6 +137,7 @@ def generate_daily_status_report(
     latest_md.write_text(md_text, encoding="utf-8")
 
     return {
+        "report_dir": str(report_day_dir),
         "json_report": str(json_path),
         "markdown_report": str(md_path),
         "latest_json": str(latest_json),

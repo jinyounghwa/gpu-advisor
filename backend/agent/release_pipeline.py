@@ -120,12 +120,20 @@ class AgentReleasePipeline:
         }
 
     def write_report(self, payload: Dict[str, Any]) -> Dict[str, str]:
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        json_path = self.reports_dir / f"release_report_{ts}.json"
-        md_path = self.reports_dir / f"release_report_{ts}.md"
+        now = datetime.now()
+        date_dir = now.strftime("%Y-%m-%d")
+        ts = now.strftime("%Y%m%d_%H%M%S")
+        day_dir = self.reports_dir / date_dir
+        day_dir.mkdir(parents=True, exist_ok=True)
+
+        json_path = day_dir / f"release_report_{ts}.json"
+        md_path = day_dir / f"release_report_{ts}.md"
+        latest_json = self.reports_dir / "latest_release_report.json"
+        latest_md = self.reports_dir / "latest_release_report.md"
 
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(payload, f, ensure_ascii=False, indent=2)
+        latest_json.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
         readiness = payload.get("readiness", {})
         status = payload.get("status")
@@ -169,8 +177,16 @@ class AgentReleasePipeline:
             "## 4) 결론",
             "- `pass`면 공개 후보, `blocked`면 데이터/학습/정책 재조정 필요.",
         ]
-        md_path.write_text("\n".join(md), encoding="utf-8")
-        return {"json_report": str(json_path), "markdown_report": str(md_path)}
+        md_text = "\n".join(md)
+        md_path.write_text(md_text, encoding="utf-8")
+        latest_md.write_text(md_text, encoding="utf-8")
+        return {
+            "report_dir": str(day_dir),
+            "json_report": str(json_path),
+            "markdown_report": str(md_path),
+            "latest_json": str(latest_json),
+            "latest_markdown": str(latest_md),
+        }
 
     def run(self, cfg: Optional[PipelineConfig] = None) -> Dict[str, Any]:
         cfg = cfg or PipelineConfig()
