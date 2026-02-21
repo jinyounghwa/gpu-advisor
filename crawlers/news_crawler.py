@@ -1,6 +1,6 @@
 """
 GPU 뉴스 크롤러
-GPU 관련 뉴스 수집 및 감정 분석
+Google News RSS에서 GPU 관련 뉴스 수집 및 키워드 기반 감성 분석
 """
 import requests
 from bs4 import BeautifulSoup
@@ -8,71 +8,110 @@ import json
 from datetime import datetime
 from pathlib import Path
 import logging
-import random
+import time
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# 감성 키워드
+POSITIVE_KEYWORDS = [
+    "price drop", "cheaper", "discount", "sale", "deal", "lower price",
+    "price cut", "price fall", "affordable", "budget", "value",
+    "in stock", "available", "launch", "release", "new",
+    "가격 인하", "할인", "재고", "출시",
+]
+NEGATIVE_KEYWORDS = [
+    "price rise", "price hike", "expensive", "shortage", "out of stock",
+    "tariff", "tax", "ban", "supply chain", "delay", "recall",
+    "higher price", "increase", "inflation", "scalper", "sold out",
+    "품절", "부족", "가격 인상", "관세",
+]
+
+
+def _score_sentiment(text: str) -> tuple[str, float]:
+    """키워드 기반 감성 점수 계산"""
+    text_lower = text.lower()
+    pos = sum(1 for kw in POSITIVE_KEYWORDS if kw in text_lower)
+    neg = sum(1 for kw in NEGATIVE_KEYWORDS if kw in text_lower)
+
+    if pos == neg == 0:
+        return "neutral", 0.0
+    total = pos + neg
+    score = (pos - neg) / total  # [-1, 1]
+    if score > 0.1:
+        return "positive", round(score, 2)
+    elif score < -0.1:
+        return "negative", round(score, 2)
+    return "neutral", round(score, 2)
+
 
 class NewsCrawler:
-    """GPU 뉴스 크롤러"""
+    """GPU 뉴스 크롤러 (Google News RSS)"""
+
+    RSS_BASE = "https://news.google.com/rss/search"
 
     def __init__(self, output_dir: str = "data/raw/news"):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-        # 검색 키워드
         self.keywords = [
-            "GPU price",
-            "graphics card",
-            "NVIDIA RTX",
-            "AMD Radeon",
-            "Intel Arc",
+            "NVIDIA GPU price",
+            "AMD Radeon GPU",
+            "Intel Arc GPU",
+            "graphics card price",
             "GPU shortage",
+            "RTX 5090",
+            "RTX 5080",
             "GPU stock",
-            "graphics card price drop",
         ]
 
     def fetch_news(self, keyword: str) -> list:
-        """
-        특정 키워드로 뉴스 검색
-        실제로는 Google News RSS, Naver News API 등 사용
-        """
-        try:
-            # Mock 데이터 (실제로는 RSS 파싱 또는 API 호출)
-            # Google News RSS: https://news.google.com/rss/search?q={keyword}
+        """Google News RSS에서 키워드 기사 수집"""
+        params = {
+            "q": keyword,
+            "hl": "en",
+            "gl": "US",
+            "ceid": "US:en",
+        }
+        headers = {"User-Agent": "Mozilla/5.0"}
 
-            articles = []
+        response = requests.get(
+            self.RSS_BASE, params=params, headers=headers, timeout=10
+        )
+        response.raise_for_status()
 
-            # 랜덤하게 0~3개 기사 생성
-            num_articles = random.randint(0, 3)
+        soup = BeautifulSoup(response.content, "xml")
+        items = soup.find_all("item")
 
-            for i in range(num_articles):
-                sentiment = random.choice(["positive", "negative", "neutral"])
-                sentiment_scores = {
-                    "positive": random.uniform(0.5, 1.0),
-                    "negative": random.uniform(-1.0, -0.5),
-                    "neutral": random.uniform(-0.2, 0.2),
-                }
+        articles = []
+        for item in items[:5]:  # 키워드당 최대 5개
+            title_el = item.find("title")
+            link_el = item.find("link")
+            pub_el = item.find("pubDate")
+            source_el = item.find("source")
 
-                article = {
-                    "title": f"{keyword} 관련 뉴스 {i + 1}",
-                    "url": f"https://news.example.com/article/{random.randint(1000, 9999)}",
-                    "published_at": datetime.now().isoformat(),
-                    "sentiment": sentiment,
-                    "sentiment_score": round(sentiment_scores[sentiment], 2),
-                    "keywords": [keyword],
-                }
-                articles.append(article)
+            if not title_el:
+                continue
 
-            if articles:
-                logger.info(f"  {keyword}: {len(articles)}개 기사")
+            title = title_el.get_text(strip=True)
+            link = link_el.get_text(strip=True) if link_el else ""
+            pub_date = pub_el.get_text(strip=True) if pub_el else ""
+            source = source_el.get_text(strip=True) if source_el else ""
 
-            return articles
+            sentiment, score = _score_sentiment(title)
 
-        except Exception as e:
-            logger.error(f"뉴스 크롤링 실패 ({keyword}): {e}")
-            return []
+            articles.append({
+                "title": title,
+                "url": link,
+                "source": source,
+                "published_at": pub_date,
+                "sentiment": sentiment,
+                "sentiment_score": score,
+                "keywords": [keyword],
+            })
+
+        logger.info(f"  {keyword}: {len(articles)}개 기사")
+        return articles
 
     def crawl_all(self) -> list:
         """모든 키워드로 뉴스 수집"""
@@ -81,12 +120,20 @@ class NewsCrawler:
         logger.info("=" * 80)
 
         all_articles = []
+        seen_titles = set()
 
         for keyword in self.keywords:
-            articles = self.fetch_news(keyword)
-            all_articles.extend(articles)
+            try:
+                articles = self.fetch_news(keyword)
+                for a in articles:
+                    if a["title"] not in seen_titles:
+                        seen_titles.add(a["title"])
+                        all_articles.append(a)
+            except Exception as e:
+                logger.warning(f"  ⚠ {keyword}: {e}")
+            time.sleep(0.5)
 
-        logger.info(f"\n✓ 총 {len(all_articles)}개 기사 수집")
+        logger.info(f"\n✓ 총 {len(all_articles)}개 기사 수집 (중복 제거)")
         return all_articles
 
     def calculate_statistics(self, articles: list) -> dict:
@@ -101,18 +148,12 @@ class NewsCrawler:
             }
 
         sentiments = [a["sentiment_score"] for a in articles]
-        sentiment_counts = {
-            "positive": sum(1 for a in articles if a["sentiment"] == "positive"),
-            "negative": sum(1 for a in articles if a["sentiment"] == "negative"),
-            "neutral": sum(1 for a in articles if a["sentiment"] == "neutral"),
-        }
-
         return {
             "total": len(articles),
             "sentiment_avg": round(sum(sentiments) / len(sentiments), 2),
-            "positive_count": sentiment_counts["positive"],
-            "negative_count": sentiment_counts["negative"],
-            "neutral_count": sentiment_counts["neutral"],
+            "positive_count": sum(1 for a in articles if a["sentiment"] == "positive"),
+            "negative_count": sum(1 for a in articles if a["sentiment"] == "negative"),
+            "neutral_count": sum(1 for a in articles if a["sentiment"] == "neutral"),
         }
 
     def save(self, articles: list) -> str:

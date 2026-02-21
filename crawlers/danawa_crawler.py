@@ -54,9 +54,12 @@ class DanawaCrawler:
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
         }
 
+    # 다나와 GPU 카테고리 코드
+    DANAWA_CATE = "112753"
+
     def search_gpu_price(self, gpu_model: str) -> dict:
         """
-        특정 GPU 모델의 최저가 검색
+        특정 GPU 모델의 최저가 검색 (다나와 실시간 크롤링)
 
         Args:
             gpu_model: GPU 모델명 (예: RTX 5060)
@@ -65,64 +68,119 @@ class DanawaCrawler:
             가격 정보 딕셔너리
         """
         try:
-            # 다나와 검색 API (간소화된 버전)
-            # 실제로는 다나와 검색 페이지를 파싱해야 합니다
-            search_url = f"http://www.danawa.com/search/?query={gpu_model.replace(' ', '+')}"
-
-            # 실제 크롤링 대신 mock 데이터 반환 (실전에서는 실제 파싱)
-            # response = requests.get(search_url, headers=self.headers, timeout=10)
-            # soup = BeautifulSoup(response.text, 'html.parser')
-
-            # Mock 데이터 (실제로는 파싱 결과)
-            import random
-
-            base_prices = {
-                "RTX 5090": 6500000,
-                "RTX 5080": 2200000,
-                "RTX 5070 Ti": 1600000,
-                "RTX 5070": 1100000,
-                "RTX 5060 Ti": 750000,
-                "RTX 5060": 600000,
-                "RTX 5050": 450000,
-                "RTX 4090": 2500000,
-                "RTX 4080": 1800000,
-                "RTX 4070 Ti": 1200000,
-                "RTX 4070": 900000,
-                "RTX 4060 Ti": 650000,
-                "RTX 4060": 500000,
-                "RX 9070 XT": 1100000,
-                "RX 9060 XT": 700000,
-                "RX 7900 XTX": 1400000,
-                "RX 7900 XT": 1200000,
-                "RX 7800 XT": 900000,
-                "RX 7700 XT": 750000,
-                "RX 7600": 500000,
-                "RX 6600": 350000,
-                "Arc B580": 350000,
-                "Arc B570": 300000,
-                "Arc A770": 450000,
-            }
-
-            base_price = base_prices.get(gpu_model, 500000)
-            # 가격 변동 추가 (±5%)
-            price = int(base_price * (1 + random.uniform(-0.05, 0.05)))
-
-            result = {
-                "product_name": f"{gpu_model} 샘플 제품",
-                "manufacturer": random.choice(["MSI", "ASUS", "GIGABYTE", "ZOTAC", "PALIT"]),
-                "chipset": gpu_model,
-                "lowest_price": price,
-                "seller_count": random.randint(5, 30),
-                "stock_status": random.choice(["in_stock", "low_stock", "out_of_stock"]),
-                "product_url": f"https://prod.danawa.com/info/?pcode={random.randint(10000000, 99999999)}",
-            }
-
-            logger.info(f"✓ {gpu_model}: {price:,}원")
-            return result
+            result = self._crawl_danawa(gpu_model)
+            if result:
+                logger.info(f"✓ {gpu_model}: {result['lowest_price']:,}원 ({result['product_name']})")
+                return result
+            logger.warning(f"⚠ {gpu_model}: 크롤링 실패, 건너뜀")
+            return None
 
         except Exception as e:
-            logger.error(f"✗ {gpu_model} 크롤링 실패: {e}")
+            logger.error(f"✗ {gpu_model} 크롤링 오류: {e}")
             return None
+
+    def _crawl_danawa(self, gpu_model: str) -> dict:
+        """다나와 검색 페이지에서 GPU 최저가 파싱"""
+        search_url = "https://search.danawa.com/dsearch.php"
+        params = {
+            "query": gpu_model,
+            "tab": "goods",
+            "page": 1,
+            "limit": 40,
+        }
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0.0.0 Safari/537.36"
+            ),
+            "Referer": "https://www.danawa.com/",
+            "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        }
+
+        response = requests.get(search_url, params=params, headers=headers, timeout=15)
+        response.raise_for_status()
+        response.encoding = "utf-8"
+
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        # 다나와 검색 결과: li.prod_item
+        items = soup.select("li.prod_item")
+        if not items:
+            return None
+
+        best = None  # 최저가 상품
+
+        for item in items:
+            # 상품명 + URL: p.prod_name > a
+            name_el = item.select_one("p.prod_name > a")
+            if not name_el:
+                continue
+
+            product_name = name_el.get_text(strip=True)
+            href = name_el.get("href", "")
+
+            # pcode 추출 (예: ?pcode=12345678&keyword=...)
+            pcode = None
+            for part in href.replace("?", "&").split("&"):
+                if part.startswith("pcode="):
+                    pcode = part[6:]
+                    break
+            if not pcode:
+                continue
+
+            product_url = (
+                f"https://prod.danawa.com/info/?pcode={pcode}&cate={self.DANAWA_CATE}"
+            )
+
+            # 가격: p.price_sect > a (텍스트: "6,148,990원")
+            price_el = item.select_one("p.price_sect > a")
+            if not price_el:
+                continue
+            price_text = (
+                price_el.get_text(strip=True)
+                .replace(",", "")
+                .replace("원", "")
+                .strip()
+            )
+            if not price_text.isdigit():
+                continue
+            price = int(price_text)
+
+            # 판매자 수: span.text__number
+            seller_el = item.select_one("span.text__number")
+            seller_count = 0
+            if seller_el:
+                s = seller_el.get_text(strip=True)
+                seller_count = int(s) if s.isdigit() else 0
+
+            # 재고 상태
+            if seller_count == 0:
+                stock_status = "out_of_stock"
+            elif seller_count <= 3:
+                stock_status = "low_stock"
+            else:
+                stock_status = "in_stock"
+
+            # 제조사: 상품명 첫 단어
+            manufacturer = product_name.split()[0] if product_name else "Unknown"
+
+            candidate = {
+                "product_name": product_name,
+                "manufacturer": manufacturer,
+                "chipset": gpu_model,
+                "lowest_price": price,
+                "seller_count": seller_count,
+                "stock_status": stock_status,
+                "product_url": product_url,
+            }
+
+            # 최저가 상품 선택
+            if best is None or price < best["lowest_price"]:
+                best = candidate
+
+        return best
 
     def crawl_all(self) -> list:
         """모든 GPU 모델 크롤링"""

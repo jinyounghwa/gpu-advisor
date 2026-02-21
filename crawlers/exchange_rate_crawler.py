@@ -1,6 +1,7 @@
 """
 환율 크롤러
 USD/KRW, JPY/KRW, EUR/KRW 수집
+출처: open.er-api.com (무료, 인증 불필요)
 """
 import requests
 import json
@@ -15,6 +16,8 @@ logger = logging.getLogger(__name__)
 class ExchangeRateCrawler:
     """환율 크롤러"""
 
+    API_URL = "https://open.er-api.com/v6/latest/USD"
+
     def __init__(self, output_dir: str = "data/raw/exchange"):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -22,36 +25,33 @@ class ExchangeRateCrawler:
     def fetch_exchange_rates(self) -> dict:
         """
         환율 정보 가져오기
-        실제로는 한국은행 API, exchangerate-api.com 등 사용
+        open.er-api.com에서 USD 기준 실시간 환율 수집
         """
-        try:
-            # Mock 데이터 (실제로는 API 호출)
-            # API 예시: https://api.exchangerate-api.com/v4/latest/USD
-            # response = requests.get(api_url, timeout=10)
-            # data = response.json()
+        response = requests.get(self.API_URL, timeout=10)
+        response.raise_for_status()
+        data = response.json()
 
-            import random
+        if data.get("result") != "success":
+            raise ValueError(f"API 오류: {data}")
 
-            # 기준 환율에서 ±1% 변동
-            base_usd_krw = 1442.7
-            base_jpy_krw = 943.28
-            base_eur_krw = 1560.5
+        rates = data["rates"]
 
-            rates = {
-                "USD/KRW": round(base_usd_krw * (1 + random.uniform(-0.01, 0.01)), 2),
-                "JPY/KRW": round(base_jpy_krw * (1 + random.uniform(-0.01, 0.01)), 2),
-                "EUR/KRW": round(base_eur_krw * (1 + random.uniform(-0.01, 0.01)), 2),
-            }
+        # KRW 기준으로 변환
+        usd_krw = rates["KRW"]
+        jpy_krw = rates["KRW"] / rates["JPY"]   # 100엔당 원
+        eur_krw = rates["KRW"] / rates["EUR"]
 
-            logger.info("환율 정보 수집 완료:")
-            for currency, rate in rates.items():
-                logger.info(f"  {currency}: {rate}")
+        result = {
+            "USD/KRW": round(usd_krw, 2),
+            "JPY/KRW": round(jpy_krw * 100, 2),  # 100엔 기준
+            "EUR/KRW": round(eur_krw, 2),
+        }
 
-            return rates
+        logger.info("환율 정보 수집 완료:")
+        for currency, rate in result.items():
+            logger.info(f"  {currency}: {rate:,.2f}")
 
-        except Exception as e:
-            logger.error(f"환율 크롤링 실패: {e}")
-            return {}
+        return result
 
     def save(self, data: dict) -> str:
         """환율 데이터 저장"""
@@ -60,7 +60,7 @@ class ExchangeRateCrawler:
 
         output_data = {
             "date": today,
-            "source": "exchange_rate_api",
+            "source": "open.er-api.com",
             "rates": data,
             "metadata": {"fetched_at": datetime.now().isoformat()},
         }
@@ -77,9 +77,12 @@ class ExchangeRateCrawler:
         logger.info(f"환율 정보 수집 시작 - {datetime.now()}")
         logger.info("=" * 80)
 
-        rates = self.fetch_exchange_rates()
-        if rates:
+        try:
+            rates = self.fetch_exchange_rates()
             self.save(rates)
+        except Exception as e:
+            logger.error(f"✗ 환율 크롤링 실패: {e}")
+            raise
 
 
 if __name__ == "__main__":
