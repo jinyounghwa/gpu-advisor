@@ -367,7 +367,17 @@ python3 backend/run_release_ready.py --tag --push-tag
 
 ## 📝 Disclaimer
 
-This project is for **educational and research purposes only**. It uses algorithms inspired by AlphaGo Zero / MuZero (DeepMind) for studying reinforcement learning applications in market analysis. Not intended for commercial use or financial advice.
+1. **Educational Purpose Only**
+   The codebase and architecture in this repository are a solo project and reference material for education and research, implementing an MCTS (Monte Carlo Tree Search)-based AI agent pipeline (crawling-learning-inference). It does not guarantee production-level integrity for commercial services.
+
+2. **No Financial Liability**
+   If this project is modified or applied to price prediction or automated trading of stocks, cryptocurrencies, or physical assets, all financial losses and legal liabilities are solely the responsibility of the user running the code. The original author provides no warranty and accepts no liability for any derived outcomes.
+
+3. **Web Scraping Liability**
+   The included data crawling pipeline is example code intended to demonstrate system operation. Any legal disputes arising from collecting data from third-party websites, including Terms of Service violations, IP blocking, or service disruption due to server load, are the sole responsibility of the executor. You must independently review and comply with each target website's `robots.txt` and Terms of Service.
+
+4. **Algorithm Attribution**
+   The state-transition simulation and tree-search logic in this system are independently implemented by borrowing concepts from widely published reinforcement learning architectures such as DeepMind's AlphaZero and MuZero. Rights to the underlying algorithmic concepts belong to their original authors.
 
 ## 👤 Author
 
