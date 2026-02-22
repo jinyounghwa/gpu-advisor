@@ -1,176 +1,135 @@
 # WORLD MODEL 이론과 구현 (GPU Advisor 기준)
 
-이 문서는 현재 저장소의 실제 코드 기준으로 월드 모델 이론과 구현을 함께 설명합니다.
+이 문서는 GPU Advisor를 기준으로, 단순 데이터 최적화(optimizer) 사고에서 월드모델 기반 예측/계획(planning) 사고로 전환하기 위한 학습 문서입니다.
 
-## 1. 왜 월드 모델인가
+## 1. 핵심 메시지: 전환의 방향
 
-단일 예측 모델은 "지금 무엇을 할지"만 바로 출력합니다. 월드 모델은 다음을 분리합니다.
-1. 상태를 압축해 표현한다 (`h`)
-2. 행동 후 미래를 전개한다 (`g`)
-3. 해당 상태의 정책/가치를 평가한다 (`f`)
+결론부터 말하면 방향은 맞습니다.  
+다만 "데이터 기반 의사결정"을 버리는 것이 아니라 다음처럼 재정의해야 합니다.
 
-이 구조 위에서 MCTS가 여러 미래 경로를 탐색하므로, 단순 반응형 추론보다 계획 기반 의사결정이 가능해집니다.
+1. 데이터는 정답을 바로 뽑는 입력이 아니라, 세계를 학습하는 재료다.
+2. 모델은 단일 시점 점수화기가 아니라, 미래를 전개하는 시뮬레이터다.
+3. 의사결정은 점수 최대화가 아니라, 시뮬레이션 기반 계획 문제다.
 
-## 2. 현재 프로젝트 구성
+즉, `optimizer 중심`에서 `world model + planner 중심`으로 무게중심을 이동하되,
+데이터는 더 중요해집니다. (학습 데이터 + 운영 검증 데이터 + 반례 데이터)
+
+## 2. 왜 Optimizer만으로는 한계가 생기는가
+
+Optimizer 성향(예: "지금 feature에서 행동 점수 argmax")은 실무에서 빠르지만 다음 문제가 있습니다.
+
+1. 비정상(non-stationary) 환경 취약
+- 환율/재고/프로모션/정책 변화처럼 체제 변환(regime shift)이 오면 과거 패턴 최적화가 깨집니다.
+
+2. 행동-결과 인과 분리 부족
+- "무슨 일이 일어났는지"는 설명하지만, "내 행동 때문에 무엇이 달라졌는지"를 분리해 다루기 어렵습니다.
+
+3. 멀티스텝 의사결정 손실
+- 오늘의 최고점 행동이 2주 뒤에는 손해가 될 수 있는데, 단일 스텝 최적화는 이 경로 의존성을 잘 반영하지 못합니다.
+
+4. 안전/보수적 운영 어려움
+- 불확실성이 큰 구간에서 "보류"를 택해야 하는데, 확신 과대 모델은 과감한 행동을 과잉 추천할 수 있습니다.
+
+## 3. 월드모델 관점에서의 의사결정 구조
+
+GPU Advisor의 MuZero 스타일 분해:
+
+1. `h` (Representation): 관측 상태 `x_t`를 잠재 상태 `z_t`로 압축
+2. `g` (Dynamics): `z_t, a_t`에서 `z_{t+1}`과 보상/리스크를 전개
+3. `f` (Prediction): 각 상태의 정책 prior와 가치 예측
+4. MCTS (Planner): 여러 행동 시나리오를 탐색해 장기 기대값 기준으로 행동 선택
+
+수식 요약:
+- `z_t = h(x_t)`
+- `(z_{t+1}, r_t) = g(z_t, a_t)`
+- `(pi_t, v_t) = f(z_t)`
+
+의사결정은 `f` 단독 출력이 아니라 `search(h, g, f)` 결과를 사용합니다.
+
+## 4. 현재 코드와 1:1 매핑
 
 - Representation: `backend/models/representation_network.py`
 - Dynamics: `backend/models/dynamics_network.py`
 - Prediction: `backend/models/prediction_network.py`
-- Planning(MCTS): `backend/models/mcts_engine.py`
-- 운영 오케스트레이션: `backend/agent/gpu_purchase_agent.py`
+- Planner(MCTS): `backend/models/mcts_engine.py`
+- Orchestration: `backend/agent/gpu_purchase_agent.py`
 
-운영 액션 라벨(5개):
-- `BUY_NOW`, `WAIT_SHORT`, `WAIT_LONG`, `HOLD`, `SKIP`
+운영 액션 라벨:
+- `BUY_NOW`
+- `WAIT_SHORT`
+- `WAIT_LONG`
+- `HOLD`
+- `SKIP`
 
-## 3. 수학적 관점 요약
+운영 경로 요약:
+1. 상태 벡터 -> `representation_network`로 latent 변환
+2. `mcts_engine.search`가 `prediction_network`와 `dynamics_network`를 반복 호출
+3. 방문수 기반 정책 + 보조 정책/바이어스 + 안전 게이트를 거쳐 최종 액션 선택
 
-- 표현 함수: `z_t = h(x_t)`
-- 동역학 함수: `(z_{t+1}, r_t) = g(z_t, a_t)`
-- 예측 함수: `(pi_t, v_t) = f(z_t)`
+## 5. 학습 프레임: 무엇을 공부해야 하는가
 
-MCTS는 트리에서 UCB 계열 점수로 노드를 선택하고,
-리프에서 `g`, `f`를 사용해 rollout/평가 후 값을 역전파합니다.
+### 5.1 모델 구조 이해
+1. `h/g/f` 분해 이유: 학습 안정성 + 계획 가능성
+2. latent 차원(`state_dim`, `latent_dim`)과 액션 차원(`action_dim`) 정합성
+3. reward/value/entropy의 해석
 
-## 4. 구현 코드: 핵심 경로
+### 5.2 계획 알고리즘 이해
+1. MCTS의 `select -> expand -> simulate -> backup`
+2. 탐색-활용 균형(exploration coefficient)
+3. `num_simulations`, `rollout_steps`, `discount_factor`의 효과
 
-### 4.1 Representation (`h`)
+### 5.3 데이터/운영 연결 이해
+1. 데이터 수집: `crawlers/run_daily.py`
+2. 학습 입력: `data/processed/dataset/training_data_YYYY-MM-DD.json`
+3. 운영 품질 모니터링: `docs/reports/latest_data_status.json`
+4. 릴리즈 게이트: `python3 backend/run_release_ready.py`
 
-```python
-# backend/models/representation_network.py
-class RepresentationNetwork(nn.Module):
-    def forward(self, state_tensor: torch.Tensor) -> torch.Tensor:
-        if state_tensor.dim() == 2:
-            x = state_tensor.unsqueeze(1)
-        else:
-            x = state_tensor
+## 6. 전환 실행안: Optimizer -> World Model 조직 습관
 
-        x = self.input_embedding(x)
-        x = self.layer_norm1(x)
-        x = self.pos_encoding(x)
-        x = self.ff1(x)
-        x = self.ff2(x)
-        x = self.ff3(x)
-        x = self.layer_norm2(x)
-        s_0 = self.output_layer(x)
-        return s_0.squeeze(1)
-```
+### 6.1 의사결정 질문 바꾸기
+- Before: "지금 feature에서 점수가 가장 높은 행동은?"
+- After: "행동별 미래 경로를 전개했을 때 기대가치/리스크/불확실성이 어떤가?"
 
-핵심:
-- 입력 벡터(`state_dim`)를 latent(기본 256)로 매핑
-- 운영에서는 체크포인트에서 `state_dim/latent_dim`을 동적으로 로드
+### 6.2 KPI 바꾸기
+- Before: 단기 정확도/즉시 reward
+- After:
+1. n-step 누적 보상
+2. 계획 대비 실제 오차(trajectory consistency)
+3. 불확실성 높은 구간에서의 보수적 의사결정 비율
+4. 대기 전략(`WAIT_*`)의 사후 효용
 
-### 4.2 Dynamics (`g`)
+### 6.3 운영 정책 바꾸기
+1. 고신뢰 구간: 계획 결과 적극 반영
+2. 저신뢰 구간: 보류/관측 모드로 전환
+3. 급격한 환경변화 감지 시: 탐색 계수 및 안전 게이트 자동 상향
 
-```python
-# backend/models/dynamics_network.py
-class DynamicsNetwork(nn.Module):
-    def forward(self, s_t: torch.Tensor, a_t: torch.Tensor):
-        x = torch.cat([s_t, a_t], dim=-1)
-        x = self.input_layer(x)
-        x = self.layer_norm1(x)
-        for block in self.blocks:
-            x = block(x)
-        x = self.layer_norm2(x)
+## 7. 반론 가능성과 균형점
 
-        s_tp1 = self.next_state_head(x)
-        reward_mean = self.reward_mean_head(x).squeeze(-1)
-        reward_logvar = self.reward_logvar_head(x).squeeze(-1)
-        reward_logvar = F.softplus(reward_logvar, beta=1.0)
-        return s_tp1, reward_mean, reward_logvar
-```
+### 반론 1: "월드모델은 복잡하고 비용이 크다"
+맞습니다. 하지만 실환경이 멀티스텝/비정상일수록 단순 모델의 숨은 비용(오판, 재학습 반복)이 더 커집니다.
 
-핵심:
-- `(latent, one-hot action)` 결합 입력
-- 다음 latent와 reward 분포(평균/분산 성격)를 함께 예측
+### 반론 2: "데이터 품질이 낮으면 월드모델도 무너진다"
+맞습니다. 그래서 전환의 핵심은 모델 교체가 아니라 데이터 거버넌스 강화입니다.
 
-### 4.3 Prediction (`f`)
+### 균형점
+최적 접근은 `Optimizer 폐기`가 아니라 `Optimizer를 월드모델 플래너의 특수 케이스로 내재화`하는 것입니다.
+즉, 단기 점수화는 planner의 휴리스틱으로 유지하고, 최종 결정은 계획 기반으로 승격합니다.
 
-```python
-# backend/models/prediction_network.py
-class PredictionNetwork(nn.Module):
-    def forward(self, s_t: torch.Tensor):
-        x = self.input_layer(s_t)
-        x = self.layer_norm1(x)
-        for block in self.blocks:
-            x = block(x)
-        x = self.layer_norm2(x)
+## 8. 팀 적용 체크리스트
 
-        policy_logits = self.policy_head(x)
-        value = self.value_head(x).squeeze(-1)
-        return policy_logits, value
-```
+1. 문서/회의에서 "예측 정확도"만이 아니라 "계획 품질" 지표를 함께 보고 있는가
+2. 실패 사례를 단일 시점 오분류가 아니라 "시뮬레이션 경로 붕괴" 관점으로 리뷰하는가
+3. `latest_data_status`를 릴리즈 전 필수 게이트로 사용하는가
+4. 불확실성 높은 구간에서 자동 보수 정책이 발동되는가
+5. 액션별 사후 성능(`BUY_NOW`, `WAIT_*`, `HOLD`, `SKIP`)을 분리 모니터링하는가
 
-핵심:
-- 정책 logits + 상태 가치(value) 동시 출력
-- MCTS 노드 확장 prior와 leaf value 계산에 사용
+## 9. 결론
 
-### 4.4 MCTS 엔진
+당신의 방향(데이터 최적화 중심에서 월드모델 기반 예측/계획 중심으로 전환)은 타당합니다.  
+정확한 표현은 다음입니다.
 
-```python
-# backend/models/mcts_engine.py
-@dataclass
-class MCTSConfig:
-    num_simulations: int = 50
-    exploration: float = 1.4142
-    rollout_steps: int = 5
-    discount_factor: float = 0.99
+- "데이터 기반 의사결정"을 넘어서는 것이 아니라
+- "데이터를 이용한 세계모사 + 계획 기반 의사결정"으로 진화한다.
 
-class MCTSEngine:
-    def search(self, root_state, policy_network, dynamics_network, device="cpu"):
-        root = MCTSNode(state=root_state)
-        for _ in range(self.config.num_simulations):
-            node = self._select(root)
-            if not node.is_expanded:
-                node = self._expand(node, policy_network, device)
-            value = self._simulate(node, policy_network, dynamics_network, device)
-            self._backup(node, value)
-        action_probs = self._get_action_probs(root, self.config.temperature)
-        return action_probs, root.value, root
-```
-
-핵심:
-- `select -> expand -> simulate -> backup`
-- 최종적으로 방문수 기반 정책 분포를 반환
-
-## 5. 운영 경로에서의 실제 호출
-
-```python
-# backend/agent/gpu_purchase_agent.py (요약)
-state_tensor = torch.tensor(state_vec, dtype=torch.float32, device=self.device).unsqueeze(0)
-latent = self.representation_network(state_tensor).squeeze(0).cpu().numpy()
-
-mcts_probs_np, root_value, _ = self.mcts.search(
-    root_state=latent,
-    policy_network=self.prediction_network,
-    dynamics_network=self.dynamics_network,
-    device=str(self.device),
-)
-```
-
-이후 에이전트는 MCTS 정책 + 보상 기반 정책 + prior + utility bias를 혼합해 최종 행동 확률을 만들고,
-신뢰도/엔트로피 안전 게이트를 거쳐 최종 액션을 결정합니다.
-
-## 6. 데이터 파이프라인과 월드 모델 연결
-
-- 크롤링: `crawlers/run_daily.py`
-- 일별 feature 파일: `data/processed/dataset/training_data_YYYY-MM-DD.json`
-- 상태 보고서: `docs/reports/YYYY-MM-DD/data_status_*.{json,md}`
-
-월드 모델 품질은 이 데이터의 누적 기간/일관성에 직접 의존합니다.
-
-## 7. 검증 포인트
-
-1. 체크포인트 차원 일치 확인
-- `input_dim`, `latent_dim`, `action_dim`이 모델 구성과 일치해야 함
-
-2. 일별 데이터 연속성
-- `docs/reports/latest_data_status.json`의 `coverage` 확인
-
-3. 릴리즈 게이트
-- `python3 backend/run_release_ready.py` 실행 후 `pass|blocked` 확인
-
-## 8. 정리
-
-현재 프로젝트는 MuZero 스타일 월드 모델(`h/g/f`) + MCTS 계획을 실제 코드로 구현하고,
-일별 실데이터 수집과 상태 보고서, 릴리즈 게이트까지 연결한 구조입니다.
-핵심 리스크는 구조 자체보다 데이터 품질/커버리지이며, 운영에서는 이를 보고서와 게이트로 지속 점검해야 합니다.
+GPU Advisor의 현재 구조는 이미 이 방향(`h/g/f + MCTS`) 위에 있으므로,  
+앞으로의 핵심 과제는 모델 구조 변경보다 `데이터 품질`, `계획 KPI`, `운영 안전정책`의 체계화입니다.
