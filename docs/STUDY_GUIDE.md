@@ -18,7 +18,7 @@
     - 외부 API를 통한 환율 데이터 수집
     - 뉴스 데이터의 텍스트 분석 및 감정 점수(`sentiment`) 산출
 - **실습:** 
-    - `python3 crawlers/run_daily.py`를 실행하여 `data/raw/`에 JSON 파일이 생성되는지 확인하세요.
+    - `python3 crawlers/run_daily.py --skip-release`를 실행하여 `data/raw/`에 JSON 파일이 생성되는지 확인하세요.
     - `setup_cron.sh`를 통해 리눅스/맥의 `cron`에 어떻게 자동화 스케줄을 등록하는지 공부하세요.
 
 ### [2주차] Feature Engineering (The Bridge)
@@ -128,7 +128,7 @@ AI에게 "가격" 한 가지만 알려주는 것은 장님에게 코끼리 다�
 
 2. **데이터 수집 체험**
    ```bash
-   python3 crawlers/run_daily.py
+   python3 crawlers/run_daily.py --skip-release
    ```
 
 3. **백엔드 서버 가동**

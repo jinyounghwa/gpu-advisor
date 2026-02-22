@@ -11,7 +11,7 @@
 - **`exchange_rate_crawler.py`**: 주요 환율(USD, JPY, EUR)을 수집합니다. 수입 부품인 GPU 가격 결정의 핵심 요인을 파악합니다.
 - **`news_crawler.py`**: GPU 관련 뉴스를 수집하고, 간단한 텍스트 분석을 통해 시장의 긍정/부정 감정(Sentiment)을 점수화합니다.
 - **`feature_engineer.py`**: 수집된 원본 데이터를 256차원의 AI 입력용 벡터로 변환합니다. 이동평균, RSI, 변동성 등 기술적 지표 계산 로직이 들어있습니다.
-- **`run_daily.py`**: 위의 4개 모듈을 순차적으로 가동시키는 오케스트레이터입니다. `cron`에 의해 매일 호출되며, 실행 결과를 `docs/reports/YYYY-MM-DD/data_status_*.{json,md}`로 자동 기록합니다.
+- **`run_daily.py`**: 위의 4개 모듈을 순차적으로 가동시키는 오케스트레이터입니다. 기본은 `--skip-release` 옵션으로 실행해 메모리를 절약하고, 필요 시 전체 릴리즈 평가를 포함해 실행할 수 있습니다. 실행 결과를 `docs/reports/YYYY-MM-DD/data_status_*.{json,md}`로 자동 기록합니다.
 
 ---
 
@@ -54,7 +54,7 @@ AlphaZero/MuZero 아키텍처를 구성하는 신경망들입니다.
 ---
 
 ## 🛠️ 6. 루트 스크립트 및 문서
-- **`setup_cron.sh`**: 매일 자정에 `run_daily.py`가 실행되도록 시스템 스케줄러를 자동 설정해주는 쉘 스크립트입니다.
+- **`setup_cron.sh`**: 매일 자정에 `run_daily.py --skip-release`가 실행되도록 시스템 스케줄러를 자동 설정합니다. `cron.log`에 `/usr/bin/time -l` 메모리/시간 지표를 함께 남깁니다.
 - **`run_all.sh`**: 서비스의 백엔드와 프론트엔드를 한꺼번에 실행시키는 편의 도구입니다.
 - **`README.md`**: 프로젝트 설치 및 퀵스타트 안내가 포함된 대문 문서입니다.
 

@@ -3,6 +3,7 @@
 # GPU 구매 타이밍 AI - Cron 자동화 설정 스크립트
 # 매일 자정에 크롤링 실행
 ###############################################################################
+set -euo pipefail
 
 # 색상 코드
 GREEN='\033[0;32m'
@@ -19,7 +20,11 @@ PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo -e "\n${GREEN}✓${NC} 프로젝트 경로: $PROJECT_DIR"
 
 # Python 경로 찾기
-PYTHON_PATH=$(which python3)
+if ! command -v python3 >/dev/null 2>&1; then
+    echo -e "${RED}✗ python3를 찾을 수 없습니다.${NC}"
+    exit 1
+fi
+PYTHON_PATH="$(command -v python3)"
 echo -e "${GREEN}✓${NC} Python 경로: $PYTHON_PATH"
 
 # 실행 스크립트 경로
@@ -34,20 +39,25 @@ mkdir -p "$PROJECT_DIR/logs"
 echo -e "${GREEN}✓${NC} 로그 디렉토리 생성: $PROJECT_DIR/logs"
 
 # Cron job 내용
-CRON_JOB="0 0 * * * cd $PROJECT_DIR && $PYTHON_PATH $RUN_SCRIPT >> $PROJECT_DIR/logs/cron.log 2>&1"
+CRON_JOB="0 0 * * * cd \"$PROJECT_DIR\" && /usr/bin/time -l \"$PYTHON_PATH\" \"$RUN_SCRIPT\" --skip-release >> \"$PROJECT_DIR/logs/cron.log\" 2>&1"
 
 # 기존 cron job 확인
 echo -e "\n${YELLOW}[1] 기존 cron job 확인${NC}"
-crontab -l 2>/dev/null | grep -q "$RUN_SCRIPT"
-if [ $? -eq 0 ]; then
+CURRENT_CRONTAB="$(crontab -l 2>/dev/null || true)"
+if printf "%s\n" "$CURRENT_CRONTAB" | grep -Fq "$RUN_SCRIPT"; then
     echo -e "${YELLOW}⚠${NC}  이미 등록된 cron job이 있습니다."
     echo -e "${YELLOW}⚠${NC}  제거 후 다시 등록합니다."
-    crontab -l 2>/dev/null | grep -v "$RUN_SCRIPT" | crontab -
+    CURRENT_CRONTAB="$(printf "%s\n" "$CURRENT_CRONTAB" | grep -Fv "$RUN_SCRIPT" || true)"
 fi
 
 # Cron job 추가
 echo -e "\n${YELLOW}[2] Cron job 등록${NC}"
-(crontab -l 2>/dev/null; echo "$CRON_JOB") | crontab -
+{
+    if [ -n "$CURRENT_CRONTAB" ]; then
+        printf "%s\n" "$CURRENT_CRONTAB"
+    fi
+    printf "%s\n" "$CRON_JOB"
+} | crontab -
 
 # 확인
 echo -e "\n${YELLOW}[3] 등록된 cron job 확인${NC}"
@@ -62,6 +72,8 @@ echo "  • 다나와 GPU 가격 크롤링"
 echo "  • 환율 정보 수집"
 echo "  • 뉴스 수집 및 감정 분석"
 echo "  • 256차원 Feature 생성"
+echo "  • 릴리즈 파이프라인 생략(--skip-release)으로 RAM 사용량 절감"
+echo "  • /usr/bin/time -l 로 메모리/시간 측정 로그 기록"
 
 echo -e "\n${YELLOW}로그 확인:${NC}"
 echo "  • Cron 로그: $PROJECT_DIR/logs/cron.log"
@@ -69,7 +81,7 @@ echo "  • 상세 로그: $PROJECT_DIR/logs/daily_crawl.log"
 
 echo -e "\n${YELLOW}수동 실행:${NC}"
 echo "  cd $PROJECT_DIR"
-echo "  python3 crawlers/run_daily.py"
+echo "  python3 crawlers/run_daily.py --skip-release"
 
 echo -e "\n${YELLOW}Cron 관리:${NC}"
 echo "  • 목록 보기: crontab -l"

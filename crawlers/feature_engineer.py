@@ -82,9 +82,9 @@ class FeatureEngineer:
         self.processed_dir = Path(processed_dir)
         self.processed_dir.mkdir(parents=True, exist_ok=True)
 
-    def load_historical_data(self, days: int = 30) -> dict:
+    def load_historical_data(self, days: int = 30) -> dict[str, list[float]]:
         """과거 N일 다나와 데이터를 모델별 price 시계열로 로드."""
-        historical_data = defaultdict(lambda: {"prices": [], "dates": []})
+        historical_data: dict[str, list[float]] = defaultdict(list)
         danawa_dir = self.raw_data_dir / "danawa"
         if danawa_dir.exists():
             for file in sorted(danawa_dir.glob("*.json"))[-days:]:
@@ -92,9 +92,46 @@ class FeatureEngineer:
                     data = json.load(f)
                 for product in data.get("products", []):
                     gpu_model = product["chipset"]
-                    historical_data[gpu_model]["prices"].append(float(product["lowest_price"]))
-                    historical_data[gpu_model]["dates"].append(data["date"])
-        return historical_data
+                    historical_data[gpu_model].append(float(product["lowest_price"]))
+        return dict(historical_data)
+
+    def _build_feature_context(self, date_str: str) -> dict | None:
+        """특정 날짜의 feature 생성에 필요한 입력을 한 번만 로드."""
+        today_file = self.raw_data_dir / "danawa" / f"{date_str}.json"
+        if not today_file.exists():
+            logger.warning(f"데이터 파일 없음: {today_file}")
+            return None
+
+        with open(today_file, encoding="utf-8") as f:
+            today_data = json.load(f)
+        today_products = today_data.get("products", [])
+        product_by_model = {p.get("chipset"): p for p in today_products if p.get("chipset")}
+
+        exchange_file = self.raw_data_dir / "exchange" / f"{date_str}.json"
+        exchange_data = {}
+        if exchange_file.exists():
+            with open(exchange_file, encoding="utf-8") as f:
+                exchange_data = json.load(f).get("rates", {})
+
+        news_file = self.raw_data_dir / "news" / f"{date_str}.json"
+        news_stats = {}
+        today_articles: list[dict] = []
+        if news_file.exists():
+            with open(news_file, encoding="utf-8") as f:
+                news_json = json.load(f)
+            news_stats = news_json.get("statistics", {})
+            today_articles = news_json.get("articles", [])
+
+        return {
+            "historical_data": self.load_historical_data(days=30),
+            "today_products": today_products,
+            "product_by_model": product_by_model,
+            "exchange_data": exchange_data,
+            "exchange_history": self._load_exchange_history(days=30),
+            "news_stats": news_stats,
+            "today_articles": today_articles,
+            "news_history": self._load_news_history(days=30),
+        }
 
     def _load_exchange_history(self, days: int = 30) -> list[dict]:
         rows: list[dict] = []
@@ -626,52 +663,25 @@ class FeatureEngineer:
         assert len(features) == 106
         return [_clip(v, -3.0, 3.0) for v in features]
 
-    def generate_features(self, gpu_model: str, date_str: str) -> np.ndarray:
+    def generate_features(self, gpu_model: str, date_str: str, context: dict | None = None) -> np.ndarray:
         """특정 GPU 모델의 256차원 Feature 생성."""
-        historical_data = self.load_historical_data(days=30)
-        historical_prices = historical_data.get(gpu_model, {}).get("prices", [])
-
-        today_file = self.raw_data_dir / "danawa" / f"{date_str}.json"
-        if not today_file.exists():
-            logger.warning(f"데이터 파일 없음: {today_file}")
+        ctx = context if context is not None else self._build_feature_context(date_str)
+        if not ctx:
             return np.zeros(256, dtype=np.float32)
 
-        with open(today_file, encoding="utf-8") as f:
-            today_data = json.load(f)
-        today_products = today_data.get("products", [])
-
-        product_info = None
-        for product in today_products:
-            if product.get("chipset") == gpu_model:
-                product_info = product
-                break
-        if not product_info:
+        historical_prices = ctx["historical_data"].get(gpu_model, [])
+        today_products = ctx["today_products"]
+        product_info = ctx["product_by_model"].get(gpu_model)
+        if product_info is None:
             logger.warning(f"제품 정보 없음: {gpu_model}")
             return np.zeros(256, dtype=np.float32)
 
         current_price = float(product_info.get("lowest_price", 0.0))
 
-        exchange_file = self.raw_data_dir / "exchange" / f"{date_str}.json"
-        exchange_data = {}
-        if exchange_file.exists():
-            with open(exchange_file, encoding="utf-8") as f:
-                exchange_data = json.load(f).get("rates", {})
-        exchange_history = self._load_exchange_history(days=30)
-
-        news_file = self.raw_data_dir / "news" / f"{date_str}.json"
-        news_stats = {}
-        today_articles: list[dict] = []
-        if news_file.exists():
-            with open(news_file, encoding="utf-8") as f:
-                news_json = json.load(f)
-            news_stats = news_json.get("statistics", {})
-            today_articles = news_json.get("articles", [])
-        news_history = self._load_news_history(days=30)
-
         features: list[float] = []
         features.extend(self.calculate_price_features(current_price, historical_prices))  # 60
-        features.extend(self.calculate_exchange_features(exchange_data, exchange_history))  # 20
-        features.extend(self.calculate_news_features(news_stats, today_articles, news_history))  # 30
+        features.extend(self.calculate_exchange_features(ctx["exchange_data"], ctx["exchange_history"]))  # 20
+        features.extend(self.calculate_news_features(ctx["news_stats"], ctx["today_articles"], ctx["news_history"]))  # 30
         features.extend(self.calculate_market_features(product_info, today_products))  # 20
         features.extend(self.calculate_time_features(date_str))  # 20
         features.extend(self.calculate_technical_indicators(historical_prices))  # 106
@@ -695,29 +705,32 @@ class FeatureEngineer:
             logger.error(f"데이터 파일 없음: {danawa_file}")
             return None
 
-        with open(danawa_file, encoding="utf-8") as f:
-            today_data = json.load(f)
-        gpu_models = [p["chipset"] for p in today_data.get("products", [])]
+        output_dir = self.processed_dir / "dataset"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_file = output_dir / f"training_data_{date_str}.json"
+        context = self._build_feature_context(date_str)
+        if context is None:
+            return None
 
-        training_data = []
-        for gpu_model in gpu_models:
-            logger.info(f"처리 중: {gpu_model}")
-            feature_vector = self.generate_features(gpu_model, date_str)
-            training_data.append(
-                {
+        gpu_models = list(context["product_by_model"].keys())
+        sample_count = 0
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write("[\n")
+            for idx, gpu_model in enumerate(gpu_models):
+                logger.info(f"처리 중: {gpu_model}")
+                feature_vector = self.generate_features(gpu_model, date_str, context=context)
+                row = {
                     "date": date_str,
                     "gpu_model": gpu_model,
                     "state_vector": feature_vector.tolist(),
                 }
-            )
+                if idx > 0:
+                    f.write(",\n")
+                json.dump(row, f, ensure_ascii=False)
+                sample_count += 1
+            f.write("\n]\n")
 
-        output_dir = self.processed_dir / "dataset"
-        output_dir.mkdir(parents=True, exist_ok=True)
-        output_file = output_dir / f"training_data_{date_str}.json"
-        with open(output_file, "w", encoding="utf-8") as f:
-            json.dump(training_data, f, ensure_ascii=False, indent=2)
-
-        logger.info(f"\n✓ Feature 생성 완료: {len(training_data)}개 샘플")
+        logger.info(f"\n✓ Feature 생성 완료: {sample_count}개 샘플")
         logger.info(f"✓ 저장 위치: {output_file}")
         logger.info("✓ Feature 차원: 256")
         return str(output_file)

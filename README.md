@@ -94,6 +94,12 @@ This sets up daily automatic data collection at midnight (00:00).
 2. **Manual Data Collection** (for testing)
 
 ```bash
+python3 crawlers/run_daily.py --skip-release
+```
+
+Run full pipeline (includes release evaluation):
+
+```bash
 python3 crawlers/run_daily.py
 ```
 

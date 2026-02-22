@@ -30,7 +30,7 @@ cd /Users/younghwa.jin/Documents/gpu-advisor
 ### 2단계: 수동 실행 (즉시 테스트)
 
 ```bash
-python3 crawlers/run_daily.py
+python3 crawlers/run_daily.py --skip-release
 ```
 
 ---
@@ -77,6 +77,8 @@ gpu-advisor/
 3. GPU 뉴스 크롤링
 4. 256차원 Feature 생성
 5. 상태 보고서 생성
+6. 릴리즈 파이프라인 생략(`--skip-release`)으로 RAM 사용량 절감
+7. `/usr/bin/time -l`로 메모리/시간 지표를 `logs/cron.log`에 기록
 
 ### Cron 관리 명령어
 
@@ -91,10 +93,10 @@ crontab -r
 
 ```bash
 # 매일 06:00
-0 6 * * * cd /Users/younghwa.jin/Documents/gpu-advisor && python3 crawlers/run_daily.py >> logs/cron.log 2>&1
+0 6 * * * cd /Users/younghwa.jin/Documents/gpu-advisor && /usr/bin/time -l python3 crawlers/run_daily.py --skip-release >> logs/cron.log 2>&1
 
 # 매일 00:00, 12:00
-0 0,12 * * * cd /Users/younghwa.jin/Documents/gpu-advisor && python3 crawlers/run_daily.py >> logs/cron.log 2>&1
+0 0,12 * * * cd /Users/younghwa.jin/Documents/gpu-advisor && /usr/bin/time -l python3 crawlers/run_daily.py --skip-release >> logs/cron.log 2>&1
 ```
 
 ---
@@ -178,6 +180,12 @@ crontab -r
 ### 전체 파이프라인 실행
 
 ```bash
+python3 crawlers/run_daily.py --skip-release
+```
+
+### 릴리즈 평가까지 포함 실행
+
+```bash
 python3 crawlers/run_daily.py
 ```
 
@@ -257,7 +265,7 @@ python3 backend/run_release_ready.py --steps 500 --batch-size 32 --lookback-days
 ## ✅ 체크리스트
 
 - [ ] Cron 설정 완료 (`./setup_cron.sh`)
-- [ ] 수동 실행 테스트 (`python3 crawlers/run_daily.py`)
+- [ ] 수동 실행 테스트 (`python3 crawlers/run_daily.py --skip-release`)
 - [ ] raw/processed 파일 생성 확인
 - [ ] `docs/reports/latest_data_status.*` 갱신 확인
 - [ ] 30일 누적 후 `python3 backend/run_release_ready.py` 실행

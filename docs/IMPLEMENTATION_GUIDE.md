@@ -15,7 +15,7 @@ AI의 성능은 데이터의 질에 결정됩니다. 먼저 데이터를 수집�
     *   수집한 CSV/JSON 데이터를 읽어 시계열 데이터(Moving Average, RSI)로 변환하는 클래스를 만듭니다.
     *   값이 너무 큰 가격 정보 등을 0~1 사이의 값으로 **정규화(Normalization)** 하는 과정이 필수적입니다.
 3.  **자동화 스케줄링**:
-    *   `setup_cron.sh`를 참고해 리눅스/맥 시스템의 `crontab`에 수집 스크립트(`run_daily.py`)를 등록합니다.
+    *   `setup_cron.sh`를 참고해 리눅스/맥 시스템의 `crontab`에 수집 스크립트(`run_daily.py --skip-release`)를 등록합니다.
 
 ---
 
