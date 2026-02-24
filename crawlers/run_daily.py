@@ -5,6 +5,7 @@
 """
 import argparse
 import fcntl
+import json
 import sys
 import traceback
 from pathlib import Path
@@ -12,6 +13,7 @@ from datetime import datetime
 import logging
 import time
 import resource
+import subprocess
 
 # 프로젝트 루트 절대경로 (cron 환경에서도 안전)
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
@@ -36,6 +38,7 @@ from crawlers.danawa_crawler import DanawaCrawler
 from crawlers.exchange_rate_crawler import ExchangeRateCrawler
 from crawlers.news_crawler import NewsCrawler
 from crawlers.feature_engineer import FeatureEngineer
+from crawlers.release_report_fallback import write_fallback_release_report
 from crawlers.status_report import generate_daily_status_report
 logger = logging.getLogger(__name__)
 
@@ -101,6 +104,41 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Skip backend release pipeline stage to reduce runtime and memory usage.",
     )
     return parser.parse_args(argv)
+
+
+def _parse_release_subprocess_output(stdout: str) -> dict:
+    lines = [line.strip() for line in stdout.splitlines() if line.strip()]
+    if not lines:
+        raise ValueError("empty subprocess stdout")
+    return json.loads(lines[-1])
+
+
+def _run_release_pipeline_subprocess(project_root: Path, timeout_sec: int = 600) -> dict:
+    cmd = [
+        sys.executable,
+        str(project_root / "backend" / "run_release_daily.py"),
+    ]
+    proc = subprocess.run(
+        cmd,
+        cwd=str(project_root),
+        capture_output=True,
+        text=True,
+        timeout=timeout_sec,
+    )
+    if proc.returncode != 0:
+        stderr = (proc.stderr or "").strip()
+        stdout = (proc.stdout or "").strip()
+        detail = stderr or stdout or f"exit_code={proc.returncode}"
+        raise RuntimeError(detail)
+
+    payload = _parse_release_subprocess_output(proc.stdout or "")
+    if not payload.get("ok"):
+        raise RuntimeError(payload.get("error", "release subprocess returned ok=false"))
+
+    result = payload.get("result")
+    if not isinstance(result, dict):
+        raise ValueError("invalid release subprocess result payload")
+    return result
 
 
 def main(argv: list[str] | None = None):
@@ -186,17 +224,7 @@ def main(argv: list[str] | None = None):
         if args.skip_release:
             logger.info("  릴리즈 파이프라인 생략(--skip-release)")
         else:
-            # 일일 배치에서는 긴 학습 없이도 release 리포트를 항상 남긴다.
-            # (데이터 부족/게이트 실패 시에도 blocked 리포트가 생성됨)
-            from backend.agent import AgentReleasePipeline, PipelineConfig
-
-            pipeline = AgentReleasePipeline(project_root=PROJECT_ROOT)
-            release_cfg = PipelineConfig(
-                run_training=False,
-                require_30d=False,
-                lookback_days=30,
-            )
-            release_result = pipeline.run(release_cfg)
+            release_result = _run_release_pipeline_subprocess(PROJECT_ROOT)
             release_reports = release_result.get("reports", {})
             logger.info(f"  릴리즈 판정: {release_result.get('status')}")
             logger.info(f"  릴리즈 리포트(JSON): {release_reports.get('json_report')}")
@@ -205,6 +233,17 @@ def main(argv: list[str] | None = None):
             logger.info(f"  최신 릴리즈(MD): {release_reports.get('latest_markdown')}")
     except Exception as e:
         logger.error(f"릴리즈 리포트 생성 실패: {e}")
+        try:
+            fallback_reports = write_fallback_release_report(
+                project_root=PROJECT_ROOT,
+                reason="release_pipeline_failed",
+                detail=str(e),
+                run_started_at=run_started_at,
+            )
+            logger.info(f"  폴백 릴리즈(JSON): {fallback_reports.get('json_report')}")
+            logger.info(f"  폴백 릴리즈(MD): {fallback_reports.get('markdown_report')}")
+        except Exception as fallback_err:
+            logger.error(f"폴백 릴리즈 리포트 생성 실패: {fallback_err}")
     finally:
         elapsed_total = time.perf_counter() - run_started_perf
         logger.info(f"  완료 시각: {datetime.now()}")
