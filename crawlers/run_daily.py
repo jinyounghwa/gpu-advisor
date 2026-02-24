@@ -113,7 +113,7 @@ def _parse_release_subprocess_output(stdout: str) -> dict:
     return json.loads(lines[-1])
 
 
-def _run_release_pipeline_subprocess(project_root: Path, timeout_sec: int = 600) -> dict:
+def _run_release_pipeline_subprocess(project_root: Path, timeout_sec: int = 900) -> dict:
     cmd = [
         sys.executable,
         str(project_root / "backend" / "run_release_daily.py"),
@@ -224,6 +224,7 @@ def main(argv: list[str] | None = None):
         if args.skip_release:
             logger.info("  릴리즈 파이프라인 생략(--skip-release)")
         else:
+            logger.info("  릴리즈 파이프라인 시작 (MCTS 평가 중, 최대 15분 소요)...")
             release_result = _run_release_pipeline_subprocess(PROJECT_ROOT)
             release_reports = release_result.get("reports", {})
             logger.info(f"  릴리즈 판정: {release_result.get('status')}")

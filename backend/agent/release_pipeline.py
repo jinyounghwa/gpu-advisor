@@ -20,6 +20,7 @@ from .evaluator import AgentEvaluator
 class PipelineConfig:
     target_days: int = 30
     lookback_days: int = 30
+    num_simulations: int = 50
     num_steps: int = 500
     batch_size: int = 32
     learning_rate: float = 1e-4
@@ -103,7 +104,7 @@ class AgentReleasePipeline:
         }
 
     def evaluate(self, cfg: PipelineConfig) -> Dict[str, Any]:
-        agent = GPUPurchaseAgent(project_root=self.project_root)
+        agent = GPUPurchaseAgent(project_root=self.project_root, num_simulations=cfg.num_simulations)
         evaluator = AgentEvaluator(project_root=self.project_root, agent=agent)
         metrics = evaluator.run(lookback_days=cfg.lookback_days)
         return metrics
