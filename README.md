@@ -331,6 +331,23 @@ This project was developed with assistance from multiple AI tools, demonstrating
 - **Prediction Network**: 6.0M params (policy + value)
 - **MCTS Simulations**: 50 per decision
 
+## 🔢 Token Note (30-Day Trained Agent)
+
+`Day 30` 학습 윈도우가 확보된 뒤에도, 이 프로젝트의 핵심 에이전트(`backend/agent/*`)는 LLM처럼 문장을 생성하는 구조가 아닙니다.
+즉, **추론 엔진 자체는 텍스트 토큰을 생성하지 않고** 256D 상태 벡터 + MCTS 시뮬레이션으로 의사결정을 수행합니다.
+
+토큰 용어가 혼동되지 않도록 운영 기준 예상치를 아래에 기록합니다.
+
+| 항목 | 의미 | 1회 요청 기준 예상치 |
+|------|------|----------------------|
+| Agent Inference Token | AlphaZero/MCTS 추론 중 생성되는 텍스트 토큰 | **0** (텍스트 생성 없음) |
+| Auth Token (JWT) | `/api/auth/token`에서 발급되는 인증 토큰 문자열 | 약 **220-420 chars** |
+| Optional LLM Output Token | 외부 LLM을 붙여 자연어 설명을 만들 때만 발생 | 입력/출력 합산 약 **300-900 tokens** |
+
+운영 메모:
+- 30일 학습 완료 상태에서 `/api/ask` 기본 경로는 비생성형 추론이므로, 비용/지연은 주로 모델 추론 시간과 API 처리 시간에 의해 결정됩니다.
+- 토큰 비용이 발생하는 구간은 JWT 발급 문자열 저장/전송(미미) 또는 외부 LLM 연동을 추가했을 때로 한정됩니다.
+
 ## 🔧 API Endpoints
 
 | Endpoint | Method | Description |
@@ -392,6 +409,6 @@ This is a personal research project. Feel free to fork and experiment!
 
 ---
 
-**Last Updated**: 2026-02-21
+**Last Updated**: 2026-02-25
 **Version**: 0.2.0
 **Project Type**: 0.1B AI Project
