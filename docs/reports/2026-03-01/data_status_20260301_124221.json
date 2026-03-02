@@ -1,0 +1,51 @@
+{
+  "generated_at": "2026-03-01T12:42:21.433744",
+  "run_started_at": "2026-03-01T12:40:48.060371",
+  "date": "2026-03-01",
+  "steps": {
+    "danawa": true,
+    "exchange": true,
+    "news": true,
+    "feature": true
+  },
+  "feature_file": "/Users/younghwa.jin/Documents/gpu-advisor/data/processed/dataset/training_data_2026-03-01.json",
+  "today_files": {
+    "danawa": "/Users/younghwa.jin/Documents/gpu-advisor/data/raw/danawa/2026-03-01.json",
+    "exchange": "/Users/younghwa.jin/Documents/gpu-advisor/data/raw/exchange/2026-03-01.json",
+    "news": "/Users/younghwa.jin/Documents/gpu-advisor/data/raw/news/2026-03-01.json",
+    "dataset": "/Users/younghwa.jin/Documents/gpu-advisor/data/processed/dataset/training_data_2026-03-01.json"
+  },
+  "today_exists": {
+    "danawa": true,
+    "exchange": true,
+    "news": true,
+    "dataset": true
+  },
+  "coverage": {
+    "danawa": {
+      "dated_files": 12,
+      "range_days": 19,
+      "first_date": "2026-02-11",
+      "last_date": "2026-03-01"
+    },
+    "exchange": {
+      "dated_files": 9,
+      "range_days": 9,
+      "first_date": "2026-02-21",
+      "last_date": "2026-03-01"
+    },
+    "news": {
+      "dated_files": 9,
+      "range_days": 9,
+      "first_date": "2026-02-21",
+      "last_date": "2026-03-01"
+    },
+    "dataset": {
+      "dated_files": 9,
+      "range_days": 9,
+      "first_date": "2026-02-21",
+      "last_date": "2026-03-01"
+    }
+  },
+  "ready_for_30d_training": false
+}

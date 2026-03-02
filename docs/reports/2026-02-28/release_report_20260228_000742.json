@@ -1,0 +1,104 @@
+{
+  "config": {
+    "target_days": 30,
+    "lookback_days": 8,
+    "num_simulations": 32,
+    "num_steps": 500,
+    "batch_size": 32,
+    "learning_rate": 0.0001,
+    "seed": 42,
+    "min_accuracy": 0.55,
+    "min_avg_reward": 0.0,
+    "max_abstain_ratio": 0.85,
+    "max_safe_override_ratio": 0.9,
+    "min_action_entropy": 0.25,
+    "min_uplift_vs_buy": 0.0,
+    "require_30d": false,
+    "run_training": false
+  },
+  "readiness": {
+    "target_days": 30,
+    "current_min_days": 8,
+    "remaining_days": 22,
+    "ready_for_target": false,
+    "details": {
+      "danawa": {
+        "dated_files": 11,
+        "range_days": 18,
+        "first_date": "2026-02-11",
+        "last_date": "2026-02-28"
+      },
+      "exchange": {
+        "dated_files": 8,
+        "range_days": 8,
+        "first_date": "2026-02-21",
+        "last_date": "2026-02-28"
+      },
+      "news": {
+        "dated_files": 8,
+        "range_days": 8,
+        "first_date": "2026-02-21",
+        "last_date": "2026-02-28"
+      },
+      "dataset": {
+        "dated_files": 8,
+        "range_days": 8,
+        "first_date": "2026-02-21",
+        "last_date": "2026-02-28"
+      }
+    }
+  },
+  "status": "blocked",
+  "evaluation": {
+    "samples": 147,
+    "date_from": "2026-02-21",
+    "date_to": "2026-02-28",
+    "avg_reward_per_decision": 0.0024035735902803324,
+    "avg_reward_per_decision_raw": 0.001930468965921008,
+    "directional_accuracy_buy_vs_wait": 0.6054421768707483,
+    "directional_accuracy_buy_vs_wait_raw": 0.6054421768707483,
+    "abstain_ratio": 0.6190476190476191,
+    "safe_override_ratio": 0.4965986394557823,
+    "avg_confidence": 0.23711738443365843,
+    "action_distribution": {
+      "BUY_NOW": 56,
+      "HOLD": 91
+    },
+    "raw_action_distribution": {
+      "BUY_NOW": 56,
+      "SKIP": 22,
+      "WAIT_LONG": 32,
+      "WAIT_SHORT": 19,
+      "HOLD": 18
+    },
+    "action_entropy": 0.6645283699035645,
+    "action_entropy_raw": 1.5054175853729248,
+    "mode_collapse": false,
+    "mode_collapse_raw": false,
+    "std_reward": 0.03236805862228995,
+    "std_reward_raw": 0.03455385001501134,
+    "baseline": {
+      "always_buy_reward": 0.0033975704638247194,
+      "always_wait_reward": -0.0033975704638247194,
+      "always_hold_reward": -0.0010419635232383356,
+      "always_buy_accuracy": 0.14965986394557823,
+      "always_wait_accuracy": 0.8503401360544217
+    },
+    "uplift_vs_always_buy": -0.000993996873544387,
+    "uplift_raw_vs_always_buy": -0.0014671014979037115,
+    "uplift_vs_always_wait": 0.0058011440541050514,
+    "uplift_raw_vs_always_wait": 0.005328039429745727,
+    "uplift_vs_always_hold": 0.003445537113518668,
+    "uplift_raw_vs_always_hold": 0.002972432489159344
+  },
+  "gates": {
+    "accuracy_raw": true,
+    "reward_raw": true,
+    "abstain": true,
+    "safe_override": true,
+    "action_entropy_raw": true,
+    "uplift_raw_vs_buy": false,
+    "no_mode_collapse_raw": true
+  },
+  "reason": "quality_gates_failed"
+}
