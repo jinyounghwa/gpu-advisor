@@ -5,7 +5,6 @@
 """
 import argparse
 import fcntl
-import json
 import sys
 import traceback
 from pathlib import Path
@@ -13,7 +12,7 @@ from datetime import datetime
 import logging
 import time
 import resource
-import subprocess
+from dataclasses import replace
 
 # 프로젝트 루트 절대경로 (cron 환경에서도 안전)
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
@@ -38,6 +37,7 @@ from crawlers.danawa_crawler import DanawaCrawler
 from crawlers.exchange_rate_crawler import ExchangeRateCrawler
 from crawlers.news_crawler import NewsCrawler
 from crawlers.feature_engineer import FeatureEngineer
+from crawlers.auto_training import AutoTrainingConfig, run_auto_training_cycle
 from crawlers.release_report_fallback import write_fallback_release_report
 from crawlers.status_report import generate_daily_status_report
 logger = logging.getLogger(__name__)
@@ -103,42 +103,24 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Skip backend release pipeline stage to reduce runtime and memory usage.",
     )
-    return parser.parse_args(argv)
-
-
-def _parse_release_subprocess_output(stdout: str) -> dict:
-    lines = [line.strip() for line in stdout.splitlines() if line.strip()]
-    if not lines:
-        raise ValueError("empty subprocess stdout")
-    return json.loads(lines[-1])
-
-
-def _run_release_pipeline_subprocess(project_root: Path, timeout_sec: int = 900) -> dict:
-    cmd = [
-        sys.executable,
-        str(project_root / "backend" / "run_release_daily.py"),
-    ]
-    proc = subprocess.run(
-        cmd,
-        cwd=str(project_root),
-        capture_output=True,
-        text=True,
-        timeout=timeout_sec,
+    parser.add_argument(
+        "--disable-auto-train",
+        action="store_true",
+        help="Disable post-30-day auto-training orchestration and run release dry-check only.",
     )
-    if proc.returncode != 0:
-        stderr = (proc.stderr or "").strip()
-        stdout = (proc.stdout or "").strip()
-        detail = stderr or stdout or f"exit_code={proc.returncode}"
-        raise RuntimeError(detail)
-
-    payload = _parse_release_subprocess_output(proc.stdout or "")
-    if not payload.get("ok"):
-        raise RuntimeError(payload.get("error", "release subprocess returned ok=false"))
-
-    result = payload.get("result")
-    if not isinstance(result, dict):
-        raise ValueError("invalid release subprocess result payload")
-    return result
+    parser.add_argument(
+        "--auto-retrain-days",
+        type=int,
+        default=None,
+        help="Override retrain interval days for this run (default: env or 7).",
+    )
+    parser.add_argument(
+        "--auto-target-days",
+        type=int,
+        default=None,
+        help="Override target readiness window days for this run (default: env or 30).",
+    )
+    return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None):
@@ -149,7 +131,13 @@ def main(argv: list[str] | None = None):
     logger.info("=" * 80)
     logger.info(f"일일 데이터 수집 시작 - {run_started_at}")
     logger.info(f"프로젝트 경로: {PROJECT_ROOT}")
-    logger.info(f"옵션: skip_release={args.skip_release}")
+    logger.info(
+        "옵션: "
+        f"skip_release={args.skip_release}, "
+        f"disable_auto_train={args.disable_auto_train}, "
+        f"auto_retrain_days={args.auto_retrain_days}, "
+        f"auto_target_days={args.auto_target_days}"
+    )
     logger.info("=" * 80)
 
     run_lock = SingleRunLock(LOG_DIR / "daily_crawl.lock")
@@ -224,20 +212,42 @@ def main(argv: list[str] | None = None):
         if args.skip_release:
             logger.info("  릴리즈 파이프라인 생략(--skip-release)")
         else:
-            logger.info("  릴리즈 파이프라인 시작 (MCTS 평가 중, 최대 15분 소요)...")
-            release_result = _run_release_pipeline_subprocess(PROJECT_ROOT)
-            release_reports = release_result.get("reports", {})
-            logger.info(f"  릴리즈 판정: {release_result.get('status')}")
-            logger.info(f"  릴리즈 리포트(JSON): {release_reports.get('json_report')}")
-            logger.info(f"  릴리즈 리포트(MD): {release_reports.get('markdown_report')}")
-            logger.info(f"  최신 릴리즈(JSON): {release_reports.get('latest_json')}")
-            logger.info(f"  최신 릴리즈(MD): {release_reports.get('latest_markdown')}")
+            auto_cfg = AutoTrainingConfig.from_env(PROJECT_ROOT)
+            if args.disable_auto_train:
+                auto_cfg = replace(auto_cfg, auto_training_enabled=False)
+            if args.auto_retrain_days is not None:
+                auto_cfg = replace(auto_cfg, retrain_every_days=max(1, args.auto_retrain_days))
+            if args.auto_target_days is not None:
+                auto_cfg = replace(auto_cfg, target_days=max(2, args.auto_target_days))
+
+            logger.info("  자동 학습/릴리즈 오케스트레이션 시작...")
+            automation_result = run_auto_training_cycle(project_root=PROJECT_ROOT, config=auto_cfg)
+
+            decision = automation_result.get("decision", {})
+            pipeline_result = automation_result.get("pipeline_result", {})
+            pipeline_reports = pipeline_result.get("reports", {}) if isinstance(pipeline_result, dict) else {}
+            auto_reports = automation_result.get("automation_reports", {})
+
+            logger.info(f"  자동화 action: {decision.get('action')} ({decision.get('reason')})")
+            logger.info(f"  누적 일수: {decision.get('current_min_days')} / 목표 {decision.get('target_days')}")
+            logger.info(f"  신규 누적일: {decision.get('newly_accumulated_days')} (기준 {decision.get('retrain_every_days')})")
+            logger.info(f"  릴리즈 판정: {pipeline_result.get('status')}")
+
+            logger.info(f"  자동화 리포트(JSON): {auto_reports.get('json_report')}")
+            logger.info(f"  자동화 리포트(MD): {auto_reports.get('markdown_report')}")
+            logger.info(f"  최신 자동화(JSON): {auto_reports.get('latest_json')}")
+            logger.info(f"  최신 자동화(MD): {auto_reports.get('latest_markdown')}")
+
+            logger.info(f"  릴리즈 리포트(JSON): {pipeline_reports.get('json_report')}")
+            logger.info(f"  릴리즈 리포트(MD): {pipeline_reports.get('markdown_report')}")
+            logger.info(f"  최신 릴리즈(JSON): {pipeline_reports.get('latest_json')}")
+            logger.info(f"  최신 릴리즈(MD): {pipeline_reports.get('latest_markdown')}")
     except Exception as e:
-        logger.error(f"릴리즈 리포트 생성 실패: {e}")
+        logger.error(f"자동 학습/릴리즈 처리 실패: {e}")
         try:
             fallback_reports = write_fallback_release_report(
                 project_root=PROJECT_ROOT,
-                reason="release_pipeline_failed",
+                reason="automation_pipeline_failed",
                 detail=str(e),
                 run_started_at=run_started_at,
             )

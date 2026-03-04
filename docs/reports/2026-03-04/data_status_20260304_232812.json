@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-03-04T23:46:10.202014",
-  "run_started_at": "2026-03-04T00:00:00",
+  "generated_at": "2026-03-04T23:28:12.614811",
+  "run_started_at": "2026-03-04T23:28:12.614630",
   "date": "2026-03-04",
   "steps": {
     "danawa": true,
@@ -8,12 +8,12 @@
     "news": true,
     "feature": true
   },
-  "feature_file": null,
+  "feature_file": "/Users/younghwa.jin/Documents/gpu-advisor/data/processed/dataset/training_data_2026-03-04.json",
   "today_files": {
-    "danawa": "data/raw/danawa/2026-03-04.json",
-    "exchange": "data/raw/exchange/2026-03-04.json",
-    "news": "data/raw/news/2026-03-04.json",
-    "dataset": "data/processed/dataset/training_data_2026-03-04.json"
+    "danawa": "/Users/younghwa.jin/Documents/gpu-advisor/data/raw/danawa/2026-03-04.json",
+    "exchange": "/Users/younghwa.jin/Documents/gpu-advisor/data/raw/exchange/2026-03-04.json",
+    "news": "/Users/younghwa.jin/Documents/gpu-advisor/data/raw/news/2026-03-04.json",
+    "dataset": "/Users/younghwa.jin/Documents/gpu-advisor/data/processed/dataset/training_data_2026-03-04.json"
   },
   "today_exists": {
     "danawa": true,
@@ -49,7 +49,7 @@
   },
   "ready_for_30d_training": false,
   "next_steps": {
-    "generated_at": "2026-03-04T23:46:10.203569",
+    "generated_at": "2026-03-04T23:28:12.620294",
     "target_days": 30,
     "current_min_days": 12,
     "remaining_days": 18,

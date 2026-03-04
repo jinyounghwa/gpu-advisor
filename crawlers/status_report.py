@@ -10,6 +10,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
+from backend.agent.next_steps import build_post_30d_next_steps
+
 
 def _collect_date_summary(root: Path, prefix_to_strip: str = "") -> Dict[str, Any]:
     dates = []
@@ -73,7 +75,15 @@ def generate_daily_status_report(
     }
     today_exists = {k: Path(v).exists() for k, v in today_files.items()}
 
-    ready_for_30d = min(v["range_days"] for v in details.values()) >= 30
+    min_days = min(v["range_days"] for v in details.values())
+    ready_for_30d = min_days >= 30
+    readiness = {
+        "target_days": 30,
+        "current_min_days": min_days,
+        "remaining_days": max(30 - min_days, 0),
+        "ready_for_target": ready_for_30d,
+    }
+    next_steps = build_post_30d_next_steps(readiness=readiness)
 
     payload: Dict[str, Any] = {
         "generated_at": now_iso,
@@ -85,6 +95,7 @@ def generate_daily_status_report(
         "today_exists": today_exists,
         "coverage": details,
         "ready_for_30d_training": ready_for_30d,
+        "next_steps": next_steps,
     }
 
     json_path = report_day_dir / f"data_status_{ts}.json"
@@ -128,6 +139,26 @@ def generate_daily_status_report(
                 f"- range_days: {item['range_days']}",
                 f"- first_date: {item['first_date']}",
                 f"- last_date: {item['last_date']}",
+                "",
+            ]
+        )
+
+    md_lines.extend(
+        [
+            "## 4) 다음 진행사항 (Next Steps)",
+            f"- 요약(KR): {next_steps.get('summary_ko', 'N/A')}",
+            f"- Summary(EN): {next_steps.get('summary_en', 'N/A')}",
+            "",
+        ]
+    )
+    for step in next_steps.get("steps", []):
+        command = step.get("command") or "N/A"
+        md_lines.extend(
+            [
+                f"### {step.get('order')}. {step.get('title_ko')} / {step.get('title_en')}",
+                f"- status: {step.get('status')}",
+                f"- condition: {step.get('condition')}",
+                f"- command: {command}",
                 "",
             ]
         )

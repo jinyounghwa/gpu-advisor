@@ -102,7 +102,7 @@
   },
   "reason": "quality_gates_failed",
   "next_steps": {
-    "generated_at": "2026-03-04T23:49:01.859213",
+    "generated_at": "2026-03-04T23:42:07.487446",
     "target_days": 30,
     "current_min_days": 12,
     "remaining_days": 18,

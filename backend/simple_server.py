@@ -27,6 +27,7 @@ try:
         AgentReleasePipeline,
         GPUPurchaseAgent,
         PipelineConfig,
+        build_post_30d_next_steps,
     )
 except ModuleNotFoundError:  # pragma: no cover
     from backend.agent import (
@@ -35,6 +36,7 @@ except ModuleNotFoundError:  # pragma: no cover
         AgentReleasePipeline,
         GPUPurchaseAgent,
         PipelineConfig,
+        build_post_30d_next_steps,
     )
 
 try:
@@ -236,6 +238,16 @@ def _data_readiness() -> dict:
     }
 
 
+def _load_latest_release_result() -> Optional[dict]:
+    latest_report = PROJECT_ROOT / "docs" / "reports" / "latest_release_report.json"
+    if not latest_report.exists():
+        return None
+    try:
+        return json.loads(latest_report.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
 def _validate_auth(request: Request) -> tuple[bool, str]:
     mode = security_config.auth_mode
     if mode == AuthMode.NONE:
@@ -376,6 +388,19 @@ def agent_release_check():
     result["gates"] = gates
     result["status"] = "pass" if all(gates.values()) else "blocked"
     return result
+
+
+@app.get("/api/agent/next-steps")
+def agent_next_steps():
+    readiness = _data_readiness()
+    normalized = {
+        "target_days": readiness["target_days"],
+        "current_min_days": readiness["current_min_days"],
+        "remaining_days": readiness["remaining_days"],
+        "ready_for_target": readiness["ready_for_30d_training"],
+    }
+    latest_release = _load_latest_release_result()
+    return build_post_30d_next_steps(readiness=normalized, release_result=latest_release)
 
 
 @app.post("/api/agent/pipeline/run")

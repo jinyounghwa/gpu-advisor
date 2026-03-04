@@ -97,3 +97,12 @@ class TestSystemStatus:
         assert "cpu_percent" in data
         assert "memory_mb" in data
         assert "is_training" in data
+
+
+class TestAgentWorkflowEndpoints:
+    def test_agent_next_steps(self, client):
+        resp = client.get("/api/agent/next-steps")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "steps" in data
+        assert "summary_ko" in data

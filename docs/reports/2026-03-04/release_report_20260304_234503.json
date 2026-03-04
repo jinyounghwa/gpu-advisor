@@ -1,8 +1,8 @@
 {
   "config": {
     "target_days": 30,
-    "lookback_days": 12,
-    "num_simulations": 20,
+    "lookback_days": 7,
+    "num_simulations": 50,
     "num_steps": 500,
     "batch_size": 32,
     "learning_rate": 0.0001,
@@ -48,48 +48,48 @@
       }
     }
   },
-  "status": "blocked",
+  "status": "pass",
   "evaluation": {
-    "samples": 235,
-    "date_from": "2026-02-21",
+    "samples": 151,
+    "date_from": "2026-02-25",
     "date_to": "2026-03-04",
-    "avg_reward_per_decision": 0.0012834564376179053,
-    "avg_reward_per_decision_raw": 0.000699332727334434,
-    "directional_accuracy_buy_vs_wait": 0.6212765957446809,
-    "directional_accuracy_buy_vs_wait_raw": 0.6212765957446809,
-    "abstain_ratio": 0.6382978723404256,
-    "safe_override_ratio": 0.5191489361702127,
-    "avg_confidence": 0.23258515809902536,
+    "avg_reward_per_decision": 0.001016289463323437,
+    "avg_reward_per_decision_raw": 0.0020971648317813373,
+    "directional_accuracy_buy_vs_wait": 0.609271523178808,
+    "directional_accuracy_buy_vs_wait_raw": 0.609271523178808,
+    "abstain_ratio": 0.6225165562913907,
+    "safe_override_ratio": 0.5165562913907285,
+    "avg_confidence": 0.23533596874550045,
     "action_distribution": {
-      "BUY_NOW": 85,
-      "HOLD": 150
+      "BUY_NOW": 57,
+      "HOLD": 94
     },
     "raw_action_distribution": {
-      "BUY_NOW": 85,
-      "SKIP": 35,
-      "WAIT_LONG": 53,
-      "WAIT_SHORT": 34,
-      "HOLD": 28
+      "BUY_NOW": 57,
+      "WAIT_SHORT": 21,
+      "HOLD": 16,
+      "SKIP": 24,
+      "WAIT_LONG": 33
     },
-    "action_entropy": 0.6543912291526794,
-    "action_entropy_raw": 1.520496129989624,
+    "action_entropy": 0.6628186702728271,
+    "action_entropy_raw": 1.5046416521072388,
     "mode_collapse": false,
     "mode_collapse_raw": false,
-    "std_reward": 0.026046295255736443,
-    "std_reward_raw": 0.028090922475056856,
+    "std_reward": 0.020702883311084944,
+    "std_reward_raw": 0.02482071242880791,
     "baseline": {
-      "always_buy_reward": 0.0025590359839722772,
-      "always_wait_reward": -0.0025590359839722772,
-      "always_hold_reward": -0.000874256015003725,
-      "always_buy_accuracy": 0.11063829787234042,
-      "always_wait_accuracy": 0.8893617021276595
+      "always_buy_reward": 0.000888729920550948,
+      "always_wait_reward": -0.000888729920550948,
+      "always_hold_reward": -0.0009689598617531746,
+      "always_buy_accuracy": 0.09271523178807947,
+      "always_wait_accuracy": 0.9072847682119205
     },
-    "uplift_vs_always_buy": -0.001275579546354372,
-    "uplift_raw_vs_always_buy": -0.0018597032566378432,
-    "uplift_vs_always_wait": 0.0038424924215901823,
-    "uplift_raw_vs_always_wait": 0.003258368711306711,
-    "uplift_vs_always_hold": 0.0021577124526216303,
-    "uplift_raw_vs_always_hold": 0.001573588742338159
+    "uplift_vs_always_buy": 0.00012755954277248903,
+    "uplift_raw_vs_always_buy": 0.0012084349112303893,
+    "uplift_vs_always_wait": 0.001905019383874385,
+    "uplift_raw_vs_always_wait": 0.0029858947523322852,
+    "uplift_vs_always_hold": 0.0019852493250766116,
+    "uplift_raw_vs_always_hold": 0.003066124693534512
   },
   "gates": {
     "accuracy_raw": true,
@@ -97,18 +97,17 @@
     "abstain": true,
     "safe_override": true,
     "action_entropy_raw": true,
-    "uplift_raw_vs_buy": false,
+    "uplift_raw_vs_buy": true,
     "no_mode_collapse_raw": true
   },
-  "reason": "quality_gates_failed",
   "next_steps": {
-    "generated_at": "2026-03-04T23:49:01.859213",
+    "generated_at": "2026-03-04T23:45:03.666506",
     "target_days": 30,
     "current_min_days": 12,
     "remaining_days": 18,
     "ready_for_target": false,
-    "release_status": "blocked",
-    "release_reason": "quality_gates_failed",
+    "release_status": "pass",
+    "release_reason": null,
     "summary_ko": "아직 30일 기준에 도달하지 않았습니다. 남은 18일 동안 일일 수집을 유지하고 릴리즈 드라이런만 수행하세요.",
     "summary_en": "The 30-day window is not ready yet. Keep daily collection running for the remaining 18 days and run dry checks only.",
     "steps": [

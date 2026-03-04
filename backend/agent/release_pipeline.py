@@ -14,6 +14,7 @@ from typing import Any, Dict, Optional
 from .fine_tuner import AgentFineTuner
 from .gpu_purchase_agent import GPUPurchaseAgent
 from .evaluator import AgentEvaluator
+from .next_steps import build_post_30d_next_steps
 
 
 @dataclass
@@ -140,6 +141,7 @@ class AgentReleasePipeline:
         status = payload.get("status")
         evalm = payload.get("evaluation", {})
         gates = payload.get("gates", {})
+        next_steps = payload.get("next_steps", {})
         def _v(key: str) -> Any:
             val = evalm.get(key)
             return "N/A" if val is None else val
@@ -153,6 +155,23 @@ class AgentReleasePipeline:
                 gate_lines.append(f"- {k}: {_g(k)}")
         else:
             gate_lines.append("- N/A")
+
+        next_step_lines = []
+        if isinstance(next_steps, dict) and next_steps.get("steps"):
+            for step in next_steps["steps"]:
+                command = step.get("command") or "N/A"
+                next_step_lines.extend(
+                    [
+                        f"### {step.get('order')}. {step.get('title_ko')}",
+                        f"- status: {step.get('status')}",
+                        f"- condition: {step.get('condition')}",
+                        f"- command: {command}",
+                        f"- detail: {step.get('detail_ko')}",
+                        "",
+                    ]
+                )
+        else:
+            next_step_lines.append("- N/A")
 
         md = [
             "# GPU Advisor 릴리즈 판정 보고서",
@@ -175,7 +194,11 @@ class AgentReleasePipeline:
             "## 3) 게이트 통과 여부",
             *gate_lines,
             "",
-            "## 4) 결론",
+            "## 4) 다음 진행사항",
+            f"- 요약: {next_steps.get('summary_ko', 'N/A') if isinstance(next_steps, dict) else 'N/A'}",
+            "",
+            *next_step_lines,
+            "## 5) 결론",
             "- `pass`면 공개 후보, `blocked`면 데이터/학습/정책 재조정 필요.",
         ]
         md_text = "\n".join(md)
@@ -201,11 +224,13 @@ class AgentReleasePipeline:
         # 최소 2일 전이는 있어야 평가 자체가 의미 있음(상태 전이/보상 계산 불가 방지)
         if readiness["current_min_days"] < 2:
             result["reason"] = "insufficient_data_window"
+            result["next_steps"] = build_post_30d_next_steps(readiness=readiness, release_result=result)
             result["reports"] = self.write_report(result)
             return result
 
         if cfg.require_30d and not readiness["ready_for_target"]:
             result["reason"] = "insufficient_data_window"
+            result["next_steps"] = build_post_30d_next_steps(readiness=readiness, release_result=result)
             result["reports"] = self.write_report(result)
             return result
 
@@ -219,5 +244,6 @@ class AgentReleasePipeline:
         result["status"] = "pass" if all(gates.values()) else "blocked"
         if result["status"] != "pass":
             result["reason"] = "quality_gates_failed"
+        result["next_steps"] = build_post_30d_next_steps(readiness=readiness, release_result=result)
         result["reports"] = self.write_report(result)
         return result

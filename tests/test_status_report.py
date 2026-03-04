@@ -37,3 +37,4 @@ def test_generate_daily_status_report(tmp_path: Path):
     latest_json_text = Path(reports["latest_json"]).read_text(encoding="utf-8")
     assert '"ready_for_30d_training": false' in latest_json_text
     assert '"range_days": 2' in latest_json_text
+    assert '"next_steps": {' in latest_json_text

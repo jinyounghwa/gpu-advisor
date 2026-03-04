@@ -94,14 +94,19 @@ This sets up daily automatic data collection at midnight (00:00).
 2. **Manual Data Collection** (for testing)
 
 ```bash
+python3 crawlers/run_daily.py
+```
+
+Optional (crawl/feature only, skip release/automation stage):
+
+```bash
 python3 crawlers/run_daily.py --skip-release
 ```
 
-Run full pipeline (includes release evaluation):
-
-```bash
-python3 crawlers/run_daily.py
-```
+Automation note:
+- Before 30-day readiness, this runs release dry-check only.
+- After 30-day readiness, this automatically runs training + release flow.
+- Then it retrains again whenever the configured new-data interval is accumulated.
 
 3. **Start Backend Server (Production Path)**
 
@@ -272,6 +277,10 @@ gpu-advisor/
 - [`docs/AI_CODE_DEEP_DIVE.md`](docs/AI_CODE_DEEP_DIVE.md): AI 핵심 코드 분석 인덱스
 - [`docs/AI_COMPONENTS_AND_IMPLEMENTATION_KR.md`](docs/AI_COMPONENTS_AND_IMPLEMENTATION_KR.md): AI 구성요소와 현재 구현 상태(한국어)
 - [`docs/FINAL_DEVELOPMENT_REPORT_KR.md`](docs/FINAL_DEVELOPMENT_REPORT_KR.md): 최종 개발 결과 정리(한국어)
+- [`docs/POST_30D_NEXT_STEPS_KR.md`](docs/POST_30D_NEXT_STEPS_KR.md): 30일 데이터 달성 후 운영 절차(한국어)
+- [`docs/POST_30D_NEXT_STEPS.md`](docs/POST_30D_NEXT_STEPS.md): Post-30-day operational runbook (English)
+- [`docs/AUTO_TRAINING_WORKFLOW_KR.md`](docs/AUTO_TRAINING_WORKFLOW_KR.md): 자동 학습/재학습 및 결과물 생성 워크플로우(한국어)
+- [`docs/AUTO_TRAINING_WORKFLOW.md`](docs/AUTO_TRAINING_WORKFLOW.md): Auto training/retraining and artifact workflow (English)
 
 ### `docs/` Learning Pairs (EN/KR)
 
@@ -357,6 +366,7 @@ Operational notes:
 | `/api/training/stop` | POST | Stop training |
 | `/api/training/metrics` | GET | Get training metrics |
 | `/api/agent/readiness` | GET | Check 30-day data readiness |
+| `/api/agent/next-steps` | GET | Get bilingual next-step checklist for pre/post 30-day workflow |
 | `/api/agent/evaluate` | GET | Run backtest evaluation |
 | `/api/agent/release-check` | GET | Run release quality gates |
 | `/api/agent/model-info` | GET | Check loaded model metadata |
@@ -409,6 +419,6 @@ This is a personal research project. Feel free to fork and experiment!
 
 ---
 
-**Last Updated**: 2026-02-25
+**Last Updated**: 2026-03-04
 **Version**: 0.2.0
 **Project Type**: 0.1B AI Project

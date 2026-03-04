@@ -30,7 +30,7 @@ cd /Users/younghwa.jin/Documents/gpu-advisor
 ### 2단계: 수동 실행 (즉시 테스트)
 
 ```bash
-python3 crawlers/run_daily.py --skip-release
+python3 crawlers/run_daily.py
 ```
 
 ---
@@ -44,6 +44,7 @@ gpu-advisor/
 │   ├── exchange_rate_crawler.py
 │   ├── news_crawler.py
 │   ├── feature_engineer.py
+│   ├── auto_training.py
 │   ├── status_report.py
 │   └── run_daily.py
 ├── data/
@@ -61,7 +62,11 @@ gpu-advisor/
 │   │   ├── data_status_*.json
 │   │   └── data_status_*.md
 │   ├── latest_data_status.json
-│   └── latest_data_status.md
+│   ├── latest_data_status.md
+│   ├── latest_release_report.json
+│   ├── latest_release_report.md
+│   ├── latest_auto_training_status.json
+│   └── latest_auto_training_status.md
 └── setup_cron.sh
 ```
 
@@ -77,8 +82,11 @@ gpu-advisor/
 3. GPU 뉴스 크롤링
 4. 256차원 Feature 생성
 5. 상태 보고서 생성
-6. 릴리즈 파이프라인 생략(`--skip-release`)으로 RAM 사용량 절감
-7. `/usr/bin/time -l`로 메모리/시간 지표를 `logs/cron.log`에 기록
+6. 자동 학습 오케스트레이션 실행
+  - 30일 미달: 릴리즈 드라이 체크(`backend/run_release_daily.py`)
+  - 30일 도달/재학습 간격 충족: 학습+평가(`backend/run_release_ready.py`)
+7. 자동화/릴리즈 결과 보고서 생성
+8. `/usr/bin/time -l`로 메모리/시간 지표를 `logs/cron.log`에 기록
 
 ### Cron 관리 명령어
 
@@ -93,10 +101,10 @@ crontab -r
 
 ```bash
 # 매일 06:00
-0 6 * * * cd /Users/younghwa.jin/Documents/gpu-advisor && /usr/bin/time -l python3 crawlers/run_daily.py --skip-release >> logs/cron.log 2>&1
+0 6 * * * cd /Users/younghwa.jin/Documents/gpu-advisor && /usr/bin/time -l python3 crawlers/run_daily.py >> logs/cron.log 2>&1
 
 # 매일 00:00, 12:00
-0 0,12 * * * cd /Users/younghwa.jin/Documents/gpu-advisor && /usr/bin/time -l python3 crawlers/run_daily.py --skip-release >> logs/cron.log 2>&1
+0 0,12 * * * cd /Users/younghwa.jin/Documents/gpu-advisor && /usr/bin/time -l python3 crawlers/run_daily.py >> logs/cron.log 2>&1
 ```
 
 ---
@@ -180,13 +188,19 @@ crontab -r
 ### 전체 파이프라인 실행
 
 ```bash
-python3 crawlers/run_daily.py --skip-release
+python3 crawlers/run_daily.py
 ```
 
-### 릴리즈 평가까지 포함 실행
+### 자동 학습 비활성화(드라이 체크만)
 
 ```bash
-python3 crawlers/run_daily.py
+python3 crawlers/run_daily.py --disable-auto-train
+```
+
+### 재학습 간격 임시 오버라이드
+
+```bash
+python3 crawlers/run_daily.py --auto-retrain-days 5
 ```
 
 ### 로그 확인
@@ -226,6 +240,20 @@ cat data/processed/dataset/training_data_$(date +%Y-%m-%d).json | python3 -m jso
 - 파일: `crawlers/feature_engineer.py`
 - 각 블록(가격/환율/뉴스/시장/시간/기술지표) 차원과 최종 합계가 일치하도록 함께 수정
 
+### 자동 학습 정책 변경(환경변수)
+
+```bash
+export GPU_ADVISOR_AUTO_TRAIN_ENABLED=true
+export GPU_ADVISOR_AUTO_TRAIN_TARGET_DAYS=30
+export GPU_ADVISOR_AUTO_RETRAIN_EVERY_DAYS=7
+export GPU_ADVISOR_AUTO_TRAIN_STEPS=500
+export GPU_ADVISOR_AUTO_TRAIN_BATCH_SIZE=32
+export GPU_ADVISOR_AUTO_TRAIN_LR=0.0001
+export GPU_ADVISOR_AUTO_TRAIN_SEED=42
+export GPU_ADVISOR_AUTO_TRAIN_LOOKBACK_DAYS=30
+export GPU_ADVISOR_AUTO_TRAIN_TIMEOUT_SEC=5400
+```
+
 ---
 
 ## 📈 누적 데이터 확인
@@ -246,31 +274,27 @@ cat docs/reports/latest_data_status.json | python3 -m json.tool
 
 ---
 
-## 🚀 다음 단계 (30일 이상 누적 후)
+## 🚀 30일 이후 자동 동작
 
-### 릴리즈 준비도/평가/게이트 실행
+`python3 crawlers/run_daily.py` 실행 시 자동으로:
 
-```bash
-python3 backend/run_release_ready.py
-```
-
-필요 시 옵션:
-
-```bash
-python3 backend/run_release_ready.py --steps 500 --batch-size 32 --lookback-days 30
-```
+1. 첫 30일 도달 시 학습+릴리즈 실행
+2. 이후 `GPU_ADVISOR_AUTO_RETRAIN_EVERY_DAYS` 누적마다 재학습+릴리즈 실행
+3. 누적이 부족한 날에는 드라이 체크만 실행
+4. 결과물은 `latest_release_report.*`, `latest_auto_training_status.*`에 최신본 저장
 
 ---
 
 ## ✅ 체크리스트
 
 - [ ] Cron 설정 완료 (`./setup_cron.sh`)
-- [ ] 수동 실행 테스트 (`python3 crawlers/run_daily.py --skip-release`)
+- [ ] 수동 실행 테스트 (`python3 crawlers/run_daily.py`)
 - [ ] raw/processed 파일 생성 확인
 - [ ] `docs/reports/latest_data_status.*` 갱신 확인
-- [ ] 30일 누적 후 `python3 backend/run_release_ready.py` 실행
+- [ ] `docs/reports/latest_auto_training_status.*` 확인
+- [ ] `docs/reports/latest_release_report.*` 확인
 
 ---
 
-**작성/갱신:** 2026-02-21
+**작성/갱신:** 2026-03-04
 **프로젝트:** GPU Purchase Timing Advisor
