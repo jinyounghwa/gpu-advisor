@@ -1,8 +1,8 @@
 {
   "config": {
     "target_days": 30,
-    "lookback_days": 14,
-    "num_simulations": 17,
+    "lookback_days": 13,
+    "num_simulations": 18,
     "num_steps": 500,
     "batch_size": 32,
     "learning_rate": 0.0001,
@@ -18,78 +18,78 @@
   },
   "readiness": {
     "target_days": 30,
-    "current_min_days": 15,
-    "remaining_days": 15,
+    "current_min_days": 13,
+    "remaining_days": 17,
     "ready_for_target": false,
     "details": {
       "danawa": {
-        "dated_files": 18,
-        "range_days": 25,
+        "dated_files": 16,
+        "range_days": 23,
         "first_date": "2026-02-11",
-        "last_date": "2026-03-07"
+        "last_date": "2026-03-05"
       },
       "exchange": {
-        "dated_files": 15,
-        "range_days": 15,
+        "dated_files": 13,
+        "range_days": 13,
         "first_date": "2026-02-21",
-        "last_date": "2026-03-07"
+        "last_date": "2026-03-05"
       },
       "news": {
-        "dated_files": 15,
-        "range_days": 15,
+        "dated_files": 13,
+        "range_days": 13,
         "first_date": "2026-02-21",
-        "last_date": "2026-03-07"
+        "last_date": "2026-03-05"
       },
       "dataset": {
-        "dated_files": 15,
-        "range_days": 15,
+        "dated_files": 13,
+        "range_days": 13,
         "first_date": "2026-02-21",
-        "last_date": "2026-03-07"
+        "last_date": "2026-03-05"
       }
     }
   },
-  "status": "pass",
+  "status": "blocked",
   "evaluation": {
-    "samples": 301,
+    "samples": 257,
     "date_from": "2026-02-21",
-    "date_to": "2026-03-07",
-    "avg_reward_per_decision": 0.002470649199198556,
-    "avg_reward_per_decision_raw": 0.003755504559685747,
-    "directional_accuracy_buy_vs_wait": 0.627906976744186,
-    "directional_accuracy_buy_vs_wait_raw": 0.627906976744186,
-    "abstain_ratio": 0.6511627906976745,
-    "safe_override_ratio": 0.5116279069767442,
-    "avg_confidence": 0.23008017212727885,
+    "date_to": "2026-03-05",
+    "avg_reward_per_decision": 0.0016721561339220592,
+    "avg_reward_per_decision_raw": 0.0017164780285516485,
+    "directional_accuracy_buy_vs_wait": 0.622568093385214,
+    "directional_accuracy_buy_vs_wait_raw": 0.622568093385214,
+    "abstain_ratio": 0.642023346303502,
+    "safe_override_ratio": 0.5291828793774319,
+    "avg_confidence": 0.23416317744448767,
     "action_distribution": {
-      "BUY_NOW": 105,
-      "HOLD": 196
+      "BUY_NOW": 92,
+      "HOLD": 165
     },
     "raw_action_distribution": {
-      "BUY_NOW": 105,
-      "SKIP": 41,
-      "WAIT_LONG": 67,
-      "WAIT_SHORT": 46,
-      "HOLD": 42
+      "BUY_NOW": 92,
+      "SKIP": 34,
+      "WAIT_LONG": 61,
+      "WAIT_SHORT": 41,
+      "HOLD": 29
     },
-    "action_entropy": 0.6467238664627075,
-    "action_entropy_raw": 1.5352288484573364,
+    "action_entropy": 0.6522451639175415,
+    "action_entropy_raw": 1.515721321105957,
     "mode_collapse": false,
     "mode_collapse_raw": false,
-    "std_reward": 0.04012044684970879,
-    "std_reward_raw": 0.04669826873517841,
+    "std_reward": 0.023551878729041402,
+    "std_reward_raw": 0.027110585981334884,
     "baseline": {
-      "always_buy_reward": 0.0015429371406324248,
-      "always_wait_reward": -0.0015429371406324248,
-      "always_hold_reward": -0.0011792269938371948,
-      "always_buy_accuracy": 0.11627906976744186,
-      "always_wait_accuracy": 0.8837209302325582
+      "always_buy_reward": 0.0023392967189952126,
+      "always_wait_reward": -0.0023392967189952126,
+      "always_hold_reward": -0.0008485385800260566,
+      "always_buy_accuracy": 0.11284046692607004,
+      "always_wait_accuracy": 0.8871595330739299
     },
-    "uplift_vs_always_buy": 0.0009277120585661314,
-    "uplift_raw_vs_always_buy": 0.0022125674190533223,
-    "uplift_vs_always_wait": 0.004013586339830981,
-    "uplift_raw_vs_always_wait": 0.0052984417003181725,
-    "uplift_vs_always_hold": 0.0036498761930357513,
-    "uplift_raw_vs_always_hold": 0.004934731553522942
+    "uplift_vs_always_buy": -0.0006671405850731534,
+    "uplift_raw_vs_always_buy": -0.0006228186904435641,
+    "uplift_vs_always_wait": 0.004011452852917272,
+    "uplift_raw_vs_always_wait": 0.004055774747546861,
+    "uplift_vs_always_hold": 0.002520694713948116,
+    "uplift_raw_vs_always_hold": 0.002565016608577705
   },
   "gates": {
     "accuracy_raw": true,
@@ -97,25 +97,26 @@
     "abstain": true,
     "safe_override": true,
     "action_entropy_raw": true,
-    "uplift_raw_vs_buy": true,
+    "uplift_raw_vs_buy": false,
     "no_mode_collapse_raw": true
   },
+  "reason": "quality_gates_failed",
   "next_steps": {
-    "generated_at": "2026-03-07T00:03:36.822796",
+    "generated_at": "2026-03-05T00:03:27.583610",
     "target_days": 30,
-    "current_min_days": 15,
-    "remaining_days": 15,
+    "current_min_days": 13,
+    "remaining_days": 17,
     "ready_for_target": false,
-    "release_status": "pass",
-    "release_reason": null,
-    "summary_ko": "아직 30일 기준에 도달하지 않았습니다. 남은 15일 동안 일일 수집을 유지하고 릴리즈 드라이런만 수행하세요.",
-    "summary_en": "The 30-day window is not ready yet. Keep daily collection running for the remaining 15 days and run dry checks only.",
+    "release_status": "blocked",
+    "release_reason": "quality_gates_failed",
+    "summary_ko": "아직 30일 기준에 도달하지 않았습니다. 남은 17일 동안 일일 수집을 유지하고 릴리즈 드라이런만 수행하세요.",
+    "summary_en": "The 30-day window is not ready yet. Keep daily collection running for the remaining 17 days and run dry checks only.",
     "steps": [
       {
         "order": 1,
         "id": "collect_daily_data",
         "status": "in_progress",
-        "condition": "current_min_days=15 < target_days=30",
+        "condition": "current_min_days=13 < target_days=30",
         "command": "python3 crawlers/run_daily.py",
         "title_ko": "일일 데이터 수집 유지",
         "title_en": "Keep Daily Data Collection Running",
@@ -148,7 +149,7 @@
         "order": 4,
         "id": "wait_for_30d_unlock",
         "status": "blocked",
-        "condition": "remaining_days=15",
+        "condition": "remaining_days=17",
         "command": null,
         "title_ko": "30일 게이트 해제 대기",
         "title_en": "Wait for 30-Day Gate Unlock",
