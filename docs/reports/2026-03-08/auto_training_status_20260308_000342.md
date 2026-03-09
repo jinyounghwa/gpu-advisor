@@ -1,28 +1,28 @@
 # GPU Advisor 자동 학습/결과물 생성 상태 보고서
 
-- 생성시각: 2026-03-10T00:03:50.777854
+- 생성시각: 2026-03-08T00:03:42.635308
 - 자동화 실행모드: release_check
 - 실행 스크립트: backend/run_release_daily.py
-- 파이프라인 상태: blocked
+- 파이프라인 상태: pass
 
 ## 1) 자동화 결정 (Decision)
 - action: release_check
 - reason: insufficient_data_window
-- current_min_days: 18
+- current_min_days: 16
 - target_days: 30
 - ready_for_target: False
 - newly_accumulated_days: 0
 - retrain_every_days: 7
 
 ## 2) 데이터 준비도
-- current_min_days: 18
-- remaining_days: 12
+- current_min_days: 16
+- remaining_days: 14
 - ready_for_target: False
 
 ## 3) 결과물 (Artifacts)
 - checkpoint: N/A
-- release report (json): /Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-03-10/release_report_20260310_000350.json
-- release report (md): /Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-03-10/release_report_20260310_000350.md
+- release report (json): /Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-03-08/release_report_20260308_000342.json
+- release report (md): /Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-03-08/release_report_20260308_000342.md
 - latest release json: /Users/younghwa.jin/Documents/gpu-advisor/docs/reports/latest_release_report.json
 - latest release md: /Users/younghwa.jin/Documents/gpu-advisor/docs/reports/latest_release_report.md
 
