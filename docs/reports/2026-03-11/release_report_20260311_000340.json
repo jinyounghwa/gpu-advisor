@@ -18,78 +18,78 @@
   },
   "readiness": {
     "target_days": 30,
-    "current_min_days": 21,
-    "remaining_days": 9,
+    "current_min_days": 19,
+    "remaining_days": 11,
     "ready_for_target": false,
     "details": {
       "danawa": {
-        "dated_files": 24,
-        "range_days": 31,
+        "dated_files": 22,
+        "range_days": 29,
         "first_date": "2026-02-11",
-        "last_date": "2026-03-13"
+        "last_date": "2026-03-11"
       },
       "exchange": {
-        "dated_files": 21,
-        "range_days": 21,
+        "dated_files": 19,
+        "range_days": 19,
         "first_date": "2026-02-21",
-        "last_date": "2026-03-13"
+        "last_date": "2026-03-11"
       },
       "news": {
-        "dated_files": 21,
-        "range_days": 21,
+        "dated_files": 19,
+        "range_days": 19,
         "first_date": "2026-02-21",
-        "last_date": "2026-03-13"
+        "last_date": "2026-03-11"
       },
       "dataset": {
-        "dated_files": 21,
-        "range_days": 21,
+        "dated_files": 19,
+        "range_days": 19,
         "first_date": "2026-02-21",
-        "last_date": "2026-03-13"
+        "last_date": "2026-03-11"
       }
     }
   },
   "status": "blocked",
   "evaluation": {
-    "samples": 307,
-    "date_from": "2026-02-27",
-    "date_to": "2026-03-13",
-    "avg_reward_per_decision": -0.0009237511410472638,
-    "avg_reward_per_decision_raw": 1.2069624392358727e-05,
-    "directional_accuracy_buy_vs_wait": 0.6188925081433225,
-    "directional_accuracy_buy_vs_wait_raw": 0.6188925081433225,
-    "abstain_ratio": 0.6612377850162866,
-    "safe_override_ratio": 0.504885993485342,
-    "avg_confidence": 0.22943773706039972,
+    "samples": 305,
+    "date_from": "2026-02-25",
+    "date_to": "2026-03-11",
+    "avg_reward_per_decision": 0.000638218558827544,
+    "avg_reward_per_decision_raw": 0.0023038802421222813,
+    "directional_accuracy_buy_vs_wait": 0.6163934426229508,
+    "directional_accuracy_buy_vs_wait_raw": 0.6163934426229508,
+    "abstain_ratio": 0.6459016393442623,
+    "safe_override_ratio": 0.4885245901639344,
+    "avg_confidence": 0.2304403060231253,
     "action_distribution": {
-      "BUY_NOW": 104,
-      "HOLD": 203
+      "BUY_NOW": 108,
+      "HOLD": 197
     },
     "raw_action_distribution": {
-      "BUY_NOW": 104,
-      "WAIT_LONG": 72,
+      "BUY_NOW": 108,
+      "WAIT_SHORT": 46,
       "HOLD": 48,
-      "SKIP": 37,
-      "WAIT_SHORT": 46
+      "SKIP": 39,
+      "WAIT_LONG": 64
     },
-    "action_entropy": 0.6402111053466797,
-    "action_entropy_raw": 1.5363730192184448,
+    "action_entropy": 0.6499468088150024,
+    "action_entropy_raw": 1.5345652103424072,
     "mode_collapse": false,
     "mode_collapse_raw": false,
-    "std_reward": 0.04059632322606751,
-    "std_reward_raw": 0.04603229083986053,
+    "std_reward": 0.03756316846111028,
+    "std_reward_raw": 0.044251656267615076,
     "baseline": {
-      "always_buy_reward": 0.0019210387095565454,
-      "always_wait_reward": -0.0019210387095565454,
-      "always_hold_reward": -0.0015480375531417793,
-      "always_buy_accuracy": 0.10749185667752444,
-      "always_wait_accuracy": 0.8925081433224755
+      "always_buy_reward": 0.0029046368204705794,
+      "always_wait_reward": -0.0029046368204705794,
+      "always_hold_reward": -0.001662462128228402,
+      "always_buy_accuracy": 0.10819672131147541,
+      "always_wait_accuracy": 0.8918032786885246
     },
-    "uplift_vs_always_buy": -0.002844789850603809,
-    "uplift_raw_vs_always_buy": -0.0019089690851641866,
-    "uplift_vs_always_wait": 0.0009972875685092817,
-    "uplift_raw_vs_always_wait": 0.0019331083339489041,
-    "uplift_vs_always_hold": 0.0006242864120945155,
-    "uplift_raw_vs_always_hold": 0.001560107177534138
+    "uplift_vs_always_buy": -0.0022664182616430354,
+    "uplift_raw_vs_always_buy": -0.0006007565783482981,
+    "uplift_vs_always_wait": 0.0035428553792981234,
+    "uplift_raw_vs_always_wait": 0.005208517062592861,
+    "uplift_vs_always_hold": 0.0023006806870559462,
+    "uplift_raw_vs_always_hold": 0.003966342370350684
   },
   "gates": {
     "accuracy_raw": true,
@@ -102,21 +102,21 @@
   },
   "reason": "quality_gates_failed",
   "next_steps": {
-    "generated_at": "2026-03-13T00:03:45.383182",
+    "generated_at": "2026-03-11T00:03:40.883559",
     "target_days": 30,
-    "current_min_days": 21,
-    "remaining_days": 9,
+    "current_min_days": 19,
+    "remaining_days": 11,
     "ready_for_target": false,
     "release_status": "blocked",
     "release_reason": "quality_gates_failed",
-    "summary_ko": "아직 30일 기준에 도달하지 않았습니다. 남은 9일 동안 일일 수집을 유지하고 릴리즈 드라이런만 수행하세요.",
-    "summary_en": "The 30-day window is not ready yet. Keep daily collection running for the remaining 9 days and run dry checks only.",
+    "summary_ko": "아직 30일 기준에 도달하지 않았습니다. 남은 11일 동안 일일 수집을 유지하고 릴리즈 드라이런만 수행하세요.",
+    "summary_en": "The 30-day window is not ready yet. Keep daily collection running for the remaining 11 days and run dry checks only.",
     "steps": [
       {
         "order": 1,
         "id": "collect_daily_data",
         "status": "in_progress",
-        "condition": "current_min_days=21 < target_days=30",
+        "condition": "current_min_days=19 < target_days=30",
         "command": "python3 crawlers/run_daily.py",
         "title_ko": "일일 데이터 수집 유지",
         "title_en": "Keep Daily Data Collection Running",
@@ -149,7 +149,7 @@
         "order": 4,
         "id": "wait_for_30d_unlock",
         "status": "blocked",
-        "condition": "remaining_days=9",
+        "condition": "remaining_days=11",
         "command": null,
         "title_ko": "30일 게이트 해제 대기",
         "title_en": "Wait for 30-Day Gate Unlock",
