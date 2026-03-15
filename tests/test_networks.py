@@ -61,11 +61,11 @@ class TestDynamicsNetwork:
         assert r_logvar.shape == (BATCH_SIZE,)
 
     def test_reward_logvar_positive(self):
-        """Softplus should keep log-variance non-negative."""
+        """log-variance can be any real; exp(logvar) must be positive."""
         s = torch.randn(BATCH_SIZE, LATENT_DIM)
         a = torch.randn(BATCH_SIZE, ACTION_DIM)
         _, _, r_logvar = self.model(s, a)
-        assert (r_logvar >= 0).all()
+        assert (torch.exp(r_logvar) > 0).all()
 
     def test_different_actions_different_outputs(self):
         self.model.eval()
