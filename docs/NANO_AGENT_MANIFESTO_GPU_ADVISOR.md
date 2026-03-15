@@ -1,7 +1,7 @@
 # GPU Advisor 기술 해설서
 
-- 문서 버전: v1.0
-- 작성일: 2026-02-23
+- 문서 버전: v2.0
+- 작성일: 2026-03-15
 - 프로젝트: `gpu-advisor`
 
 
@@ -9,16 +9,24 @@
 
 ## Executive Summary
 
-이 프로젝트는 "GPU를 지금 사야 하는가, 기다려야 하는가"라는 일상적이지만 난해한 의사결정 문제를, **예측**이 아니라 **계획(Planning)** 문제로 재정의한다.  
+이 프로젝트는 "GPU를 지금 사야 하는가, 기다려야 하는가"라는 일상적이지만 난해한 의사결정 문제를, **예측**이 아니라 **계획(Planning)** 문제로 재정의한다.
 핵심은 AlphaZero/MuZero 계열의 아이디어를 차용한 월드 모델 기반 에이전트이며, 시장 데이터를 잠재 상태로 압축한 뒤 MCTS로 다중 시나리오를 탐색해 행동을 선택한다.
 
-현재 구현은 다음을 달성했다.
+2026-03-15 기준 구현이 달성한 것:
 
-1. 크롤러-피처-에이전트-API-리포트까지 이어지는 E2E 파이프라인 자동화
-2. 256차원 상태벡터 기반의 계획형 의사결정 엔진
+1. 크롤러-피처-에이전트-API-리포트까지 이어지는 E2E 파이프라인 자동화 (LaunchAgent 기반)
+2. 256차원 상태벡터 기반의 계획형 의사결정 엔진 (h/g/f/a 4-네트워크 월드 모델)
 3. 릴리즈 게이트(정확도/보상/엔트로피/모드붕괴/베이스라인 uplift) 기반 품질 판정 체계
+4. 30일 도달 시 자동 학습/재학습 오케스트레이션 (AutoTrainingConfig + decide_auto_training_action)
 
-다만 2026-02-23 기준 누적 데이터 창(window)이 짧아(`exchange/news/dataset`: 3일), 최종 릴리즈 판정은 `blocked` 상태다. 즉, 아키텍처는 유효하고 실행되지만 통계적 확신을 위한 데이터 축적이 아직 부족하다.
+현재 운영 상태 (2026-03-15):
+- 데이터 창: dataset 23일 확보 (목표 30일, 잔여 7일)
+- 샘플 수: 308건
+- 방향정확도: 0.630 / 평균 보상: +0.000276 (양수 전환)
+- 게이트: 7개 중 6개 통과 (`uplift_raw_vs_buy` 데이터 부족으로 미통과)
+- 종합 판정: `blocked` (데이터 창 미달)
+
+아키텍처는 완성되고 대부분 지표도 양호하다. 현재의 핵심 과제는 **7일 추가 데이터 축적과 uplift 게이트 통과**다.
 
 ---
 
@@ -28,11 +36,11 @@
 
 전통적인 데이터 드리븐 접근은 대개 "정답 레이블 예측 정확도"를 우선한다. 하지만 실제 구매 의사결정은 다음 특성을 갖는다.
 
-1. 정답이 단일값이 아니다.  
+1. 정답이 단일값이 아니다.
    같은 가격 경로에서도 자금 상황, 대체재, 기다림 비용에 따라 최적 행동이 달라진다.
-2. 의사결정은 연속적이다.  
+2. 의사결정은 연속적이다.
    오늘 `BUY`를 선택하지 않으면 내일 다시 선택해야 하며, 전략은 시계열적으로 연결된다.
-3. 시장은 확률적이다.  
+3. 시장은 확률적이다.
    단일 시점 회귀값보다, 복수 미래 경로에서의 기대 효용이 더 중요하다.
 
 따라서 단순 회귀/분류만으로는 "언제 사야 하는가" 문제를 충분히 해결하기 어렵다.
@@ -46,6 +54,7 @@ GPU Advisor는 문제를 이렇게 바꾼다.
 3. 행동 후 전이를 모델링한다. (Dynamics Network)
 4. 가치(value)와 정책(policy)을 동시에 학습한다.
 5. MCTS로 행동 전개를 탐색한다.
+6. ActionModel(a)로 행동 사전 분포를 학습해 4-신호 블렌드로 보정한다.
 
 즉 "가격 예측 모델"이 아니라 "행동 최적화 모델"이다.
 
@@ -55,7 +64,7 @@ GPU Advisor는 문제를 이렇게 바꾼다.
 
 1. 큰 파라미터보다 올바른 문제정식화가 우선이다.
 2. LLM 호출을 반복하는 오케스트레이션보다, 도메인 월드 모델 + 탐색이 의사결정 품질에 유리한 구간이 분명히 존재한다.
-3. 운영 가능한 소형 모델(약 18.9M 파라미터)로도 고난도 의사결정 자동화가 가능하다.
+3. 운영 가능한 소형 모델(약 18.9M + 43K 파라미터)로도 고난도 의사결정 자동화가 가능하다.
 4. 에이전트는 "말 잘하는 시스템"이 아니라 "행동 품질이 검증되는 시스템"이어야 한다.
 
 ---
@@ -66,11 +75,12 @@ GPU Advisor는 문제를 이렇게 바꾼다.
 
 월드 모델은 환경을 잠재공간(latent space)에서 근사하는 내부 시뮬레이터다.
 
-GPU Advisor의 구성:
+GPU Advisor의 구성 (4-네트워크):
 
-1. Representation `h`: 관측 상태벡터(256D) -> 잠재상태(256D)
-2. Dynamics `g`: 잠재상태 + 행동 -> 다음 잠재상태 + 보상 추정
-3. Prediction `f`: 잠재상태 -> 정책(logits) + 가치(value)
+1. Representation `h`: 관측 상태벡터(256D) → 잠재상태(256D)
+2. Dynamics `g`: 잠재상태 + 행동 → 다음 잠재상태 + 보상(μ, σ²)
+3. Prediction `f`: 잠재상태 → 정책(logits) + 가치(value)
+4. Action Model `a`: 잠재상태 → 행동 사전 확률 (학습된 prior)
 
 결과적으로 모델은 "다음 가격 숫자 하나"가 아니라, 행동에 따른 상태 전개와 장기 효용을 내재화한다.
 
@@ -80,7 +90,9 @@ GPU Advisor의 구성:
 
 1. 가치함수와 정책함수를 결합해 탐색 효율을 높인다.
 2. 학습된 모델을 MCTS의 휴리스틱으로 사용한다.
-3. 탐색 결과가 다시 학습 목표를 강화한다.
+3. PUCT 공식(`Q + c·P·√N_parent/(1+N_child)`, c=√2)으로 탐색-활용 균형을 맞춘다.
+4. 루트 노드에 디리클레 노이즈(ε=0.25, α=0.03)를 추가해 탐색 다양성을 확보한다.
+5. 탐색 결과가 다시 학습 목표를 강화한다.
 
 GPU Advisor는 완전정보 게임이 아니므로 진정한 self-play 대신, **히스토리 리플레이 기반 전이 샘플**로 학습한다.
 
@@ -90,10 +102,13 @@ GPU Advisor는 완전정보 게임이 아니므로 진정한 self-play 대신, *
 
 현재 체크포인트(`alphazero_model_agent_latest.pth`) 기준:
 
-1. Representation 파라미터: 921,600
-2. Dynamics 파라미터: 8,671,490
-3. Prediction 파라미터: 9,330,182
-4. 총 파라미터: 18,923,272
+| 네트워크 | 파라미터 | 역할 |
+|----------|----------|------|
+| Representation (h) | ~921,600 | 256D 입력 → 256D 잠재 |
+| Dynamics (g) | ~8,671,490 | 잠재 상태 전이 + 보상(μ, σ²) |
+| Prediction (f) | ~9,330,182 | 정책 + 가치 |
+| Action Model (a) | ~43,000 | 행동 사전 확률 |
+| **총합** | **~18,966,272** | |
 
 이 규모는 대규모 LLM 대비 매우 작지만, 특정 도메인 행동문제에서는 충분한 실용성을 보인다.
 
@@ -101,16 +116,16 @@ GPU Advisor는 완전정보 게임이 아니므로 진정한 self-play 대신, *
 
 LLM 에이전트 중심 구조와 대비하면 다음 차이가 핵심이다.
 
-1. 추론 중심  
-   - LLM 에이전트: 텍스트 추론 + 툴 호출  
+1. 추론 중심
+   - LLM 에이전트: 텍스트 추론 + 툴 호출
    - 본 시스템: 잠재 동역학 + MCTS 계획
-2. 출력 형태  
-   - LLM 에이전트: 설명 텍스트  
+2. 출력 형태
+   - LLM 에이전트: 설명 텍스트
    - 본 시스템: 행동 확률분포, 기대보상, 가치, 안전오버라이드
-3. 검증 가능성  
-   - LLM 에이전트: 평가가 상대적으로 정성적  
+3. 검증 가능성
+   - LLM 에이전트: 평가가 상대적으로 정성적
    - 본 시스템: 백테스트 보상, 정확도, 엔트로피, uplift 등 정량 게이트
-4. 재현성  
+4. 재현성
    - 본 시스템은 데이터/체크포인트/게이트 기준으로 릴리즈 판정이 비교적 명확하다.
 
 ---
@@ -130,7 +145,7 @@ LLM 에이전트 중심 구조와 대비하면 다음 차이가 핵심이다.
 문제 재정의:
 
 1. 상태: 가격/환율/뉴스/공급/시간/기술지표로 구성된 256D 벡터
-2. 행동: 5개 이산 행동
+2. 행동: 5개 이산 행동 (BUY_NOW/WAIT_SHORT/WAIT_LONG/HOLD/SKIP)
 3. 전이: 오늘 행동이 내일 상태와 보상에 미치는 영향 추정
 4. 보상: 미래 가격 변화율에 따른 행동 적합도
 5. 목적: 단일 시점 정확도 극대화가 아니라, 행동 연쇄의 기대 효용 극대화
@@ -145,7 +160,10 @@ LLM 에이전트 중심 구조와 대비하면 다음 차이가 핵심이다.
   256D state_vector (GPU별)
         ↓
 [Agent Core]
-  h(Representation) -> g(Dynamics) -> f(Prediction) + MCTS
+  h(Representation) → g(Dynamics) → f(Prediction) + a(ActionModel) + MCTS(PUCT)
+        ↓
+[4-신호 블렌드 보정]
+  45% MCTS + 25% 보상정책 + 15% f-net prior + 15% ActionModel prior
         ↓
 [FastAPI Service]
   /api/ask, /api/agent/*, /api/training/*
@@ -154,155 +172,178 @@ LLM 에이전트 중심 구조와 대비하면 다음 차이가 핵심이다.
   SQLite or PostgreSQL
         ↓
 [Reports]
-  latest_data_status / latest_release_report
+  latest_data_status / latest_release_report / latest_auto_training_status
+        ↓
+[LaunchAgent 자동화]
+  macOS LaunchAgent (자정 실행) + Auto Training Orchestration
 ```
 
-### 3.4 데이터 파이프라인 상세 (크롤러 -> 피처 엔지니어링 -> 256차원)
+### 3.4 데이터 파이프라인 상세 (크롤러 → 피처 엔지니어링 → 256차원)
 
-일일 배치 실행: `crawlers/run_daily.py`
+일일 배치 실행: `crawlers/run_daily.py` (LaunchAgent로 자동 실행)
 
 1. 다나와 가격 수집
 2. 환율 수집 (`USD/KRW`, `JPY/KRW`, `EUR/KRW`)
 3. 뉴스 + 감성 통계 수집
 4. Feature Engineering 실행
 5. 상태 보고서 및 릴리즈 리포트 생성
+6. 자동 학습 오케스트레이션 (`auto_training.py`)
 
 피처 256D 구성(`crawlers/feature_engineer.py`):
 
-1. 가격 피처: 60D
-2. 환율 피처: 20D
-3. 뉴스 피처: 30D
-4. 시장 피처: 20D
-5. 시간 피처: 20D
-6. 기술지표: 106D
+| 그룹 | 차원 | 내용 |
+|------|------|------|
+| 가격 피처 | 60D | 정규화 가격, MA7/MA14/MA30, 변화율, 변동성 |
+| 환율 피처 | 20D | USD/KRW, JPY/KRW, EUR/KRW |
+| 뉴스 피처 | 30D | 감성 점수, 기사 수, 긍정/부정 비율 |
+| 시장 피처 | 20D | 판매자 수, 재고 상태 |
+| 시간 피처 | 20D | 요일, 월, 연말 여부 |
+| 기술지표 | 106D | RSI, MACD, 모멘텀, 패딩 |
+| **합계** | **256D** | |
 
-합계: 256D
+2026-03-15 기준 운영 데이터 현황:
 
-2026-02-23 기준 운영 데이터 현황:
+| 소스 | 파일 수 | 범위 일수 | 최초일 |
+|------|---------|-----------|--------|
+| danawa | 26 | 33일 | 2026-02-11 |
+| exchange | 23 | 23일 | 2026-02-21 |
+| news | 23 | 23일 | 2026-02-21 |
+| dataset | 23 | 23일 | 2026-02-21 |
 
-1. 당일 단계 성공: danawa/exchange/news/feature 모두 `true`
-2. 누적 범위:
-   - danawa: 13일 범위
-   - exchange: 3일 범위
-   - news: 3일 범위
-   - dataset: 3일 범위
-3. `ready_for_30d_training`: `false`
+- `current_min_days`: 23일 (목표 30일, 잔여 7일)
+- `ready_for_30d_training`: `false` (약 2026-03-22 도달 예상)
 
-### 3.5 AI 엔진 상세 (Representation / Dynamics / Prediction Network)
+### 3.5 AI 엔진 상세 (h / g / f / a 네트워크)
 
-#### Representation Network (`backend/models/representation_network.py`)
+#### Representation Network `h` (`backend/models/representation_network.py`)
 
-1. 입력 임베딩: `Linear(state_dim -> 256)`
-2. 위치인코딩 + FFN 블록 3개
-3. 출력: 256D latent state
+- 입력: 256D GPU 시장 상태 벡터
+- `Linear(256, 256)` + LayerNorm + 잔차 FFN 블록 3개
+- 출력: 256D latent state
 
-참고: 파일 주석 일부는 22D 입력 예시를 담고 있으나, 실제 운영 체크포인트 입력 차원은 256D다.
+#### Dynamics Network `g` (`backend/models/dynamics_network.py`)
 
-#### Dynamics Network (`backend/models/dynamics_network.py`)
+- 입력: latent(256) + action one-hot(5)
+- 잔차 블록 4개 (hidden 512)
+- 출력:
+  - next latent(256)
+  - reward mean (μ)
+  - reward log-variance (→ σ² = exp(logvar), Gaussian NLL 학습)
 
-1. 입력: latent(256) + action one-hot(5)
-2. hidden 512, 4개 블록
-3. 출력:
-   - next latent(256)
-   - reward mean
-   - reward log-variance
+#### Prediction Network `f` (`backend/models/prediction_network.py`)
 
-#### Prediction Network (`backend/models/prediction_network.py`)
+- 입력: latent(256)
+- 잔차 블록 4개 (hidden 512)
+- 출력:
+  - policy logits(5)
+  - value (tanh, -1~1)
 
-1. 입력: latent(256)
-2. hidden 512, 4개 블록
-3. 출력:
-   - policy logits(5)
-   - value(-1~1, tanh)
+#### Action Model `a` (`backend/models/action_model.py`)
+
+- ActionEmbeddingLayer(5 actions, 16D embed) + ActionPriorNetwork(256→128→64→5)
+- 파라미터: ~43K
+- 역할: 잠재 상태에서 행동 사전 확률 예측 (기존 `utility_bias` 휴리스틱 대체)
 
 ### 3.6 MCTS 시뮬레이션 구현
 
 `backend/models/mcts_engine.py` 기준:
 
-1. 기본 시뮬레이션 횟수: 50
-2. rollout_steps: 5
-3. discount_factor: 0.99
-4. UCB 기반 선택, 확장, 시뮬레이션, 백업 수행
+| 파라미터 | 값 |
+|----------|-----|
+| num_simulations | 50 |
+| rollout_steps | 5 |
+| discount_factor | 0.99 |
+| exploration (c_puct) | √2 ≈ 1.414 |
+| dirichlet_epsilon | 0.25 |
+| dirichlet_alpha | 0.03 |
 
-추론 시(`backend/agent/gpu_purchase_agent.py`)에는 MCTS 결과에 다음 보정을 추가한다.
+탐색 공식 (PUCT, AlphaZero 스타일):
+```
+UCB(s, a) = Q(s, a) + c × P(s, a) × √N_parent / (1 + N_child)
+```
 
-1. reward 기반 policy
-2. 학습 prior 기반 policy
-3. 관측 특징 기반 utility bias policy
-4. 엔트로피 하한 보정(anti-collapse regularizer)
+루트 노드에 디리클레 노이즈 적용:
+```python
+policy = (1 - 0.25) × policy + 0.25 × Dirichlet([0.03] × 5)
+```
 
-또한 안전장치:
+추론 시(`backend/agent/gpu_purchase_agent.py`)에는 4-신호 블렌드 보정:
 
-1. 낮은 confidence -> `HOLD` 강등
-2. 높은 entropy -> `HOLD` 강등
+```python
+calibrated = 0.45 × MCTS정책 + 0.25 × 보상정책 + 0.15 × f-net사전확률 + 0.15 × ActionModel사전확률
+```
 
-### 3.7 API 서버 및 배포 구조
+안전장치:
+1. 낮은 confidence (< 0.25) → `HOLD` 강등
+2. 높은 entropy (> 1.58) → `HOLD` 강등
+3. 엔트로피 붕괴 방지: entropy < 0.65이면 균등 분포(uniform)와 혼합
 
+### 3.7 자동화 운영 구조
 
-운영 기능:
+```
+macOS LaunchAgent (자정 00:00)
+  → crawlers/run_daily.py
+  → auto_training.py (decide_auto_training_action)
+      → release_check (데이터 부족 / 재학습 불필요 시)
+      → train_release (30일 도달 / 재학습 간격 충족 시)
+```
 
-1. 인증 모드: none / api_key / jwt / hybrid
-2. 분당 rate limit
-3. 저장소 백엔드: SQLite / PostgreSQL
-4. 뉴스 스냅샷 실시간 반영 후 추론
-5. 결정 trace 저장(행동확률, 기대보상, 안전오버라이드 근거)
-
-배포:
-
-1. Docker backend (`Dockerfile`)
-2. Next.js frontend (`frontend/Dockerfile`)
-3. `docker-compose.yml`로 통합 실행
-4. 크론 자동화(`setup_cron.sh`)로 일일 배치 수행
+- LaunchAgent 로그: `~/Library/Logs/gpu-advisor/cron.log`
+- 상세 로그: `data/gpu-advisor/logs/daily_crawl.log`
+- 상태 파일: `data/processed/auto_training_state.json`
+- 재학습 간격: 7일 (`GPU_ADVISOR_AUTO_RETRAIN_EVERY_DAYS`)
 
 ---
 
 ## Part 4. Results & Validation
 
-### 4.1 학습 결과 예상치 및 결론
+### 4.1 학습 결과 현황 (2026-03-15)
 
-현 시점 결론은 "아키텍처 성공, 통계적 성숙도 미달"이다.
+| 지표 | 2026-02-23 | 2026-03-15 | 비고 |
+|------|-----------|-----------|------|
+| 샘플 수 | 42 | 308 | 7.3× 증가 |
+| 방향정확도 | 0.619 | 0.630 | 개선 |
+| 평균 보상 (raw) | -0.000275 | +0.000276 | 양수 전환 |
+| 관망비율 | 0.667 | 0.659 | 안정 |
+| 평균 신뢰도 | 0.228 | 0.231 | 유사 |
 
-근거:
+게이트 통과 현황:
 
-1. 2026-02-23 릴리즈 판정: `blocked`
-2. 이유: 품질 게이트 일부 실패 (`reward_raw`, `uplift_raw_vs_buy`)
-3. 데이터 창 부족: 최소 3일 (목표 30일)
+| 게이트 | 결과 |
+|--------|------|
+| accuracy_raw | ✓ 통과 |
+| reward_raw | ✓ 통과 |
+| abstain | ✓ 통과 |
+| safe_override | ✓ 통과 |
+| action_entropy_raw | ✓ 통과 |
+| no_mode_collapse_raw | ✓ 통과 |
+| uplift_raw_vs_buy | ✗ 미통과 |
 
-즉, 모델은 작동하고 의사결정/리포팅 체계도 정상이나, 장기 일반화 품질을 주장하기엔 데이터가 적다.
+현재 결론: "아키텍처 성공, 데이터 창 확보 중"
 
-### 4.2 베이스라인 모델과 비교
+- 7개 게이트 중 6개 통과 (이전: 5개)
+- 평균 보상이 양수로 전환됨 (이전: 음수)
+- `uplift_raw_vs_buy` 미통과는 always-buy 베이스라인 대비 초과수익 미달 — 데이터 30일 도달 후 재판정 예정
 
-`docs/reports/latest_release_report.json` (생성시각 2026-02-23T00:28:05.419112) 기준 주요 수치:
+### 4.2 베이스라인 비교 (2026-03-15)
 
-1. 샘플 수: 42
-2. 방향정확도(BUY vs WAIT, raw): 0.6190
-3. 평균 보상(raw): -0.0002750
-4. 평균 보상(override 후): -0.0000441
-5. 관망비율: 0.6667
-6. 평균 신뢰도: 0.2284
-
-베이스라인:
-
-1. Always Buy reward: +0.0002610
-2. Always Wait reward: -0.0002610
-3. Always Hold reward: -0.0000418
-
-Uplift:
-
-1. `uplift_raw_vs_always_buy`: -0.0005361 (음수)
-2. `uplift_vs_always_hold`: -0.0000023 (거의 동급)
-
-해석:
-
-1. 현재 raw 정책은 always buy 대비 우위가 없다.
-2. 안전오버라이드 이후 손실 폭은 줄지만, 여전히 확실한 양의 초과수익을 보이지 못한다.
-3. 초기 구간에서는 보수적 행동(`HOLD`)으로 수렴하는 경향이 크다.
+| 지표 | 값 |
+|------|-----|
+| 에이전트 평균 보상 | +0.000276 |
+| Always Buy 보상 | (30일 달성 후 측정 예정) |
+| uplift_raw_vs_buy | 미통과 (데이터 부족) |
 
 ---
 
 ## Part 5. Vision
 
-### 5.1 도메인 확장 로드맵 (항공권, 중고차, 주식)
+### 5.1 단기 실행 계획 (2026-03-15 기준)
+
+1. **잔여 7일 데이터 수집**: LaunchAgent가 매일 자동 실행 중
+2. **30일 도달 시 자동 학습**: `auto_training.py`가 `train_release` 결정 후 전체 파이프라인 실행
+3. **uplift 게이트 통과**: 30일 데이터 기반 재학습 후 베이스라인 대비 초과수익 검증
+
+### 5.2 도메인 확장 로드맵 (항공권, 중고차, 주식)
 
 이 아키텍처는 "지금 행동 vs 대기" 의사결정 문제에 일반화 가능하다.
 
@@ -324,51 +365,58 @@ Uplift:
 2. 행동: 매수/부분매수/관망/축소/회피
 3. 보상: 리스크조정 수익 (단, 규제/리스크 체계 필수)
 
-### 5.2 공통 확장 원칙
+### 5.3 공통 확장 원칙
 
 1. 레이블 예측보다 행동 품질 지표를 우선한다.
-2. 월드 모델 + 탐색 + 안전오버라이드의 3층 구조를 유지한다.
+2. 월드 모델(h/g/f/a) + 탐색(MCTS/PUCT) + 안전오버라이드의 구조를 유지한다.
 3. 릴리즈는 always-X 베이스라인 uplift 통과를 최소 조건으로 한다.
 4. 데이터 창 길이와 커버리지(결측 마스크 포함)를 운영 KPI로 관리한다.
 
 ---
 
-## 추가 제안: 프로젝트 완성도를 높이기 위한 보강 파트
+## 부록: 리스크 및 한계
 
-요청하신 본문 외에, 실제 문서 품질을 위해 아래 파트를 추가하는 것을 권장한다.
-
-### A. 리스크 및 한계
+### A. 리스크 목록
 
 1. 데이터 드리프트: 시즌/신제품 출시 주기 변화
 2. 크롤링 노이즈: 누락/파싱 실패/사이트 구조 변경
 3. 보상함수 단순화: 실제 사용자 효용(기회비용, 예산제약) 반영 한계
-4. 단기 데이터의 과적합 위험
+4. 단기 데이터의 과적합 위험 (30일 미만 구간)
 
 ### B. 운영 체크리스트
 
-1. 일일 크롤러 성공률
-2. 소스별 `range_days`
-3. 게이트 통과율 추세
-4. 액션 분포 엔트로피(모드 붕괴 감시)
+1. LaunchAgent 로그: `~/Library/Logs/gpu-advisor/cron.log`
+2. 소스별 `range_days` 추세
+3. 게이트 통과율 (목표: 7/7)
+4. 액션 분포 엔트로피 (모드 붕괴 감시)
 5. DB 저장 건수 및 API 실패율
 
 ### C. 실험 계획 (30일/60일/90일)
 
-1. 30일: 기본 게이트 통과 달성
-2. 60일: 베이스라인 uplift의 통계적 유의성 점검
-3. 90일: 도메인 전이 실험(항공권/중고차 중 1개)
+1. **30일 (~2026-03-22)**: 기본 게이트 전체 통과 달성, 자동 학습 첫 실행
+2. **60일 (~2026-04-22)**: 베이스라인 uplift의 통계적 유의성 점검, 재학습 7일 주기 검증
+3. **90일 (~2026-05-22)**: 도메인 전이 실험 또는 API 서비스 공개 검토
 
-### D. 문서-코드 정합성 개선 TODO
+### D. 문서-코드 정합성 (완료 항목)
 
-1. `representation_network.py`의 22D 주석을 256D 운영 기준으로 정리
-2. 보고서에서 raw 정책과 safe override 정책 지표를 분리 표준화
-3. 릴리즈 리포트에 신뢰구간/유의성 검정 추가
+| 항목 | 상태 |
+|------|------|
+| `representation_network.py` 22D 주석 → 256D 수정 | ✓ 완료 |
+| `dynamics_network.py` `reward_std` → `reward_var` 수정 | ✓ 완료 |
+| MCTS `ucb_score` 프로퍼티 deprecated 주석 추가 | ✓ 완료 |
+| MCTS 루트 디리클레 노이즈 실제 적용 | ✓ 완료 |
+| `grad_norm` 하드코딩 0.0 → 실제 캡처 | ✓ 완료 |
+| `_action_from_delta()` SKIP 레이블 버그 수정 | ✓ 완료 |
+| Anti-collapse uniform 분포 수정 | ✓ 완료 |
+| ActionModel(a) 전체 통합 | ✓ 완료 |
+| Gaussian NLL reward 불확실성 학습 | ✓ 완료 |
+| 릴리즈 리포트 raw/override 분리 | ✓ 완료 |
 
 ---
 
 ## 결론
 
-GPU Advisor는 "작은 모델 + 월드 모델 + MCTS" 조합으로, 구매 타이밍 문제를 실제 운영 가능한 에이전트 파이프라인으로 구현했다.  
-2026-02-23 기준으로 시스템은 기술적으로 완성도 높은 뼈대를 갖췄으며, 현재의 핵심 과제는 모델 구조가 아니라 **데이터 기간 확장과 게이트 통과를 통한 실증 강화**다.
+GPU Advisor는 "작은 모델 + 월드 모델(h/g/f/a) + MCTS(PUCT)" 조합으로, 구매 타이밍 문제를 실제 운영 가능한 에이전트 파이프라인으로 구현했다.
+2026-03-15 기준으로 시스템은 기술적으로 성숙한 상태이며, 대부분의 품질 게이트를 통과했다. 현재의 핵심 과제는 **잔여 7일 데이터 축적과 uplift 게이트 통과를 통한 통계적 실증 완성**이다.
 
-즉, 이 프로젝트는 나노급 에이전트의 가능성을 이미 보여줬고, 다음 단계는 그 가능성을 통계적으로 입증하는 일이다.
+이 프로젝트는 나노급 에이전트의 가능성을 이미 보여줬고, 다음 단계는 30일 데이터 기반의 자동 학습 완료로 그 가능성을 통계적으로 입증하는 일이다.

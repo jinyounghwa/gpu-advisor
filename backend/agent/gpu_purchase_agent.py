@@ -24,6 +24,7 @@ from models.representation_network import RepresentationNetwork
 from models.dynamics_network import DynamicsNetwork
 from models.prediction_network import PredictionNetwork
 from models.mcts_engine import MCTSConfig, MCTSEngine
+from models.action_model import ActionModel
 
 
 ACTION_LABELS = {
@@ -77,6 +78,7 @@ class GPUPurchaseAgent:
         self.representation_network: RepresentationNetwork | None = None
         self.dynamics_network: DynamicsNetwork | None = None
         self.prediction_network: PredictionNetwork | None = None
+        self.action_model: ActionModel | None = None
         self.mcts: MCTSEngine | None = None
         self.model_meta: Dict[str, Any] = {}
         self.action_prior: np.ndarray | None = None
@@ -134,6 +136,17 @@ class GPUPurchaseAgent:
         self.representation_network.eval()
         self.dynamics_network.eval()
         self.prediction_network.eval()
+
+        # ActionModel (선택적): 체크포인트에 없으면 하드코딩 휴리스틱으로 폴백
+        a_state = checkpoint.get("a_state_dict")
+        if a_state is not None:
+            self.action_model = ActionModel(
+                num_actions=action_dim,
+                embed_dim=16,
+                latent_dim=latent_dim,
+            ).to(self.device)
+            self.action_model.load_state_dict(a_state)
+            self.action_model.eval()
 
         mcts_config = MCTSConfig(num_simulations=self.num_simulations)
         self.mcts = MCTSEngine(mcts_config, latent_dim=latent_dim, action_dim=action_dim)
@@ -255,26 +268,34 @@ class GPUPurchaseAgent:
         else:
             prior_policy = np.ones_like(mcts_probs_np, dtype=np.float32) / len(mcts_probs_np)
 
-        # Sanity layer from observable features (feature_engineer index convention).
-        # [0]=price_norm, [1]=ma7, [2]=ma14, [4]=change_1d, [5]=change_7d
-        p = float(state_vec[0]) if len(state_vec) > 0 else 0.0
-        ma7 = float(state_vec[1]) if len(state_vec) > 1 else p
-        ma14 = float(state_vec[2]) if len(state_vec) > 2 else p
-        ch1 = float(state_vec[4]) if len(state_vec) > 4 else 0.0
-        ch7 = float(state_vec[5]) if len(state_vec) > 5 else 0.0
-        over_ma = max((p - 0.5 * (ma7 + ma14)), -0.2)
-        trend_up = max(ch1 + 0.5 * ch7, 0.0)
-        trend_down = max(-(ch1 + 0.5 * ch7), 0.0)
+        # 행동 유틸리티 prior: ActionModel(학습됨) 또는 하드코딩 휴리스틱 폴백
+        if self.action_model is not None:
+            with torch.no_grad():
+                latent_tensor = torch.tensor(
+                    latent, dtype=torch.float32, device=self.device
+                )
+                util_policy = self.action_model.get_prior(latent_tensor).cpu().numpy()
+        else:
+            # 폴백: 가시적 피처 기반 휴리스틱 (ActionModel 미학습 시)
+            # [0]=price_norm, [1]=ma7, [2]=ma14, [4]=change_1d, [5]=change_7d
+            p = float(state_vec[0]) if len(state_vec) > 0 else 0.0
+            ma7 = float(state_vec[1]) if len(state_vec) > 1 else p
+            ma14 = float(state_vec[2]) if len(state_vec) > 2 else p
+            ch1 = float(state_vec[4]) if len(state_vec) > 4 else 0.0
+            ch7 = float(state_vec[5]) if len(state_vec) > 5 else 0.0
+            over_ma = max((p - 0.5 * (ma7 + ma14)), -0.2)
+            trend_up = max(ch1 + 0.5 * ch7, 0.0)
+            trend_down = max(-(ch1 + 0.5 * ch7), 0.0)
 
-        utility_bias = np.zeros_like(mcts_probs_np, dtype=np.float32)
-        if len(utility_bias) >= 5:
-            utility_bias[0] = +1.0 * trend_down - 1.2 * max(over_ma, 0.0) - 0.7 * trend_up  # BUY_NOW
-            utility_bias[1] = +0.6 * max(over_ma, 0.0) + 0.5 * trend_up  # WAIT_SHORT
-            utility_bias[2] = +0.9 * max(over_ma - 0.02, 0.0) + 0.4 * trend_up  # WAIT_LONG
-            utility_bias[3] = +0.2 * (trend_up + trend_down)  # HOLD
-            utility_bias[4] = +0.8 * max(over_ma - 0.05, 0.0)  # SKIP
-        util_policy = np.exp(utility_bias / 0.8)
-        util_policy = util_policy / util_policy.sum()
+            utility_bias = np.zeros_like(mcts_probs_np, dtype=np.float32)
+            if len(utility_bias) >= 5:
+                utility_bias[0] = +1.0 * trend_down - 1.2 * max(over_ma, 0.0) - 0.7 * trend_up  # BUY_NOW
+                utility_bias[1] = +0.6 * max(over_ma, 0.0) + 0.5 * trend_up  # WAIT_SHORT
+                utility_bias[2] = +0.9 * max(over_ma - 0.02, 0.0) + 0.4 * trend_up  # WAIT_LONG
+                utility_bias[3] = +0.2 * (trend_up + trend_down)  # HOLD
+                utility_bias[4] = +0.8 * max(over_ma - 0.05, 0.0)  # SKIP
+            util_policy = np.exp(utility_bias / 0.8)
+            util_policy = util_policy / util_policy.sum()
 
         calibrated = (
             0.45 * mcts_probs_np
@@ -286,11 +307,15 @@ class GPUPurchaseAgent:
         calibrated = calibrated / calibrated.sum()
 
         # Anti-collapse regularizer: enforce minimum action entropy.
+        # ※ 수정: 기존 prior_policy(경험적 행동 분포)로 평탄화하면 훈련 데이터 편향을 강화함.
+        #   예: HOLD가 60%인 prior_policy로 평탄화 시 모든 붕괴 상황이 HOLD 쪽으로 수렴.
+        #   균등 분포(uniform)로 평탄화하여 어느 방향으로도 편향 없이 엔트로피를 회복.
         min_entropy_target = 0.65
         ent_now = float(-(calibrated * np.log(calibrated + 1e-10)).sum())
         if ent_now < min_entropy_target:
             alpha = min(0.55, (min_entropy_target - ent_now) / max(min_entropy_target, 1e-6))
-            calibrated = (1.0 - alpha) * calibrated + alpha * prior_policy
+            uniform = np.ones(len(calibrated), dtype=np.float32) / len(calibrated)
+            calibrated = (1.0 - alpha) * calibrated + alpha * uniform
             calibrated = np.maximum(calibrated, 0.02)
             calibrated = calibrated / calibrated.sum()
 

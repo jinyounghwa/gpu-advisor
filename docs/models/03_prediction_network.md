@@ -151,10 +151,11 @@ def forward(self, s_t: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
     x = self.input_layer(s_t)   # (batch, 256) → (batch, 512)
     x = self.layer_norm1(x)     # 정규화
 
-    # ② 4개의 Transformer 블록 순차 통과
+    # ② 4개의 Transformer 블록 순차 통과 (잔차 연결 포함)
     for block in self.blocks:
-        x = block(x)
+        x = x + block(x)  # Residual: 블록 출력 + 원본 입력
     # 각 블록: 512 → 2048 → GELU → Dropout → 2048 → 512 → LayerNorm
+    # 잔차 연결이 없으면 4개 블록에서 그래디언트 소실 발생
 
     x = self.layer_norm2(x)     # 최종 정규화
     # 여기까지가 공통 몸통 — 이후 두 머리로 분기

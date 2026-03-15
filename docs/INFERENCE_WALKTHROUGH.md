@@ -15,7 +15,7 @@ User Input: "RTX 4090"
     │   From training_data_2026-02-21.json
     ▼
 [3] Latent State Encoding
-    │   RepresentationNetwork: 22D → 256D
+    │   RepresentationNetwork: 256D → 256D
     ▼
 [4] MCTS Planning Search (50 simulations)
     │   Action probabilities + root value
@@ -81,20 +81,19 @@ Index 150-255:  Technical indicators (RSI, MACD, momentum, padding)
 Representation Network h(s) transforms market state into latent space.
 
 ```
-Input:  state_vector = [0.234, 0.228, ...] (22D — checkpoint input dim)
+Input:  state_vector = [0.234, 0.228, ...] (256D — feature_engineer output)
         ↓
-        Linear(22, 256) + LayerNorm
+        Linear(256, 256) + LayerNorm
         ↓
-        PositionalEncoding
-        ↓
-        FeedForward × 3 (256 → 512 → 256)
+        FeedForward × 3 with residuals (x = x + block(x))
+        Each block: 256 → 512 → GELU → 256
         ↓
         LayerNorm + Linear(256, 256)
         ↓
 Output: latent = [0.451, -0.123, 0.872, ...] (256D)
 ```
 
-**Key insight**: 22D raw market data is transformed into a rich 256D representation. This latent vector compresses price trends, market sentiment, and macroeconomic conditions into a single vector.
+**Key insight**: The 256D market state vector (price trends, exchange rates, news sentiment, technical indicators) is re-encoded into a rich 256D latent representation optimized for planning. The network compresses and re-weights raw features into a latent space better suited for MCTS simulation.
 
 **Code**: `representation_network.py:RepresentationNetwork.forward()`
 
@@ -142,10 +141,10 @@ Results:
 Blends 4 signals and applies anti-collapse regularization.
 
 ```
-MCTS policy:   [0.16, 0.36, 0.24, 0.14, 0.10]  (planning)
-Reward policy: [0.12, 0.32, 0.26, 0.17, 0.13]  (reward-based)
-Prior:         [0.20, 0.25, 0.22, 0.18, 0.15]  (data distribution)
-Utility bias:  [0.10, 0.28, 0.30, 0.17, 0.15]  (market common sense)
+MCTS policy:      [0.16, 0.36, 0.24, 0.14, 0.10]  (planning)
+Reward policy:    [0.12, 0.32, 0.26, 0.17, 0.13]  (reward-based)
+Prior (f-net):    [0.20, 0.25, 0.22, 0.18, 0.15]  (data distribution)
+ActionModel prior:[0.10, 0.28, 0.30, 0.17, 0.15]  (latent-conditioned learned prior)
 
 Blend = 0.45×[0.16,...] + 0.25×[0.12,...] + 0.15×[0.20,...] + 0.15×[0.10,...]
       = [0.143, 0.319, 0.252, 0.157, 0.117]

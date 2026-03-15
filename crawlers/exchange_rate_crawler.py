@@ -9,7 +9,6 @@ from datetime import datetime
 from pathlib import Path
 import logging
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -86,5 +85,6 @@ class ExchangeRateCrawler:
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     crawler = ExchangeRateCrawler()
     crawler.run()

@@ -94,8 +94,11 @@ class PredictionNetwork(nn.Module):
         x = self.input_layer(s_t)
         x = self.layer_norm1(x)
 
+        # Transformer blocks with residual connections
+        # 기존: 잔차 없이 순차 적용 → 그래디언트 소실
+        # 수정: x = x + block(x)
         for block in self.blocks:
-            x = block(x)
+            x = x + block(x)
 
         x = self.layer_norm2(x)
 

@@ -21,6 +21,7 @@ from .gpu_purchase_agent import ACTION_LABELS
 from models.representation_network import RepresentationNetwork
 from models.dynamics_network import DynamicsNetwork
 from models.prediction_network import PredictionNetwork
+from models.action_model import ActionModel
 
 
 @dataclass
@@ -52,6 +53,7 @@ class AgentFineTuner:
         self.h: RepresentationNetwork
         self.g: DynamicsNetwork
         self.f: PredictionNetwork
+        self.a: ActionModel
         self.optimizer: torch.optim.Optimizer
 
         self._load_models()
@@ -84,6 +86,12 @@ class AgentFineTuner:
         self.g.load_state_dict(g_state)
         self.f.load_state_dict(f_state)
 
+        # ActionModel: 체크포인트에 있으면 로드, 없으면 새로 초기화
+        self.a = ActionModel(num_actions=action_dim, embed_dim=16, latent_dim=latent_dim).to(self.device)
+        a_state = ckpt.get("a_state_dict")
+        if a_state is not None:
+            self.a.load_state_dict(a_state)
+
     def _load_processed_by_date(self) -> Dict[str, Dict[str, np.ndarray]]:
         files = sorted(self.dataset_dir.glob("training_data_*.json"))
         if len(files) < 2:
@@ -114,15 +122,56 @@ class AgentFineTuner:
 
     def _action_from_delta(self, pct_change: float) -> int:
         # Positive future price change means buying now was better than waiting.
+        # 임계값 해석: pct_change = (price_{t+1} - price_t) / price_t
+        #   >= +2%: 내일 비싸지므로 오늘 구매 유리 → BUY_NOW
+        #   -0.5% ~ +2%: 가격 횡보, 결정 보류 → HOLD
+        #   -2% ~ -0.5%: 조금 더 기다리면 더 쌈 → WAIT_SHORT
+        #   <= -2%: 크게 떨어질 것 → WAIT_LONG
+        #
+        # ※ 수정: 기존 pct_change <= -0.05 → SKIP(4) 레이블은 버그였음.
+        #   평가기 보상 함수에서 WAIT_LONG reward = +0.06, SKIP reward = -0.009 (pct=-0.06 기준)
+        #   즉 큰 하락 시 SKIP으로 훈련하면 보상 함수와 역방향으로 학습됨.
+        #   SKIP은 가격 데이터 기반 레이블링 대상이 아님; 에이전트 calibration 단계에서 처리.
         if pct_change >= 0.02:
             return 0  # BUY_NOW
-        if pct_change <= -0.05:
-            return 4  # SKIP
         if pct_change <= -0.02:
-            return 2  # WAIT_LONG
+            return 2  # WAIT_LONG (기존: -0.05 이하는 SKIP → 버그 수정)
         if pct_change <= -0.005:
             return 1  # WAIT_SHORT
         return 3  # HOLD
+
+    @staticmethod
+    def _reward_for_action(action: int, pct_change: float) -> float:
+        """
+        행동 조건부 보상 함수 (AgentEvaluator._reward_for_action과 동일 로직, int 행동 코드 사용).
+
+        Dynamics Network g(s, a) → (s', reward)의 reward 헤드가
+        action-conditioned reward를 학습하도록 한다.
+
+        ※ 기존 버그:
+            reward = pct_change (action 무관)
+            → WAIT_LONG 샘플(pct ≤ -0.02)에 음수 보상이 들어감
+            → Dynamics Network가 "WAIT 행동 = 항상 나쁨"으로 학습
+            → MCTS 시뮬레이션에서 WAIT_SHORT / WAIT_LONG 회피, BUY_NOW로 쏠림
+
+        ※ 수정:
+            BUY_NOW  → pct_change          : 가격이 오르면 매수가 맞았음 (양수)
+            WAIT_*   → -pct_change         : 가격이 내리면 대기가 맞았음 (양수)
+            HOLD     → -abs(pct) * 0.1     : 불확실성 비용 최소
+            SKIP     → -abs(pct) * 0.15    : 기회비용 (HOLD보다 소폭 높음)
+
+        결과: 모든 레이블 샘플(BUY/WAIT/HOLD)에서 reward ≥ 0.
+              MCTS가 올바른 방향의 행동을 선호하도록 학습됨.
+        """
+        if action == 0:  # BUY_NOW
+            return pct_change
+        if action in {1, 2}:  # WAIT_SHORT, WAIT_LONG
+            return -pct_change
+        if action == 3:  # HOLD
+            return -abs(pct_change) * 0.1
+        if action == 4:  # SKIP
+            return -abs(pct_change) * 0.15
+        return 0.0
 
     def _build_transition_dataset(self) -> None:
         processed = self._load_processed_by_date()
@@ -144,7 +193,7 @@ class AgentFineTuner:
                 price1 = p1[model]
                 pct_change = (price1 - price0) / price0
                 action = self._action_from_delta(pct_change)
-                reward = float(np.clip(pct_change, -1.0, 1.0))
+                reward = float(np.clip(self._reward_for_action(action, pct_change), -1.0, 1.0))
                 value_target = float(np.tanh(pct_change * 8.0))
                 samples.append(
                     TransitionSample(
@@ -207,12 +256,24 @@ class AgentFineTuner:
 
         policy_logits, value_pred = self.f(latent)
         action_onehot = F.one_hot(actions, num_classes=5).float()
-        latent_next_pred, reward_pred, _ = self.g(latent, action_onehot)
+        latent_next_pred, reward_pred, reward_logvar = self.g(latent, action_onehot)
+
+        # ActionModel: latent state → 행동 사전 분포 (감지된 레이블로 지도학습)
+        action_prior_logits, _ = self.a(latent.detach())
+        action_prior_loss = F.cross_entropy(action_prior_logits, actions, weight=self.class_weights)
 
         policy_loss = F.cross_entropy(policy_logits, actions, weight=self.class_weights)
         value_loss = F.mse_loss(value_pred, value_targets)
         dynamics_loss = F.mse_loss(latent_next_pred, latent_next_target)
         reward_loss = F.mse_loss(reward_pred, rewards)
+
+        # Gaussian NLL 손실: reward 불확실성(log_var) 학습
+        # 기존: reward_logvar 출력이 _ 로 무시되어 logvar 헤드 파라미터에 그래디언트 없음
+        # 수정: NLL = 0.5 * ((r - μ)² * exp(-logvar) + logvar) 로 불확실성 감독 학습
+        # logvar가 낮을수록 σ²이 작고, 예측이 확신에 찼다는 의미를 학습
+        reward_nll_loss = 0.5 * (
+            (reward_pred.detach() - rewards) ** 2 * torch.exp(-reward_logvar) + reward_logvar
+        ).mean()
 
         probs = torch.softmax(policy_logits, dim=-1)
         entropy = -(probs * torch.log(probs + 1e-10)).sum(dim=-1).mean()
@@ -230,13 +291,21 @@ class AgentFineTuner:
             + value_loss
             + dynamics_loss
             + reward_loss
+            + 0.5 * reward_nll_loss    # Gaussian NLL: logvar 헤드 학습 (기존에 무시됨)
             - 0.001 * entropy
             + 0.02 * prior_reg
+            + 0.3 * action_prior_loss  # ActionModel 지도 학습 손실
         )
 
         self.optimizer.zero_grad()
         total_loss.backward()
-        torch.nn.utils.clip_grad_norm_(list(self.h.parameters()) + list(self.g.parameters()) + list(self.f.parameters()), 1.0)
+        grad_norm = float(
+            torch.nn.utils.clip_grad_norm_(
+                list(self.h.parameters()) + list(self.g.parameters())
+                + list(self.f.parameters()) + list(self.a.parameters()),
+                1.0,
+            ).item()
+        )
         self.optimizer.step()
 
         pred_actions = probs.argmax(dim=-1)
@@ -249,11 +318,14 @@ class AgentFineTuner:
             "value_loss": float(value_loss.item()),
             "dynamics_loss": float(dynamics_loss.item()),
             "reward_loss": float(reward_loss.item()),
+            "reward_nll_loss": float(reward_nll_loss.item()),
+            "action_prior_loss": float(action_prior_loss.item()),
             "entropy": float(entropy.item()),
             "accuracy": float(acc),
             "action_probs": avg_probs,
             "reward": float(rewards.mean().item()),
             "prior_reg": float(prior_reg.item()),
+            "grad_norm": grad_norm,
         }
 
     def run(
@@ -274,8 +346,12 @@ class AgentFineTuner:
         self.h.train()
         self.g.train()
         self.f.train()
+        self.a.train()
 
-        params = list(self.h.parameters()) + list(self.g.parameters()) + list(self.f.parameters())
+        params = (
+            list(self.h.parameters()) + list(self.g.parameters())
+            + list(self.f.parameters()) + list(self.a.parameters())
+        )
         self.optimizer = torch.optim.AdamW(params, lr=learning_rate, weight_decay=1e-5)
         start_time = time.time()
 
@@ -305,7 +381,7 @@ class AgentFineTuner:
                 "ram_mb": round(ram_mb, 1),
                 "cpu_percent": round(psutil.cpu_percent(interval=None), 1),
                 "learning_rate": learning_rate,
-                "grad_norm": 0.0,
+                "grad_norm": round(out["grad_norm"], 4),
                 "win_rate": round(out["accuracy"], 4),
                 "episode_length": len(batch),
                 "action_probs": [round(x, 4) for x in out["action_probs"]],
@@ -327,6 +403,7 @@ class AgentFineTuner:
             "h_state_dict": self.h.state_dict(),
             "g_state_dict": self.g.state_dict(),
             "f_state_dict": self.f.state_dict(),
+            "a_state_dict": self.a.state_dict(),
             "meta": {
                 "source": "agent_finetuner",
                 "action_labels": ACTION_LABELS,

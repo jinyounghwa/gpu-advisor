@@ -274,10 +274,9 @@ def run_release_daily_check(project_root: Path, timeout_sec: int) -> Dict[str, A
         detail = (stderr or stdout).strip() or f"exit_code={rc}"
         raise RuntimeError(f"run_release_daily failed: {detail}")
 
-    lines = [line.strip() for line in stdout.splitlines() if line.strip()]
-    if not lines:
-        raise ValueError("run_release_daily returned empty output")
-    payload = json.loads(lines[-1])
+    # run_release_daily.py는 마지막 줄에 JSON을 출력하지만, 중간에 다른 출력이 끼어들
+    # 수 있으므로 _extract_first_json_object로 통일하여 파싱 일관성 확보.
+    payload = _extract_first_json_object(stdout)
     if not payload.get("ok"):
         raise RuntimeError(payload.get("error", "release daily returned ok=false"))
     result = payload.get("result")

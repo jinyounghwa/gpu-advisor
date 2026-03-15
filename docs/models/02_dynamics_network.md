@@ -26,13 +26,13 @@
 │         ↓                           │
 │  LayerNorm                          │
 │         ↓                           │
-│  Transformer Block #1 (512→2048→512)│
+│  x = x + Block #1 (512→2048→512)   │  ← 잔차 연결
 │         ↓                           │
-│  Transformer Block #2               │
+│  x = x + Block #2                  │  ← 잔차 연결
 │         ↓                           │
-│  Transformer Block #3               │
+│  x = x + Block #3                  │  ← 잔차 연결
 │         ↓                           │
-│  Transformer Block #4               │
+│  x = x + Block #4                  │  ← 잔차 연결
 │         ↓                           │
 │  LayerNorm                          │
 │         ↓                           │
@@ -140,9 +140,11 @@ def forward(self, s_t: torch.Tensor, a_t: torch.Tensor):
     x = self.input_layer(x)            # (batch, 512)
     x = self.layer_norm1(x)            # 값의 분포를 표준화
 
-    # ③ 4개의 Transformer 블록을 순차적으로 통과
+    # ③ 4개의 Transformer 블록 (잔차 연결 포함)
+    # 기존: x = block(x) 단순 순차 → 그래디언트 소실 (수정됨)
+    # 수정: x = x + block(x) 잔차 연결 → 안정적 그래디언트 흐름
     for block in self.blocks:
-        x = block(x)
+        x = x + block(x)
     # 각 블록에서:
     #   512 → 2048 (확장) → GELU → Dropout → 2048 → 512 (축소) → LayerNorm
 
@@ -151,11 +153,10 @@ def forward(self, s_t: torch.Tensor, a_t: torch.Tensor):
     # ④ 3개의 출력 헤드로 분기
     s_tp1 = self.next_state_head(x)                     # 다음 Latent State (batch, 256)
     reward_mean = self.reward_mean_head(x).squeeze(-1)  # 보상 평균 μ (batch,)
-    reward_logvar = self.reward_logvar_head(x).squeeze(-1)  # 로그 분산
 
-    # ⑤ Softplus로 분산 안정화 (항상 양수 보장)
-    reward_logvar = F.softplus(reward_logvar, beta=1.0)
-    # softplus(x) = log(1 + e^x) → 항상 양수, 부드러운 곡선
+    # log_var: 활성화 없이 raw 출력 (기존: softplus 적용 → logvar 명명 불일치)
+    # 수정: 네트워크가 log(σ²)를 직접 학습. σ² = exp(reward_logvar) 로 해석
+    reward_logvar = self.reward_logvar_head(x).squeeze(-1)  # log 분산 (음수 허용)
 
     return s_tp1, reward_mean, reward_logvar
 ```

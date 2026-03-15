@@ -9,7 +9,7 @@
 ## 📊 전체 흐름
 
 ```
-[시장 데이터 22D]
+[시장 데이터 256D]
       ↓
   ①  h (Representation)  →  Latent State 256D
       ↓                              ↓
@@ -18,6 +18,8 @@
   Policy + Value             미래 State + Reward
       ↓                              ↓
       └──────── ④ MCTS ──────────────┘
+                   ↓
+        ⑤  ActionModel (a) ─── 행동 Prior 보정
                    ↓
             GPU 구매 추천 점수
 ```
@@ -33,6 +35,7 @@
 | 03 | `prediction_network.py` | [03_prediction_network.md](models/03_prediction_network.md) | Dual-Head 구조 분석, Softmax→Policy 변환, MCTS에서의 Prior/Value 역할 |
 | 04 | `mcts.py` + `mcts_engine.py` | [04_mcts_engine.md](models/04_mcts_engine.md) | PUCT 공식 숫자 예시, Selection→Expansion→Backpropagation 추적, MCTSTrainer Self-play |
 | 05 | `transformer_model.py` | [05_transformer_model.md](models/05_transformer_model.md) | Multi-Head Attention 연산 과정, KV Cache 속도 비교, MPS 가속, Xavier 초기화 |
+| 06 | `action_model.py` | [06_action_model.md](models/06_action_model.md) | ActionEmbeddingLayer 16D 임베딩, ActionPriorNetwork 256→5 MLP, 정책 보정 통합 |
 
 ---
 

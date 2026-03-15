@@ -7,13 +7,14 @@
 이 문서는 본 프로젝트의 AI를 구성하는 핵심 요소를 설명하고, 각 요소가 현재 코드베이스에서 어떻게 구현되어 있는지 파일 단위로 연결해 설명합니다.
 
 ## 2. AI 시스템 전체 구조
-프로젝트의 AI는 다음 5개 축으로 구성됩니다.
+프로젝트의 AI는 다음 6개 축으로 구성됩니다.
 
 1. 상태 표현(Representation): 원시/가공 입력을 잠재 상태(latent state)로 변환
 2. 세계 모델(World Model): 행동에 따른 다음 상태와 보상을 추정
 3. 정책/가치 예측(Policy/Value): 현재 상태에서 행동 확률과 상태 가치를 예측
 4. 계획(Planning, MCTS): 단순 1회 추론이 아니라 탐색 기반 의사결정 수행
-5. 학습/평가/릴리즈 게이트: 모델 갱신, 성능 검증, 공개 가능 판정
+5. 행동 모델(Action Model): 잠재 상태 기반 행동 사전 확률로 정책 보정 신호 제공
+6. 학습/평가/릴리즈 게이트: 모델 갱신, 성능 검증, 공개 가능 판정
 
 ## 3. 구성요소별 설명과 코드 매핑
 
@@ -58,7 +59,22 @@
   - `GPUPurchaseAgent` 내부에서 `num_simulations` 기반 탐색 수행
   - 최종 행동: `BUY_NOW`, `WAIT_SHORT`, `WAIT_LONG`, `HOLD`, `SKIP`
 
-### 3.5 Agent Orchestrator
+### 3.5 Action Model (a)
+- 역할:
+  - 잠재 상태 `z_t`에서 5가지 행동에 대한 사전 확률(prior) 출력
+  - 정책 보정(Policy Calibration)의 4번째 신호로 사용
+  - 하드코딩된 휴리스틱(utility_bias)을 학습 가능한 신경망으로 대체
+- 구현:
+  - `backend/models/action_model.py`
+  - `ActionEmbeddingLayer`: 5개 행동 → 16D 의미 임베딩 (nn.Embedding)
+  - `ActionPriorNetwork`: 256D → 128D → 64D → 5D MLP (GELU 활성화)
+- 현재 프로젝트 동작:
+  - 체크포인트에 `a_state_dict`가 있을 때 자동 로드
+  - 없으면 폴백: 가시적 피처 기반 하드코딩 휴리스틱 사용
+  - `fine_tuner.py`에서 `action_prior_loss`(CrossEntropy)로 함께 학습
+- 파라미터 규모: 약 42K (전체 18.9M의 0.2%)
+
+### 3.6 Agent Orchestrator
 - 역할:
   - 사용자 입력 모델명 정규화/매칭
   - 데이터셋에서 상태 벡터 조회
@@ -75,7 +91,7 @@
 ### 4.1 Fine-tuner (실학습 루프)
 - 역할:
   - 가공 데이터셋 + 가격 변화 기반 transition 생성
-  - 정책/가치/동역학/보상 손실 결합 학습
+  - 정책/가치/동역학/보상/ActionPrior 손실 결합 학습 (총 5가지 loss)
   - 최신 체크포인트 저장
 - 구현:
   - `backend/agent/fine_tuner.py`

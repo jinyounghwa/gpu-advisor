@@ -21,13 +21,11 @@
 │        ↓                        │
 │  LayerNorm                      │
 │        ↓                        │
-│  PositionalEncoding             │
+│  x = x + FeedForward Block #1  │  ← 잔차 연결
 │        ↓                        │
-│  FeedForward Block #1           │
+│  x = x + FeedForward Block #2  │  ← 잔차 연결
 │        ↓                        │
-│  FeedForward Block #2           │
-│        ↓                        │
-│  FeedForward Block #3           │
+│  x = x + FeedForward Block #3  │  ← 잔차 연결
 │        ↓                        │
 │  LayerNorm                      │
 │        ↓                        │
@@ -87,29 +85,25 @@ class FeedForward(nn.Module):
     def __init__(self, d_model: int, d_ff: int, dropout: float = 0.1):
         super().__init__()
         self.linear1 = nn.Linear(d_model, d_ff)    # 256 → 512 (확장)
-        self.relu = nn.ReLU()                        # 비선형 활성화
-        self.dropout = nn.Dropout(dropout)            # 과적합 방지 (10% 뉴런 비활성화)
+        self.act = nn.GELU()                         # 비선형 활성화 (GELU, 기존 ReLU에서 변경)
+        self.dropout = nn.Dropout(dropout)
         self.linear2 = nn.Linear(d_ff, d_model)      # 512 → 256 (복원)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.linear1(x)    # 차원 확장: 더 많은 특징 공간에서 분석
-        x = self.relu(x)       # 음수값 제거 → 비선형성 도입
-        x = self.dropout(x)    # 학습 시 일부 뉴런을 랜덤하게 끔
-        x = self.linear2(x)    # 원래 차원으로 복원
-        return x
+        return self.linear2(self.dropout(self.act(self.linear1(x))))
 ```
 
 **왜 "확장 후 축소"를 하는가?**
 - `256 → 512`로 확장하면 더 풍부한 특징 공간에서 데이터를 분석할 수 있습니다.
 - `512 → 256`으로 다시 축소하면 중요한 특징만 남기고 불필요한 정보를 버립니다.
-- 이 과정을 **3번 반복(ff1, ff2, ff3)**하여 점점 더 추상적이고 의미 있는 표현을 만듭니다.
+- 이 과정을 **3번 반복(ff1, ff2, ff3), 각 블록마다 잔차 연결**하여 점점 더 추상적인 표현을 만듭니다.
 
-**ReLU가 하는 일:**
+**GELU vs ReLU:**
 ```
-입력: [-0.5, 0.3, -1.2, 0.8]
-출력: [ 0.0, 0.3,  0.0, 0.8]  ← 음수는 모두 0으로
+ReLU: x < 0 → 0으로 완전 차단 (그래디언트 소실 위험)
+GELU: x < 0 → 부드럽게 감소 (GPT, BERT 표준)
 ```
-→ "관련 없는 신호(음수)"를 차단하여 중요한 신호만 남깁니다.
+→ DynamicsNetwork, PredictionNetwork와 동일한 활성화 함수 사용으로 일관성 확보.
 
 ---
 
@@ -151,8 +145,8 @@ class RepresentationNetwork(nn.Module):
 |------|--------|-----------|-----------|------|
 | 1 | `input_embedding` | `(batch, state_dim)` | `(batch, 256)` | 저차원 → 고차원 매핑 |
 | 2 | `layer_norm1` | `(batch, 256)` | `(batch, 256)` | 값의 분포를 표준화 |
-| 3 | `pos_encoding` | `(batch, 1, 256)` | `(batch, 1, 256)` | 시간적 위치 정보 추가 |
-| 4 | `ff1 → ff2 → ff3` | `(batch, 1, 256)` | `(batch, 1, 256)` | 특징 추출 3단계 반복 |
+| 3 | `pos_encoding` | — | — | seq_len=1에서 미적용 (모듈 유지, 연산 생략) |
+| 4 | `x + ff1 → x + ff2 → x + ff3` | `(batch, 1, 256)` | `(batch, 1, 256)` | 잔차 연결 특징 추출 3단계 |
 | 5 | `layer_norm2` | `(batch, 1, 256)` | `(batch, 1, 256)` | 최종 표준화 |
 | 6 | `output_layer` | `(batch, 1, 256)` | `(batch, 1, 256)` | 최종 Latent State 생성 |
 
@@ -172,13 +166,15 @@ def forward(self, state_tensor: torch.Tensor) -> torch.Tensor:
     x = self.input_embedding(x)        # (batch, 1, 256)
     x = self.layer_norm1(x)            # 수치 안정화
 
-    # ③ 위치 인코딩 추가
-    x = self.pos_encoding(x)
+    # ③ Positional Encoding: seq_len=1에서 의미 없으므로 미적용
+    #    (모듈은 체크포인트 호환성을 위해 __init__에 유지)
 
-    # ④ 3단계 FeedForward로 특징 정제
-    x = self.ff1(x)                    # 1차 특징 추출
-    x = self.ff2(x)                    # 2차 특징 추출 (더 추상적)
-    x = self.ff3(x)                    # 3차 특징 추출 (가장 추상적)
+    # ④ 3단계 FeedForward + 잔차 연결 (Residual Connection)
+    # 기존: x = self.ff1(x) 처럼 단순 순차 적용 → 깊은 네트워크에서 그래디언트 소실
+    # 수정: x = x + ff(x) 패턴으로 그래디언트 고속도로 확보
+    x = x + self.ff1(x)               # 1차 정제: 잔차 보존
+    x = x + self.ff2(x)               # 2차 정제: 잔차 보존
+    x = x + self.ff3(x)               # 3차 정제: 잔차 보존
 
     x = self.layer_norm2(x)            # 최종 표준화
 

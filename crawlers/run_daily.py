@@ -6,7 +6,6 @@
 import argparse
 import fcntl
 import sys
-import traceback
 from pathlib import Path
 from datetime import datetime
 import logging
@@ -89,8 +88,9 @@ def run_step(name: str, fn):
         logger.info(f"✓ {name} 완료 ({elapsed:.2f}s)")
         return True
     except Exception as e:
-        logger.error(f"✗ {name} 실패: {e}")
-        traceback.print_exc()
+        # exc_info=True: 스택 트레이스를 logger(파일+콘솔)로 전달
+        # 기존: traceback.print_exc()는 stderr만 출력 → 로그 파일 누락
+        logger.error(f"✗ {name} 실패: {e}", exc_info=True)
         elapsed = time.perf_counter() - started
         logger.info(f"✗ {name} 종료 ({elapsed:.2f}s)")
         return False

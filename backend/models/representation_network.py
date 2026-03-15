@@ -38,16 +38,12 @@ class FeedForward(nn.Module):
     def __init__(self, d_model: int, d_ff: int, dropout: float = 0.1):
         super().__init__()
         self.linear1 = nn.Linear(d_model, d_ff)
-        self.relu = nn.ReLU()
+        self.act = nn.GELU()  # dynamics/prediction과 일관되게 GELU 사용 (기존: ReLU)
         self.dropout = nn.Dropout(dropout)
         self.linear2 = nn.Linear(d_ff, d_model)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.linear1(x)
-        x = self.relu(x)
-        x = self.dropout(x)
-        x = self.linear2(x)
-        return x
+        return self.linear2(self.dropout(self.act(self.linear1(x))))
 
 
 class RepresentationNetwork(nn.Module):
@@ -55,19 +51,20 @@ class RepresentationNetwork(nn.Module):
     Representation Network h(s)
     시장 State(s_t) → Latent State(s_0)
 
-    입력: 22차원 시장 State
-        - OHLCV (5): price_1m, price_5m, price_15m, price_1h, price_change_24h
-        - Order Book (3): imbalance_l1, imbalance_l2, imbalance_l3
-        - Account (4): position, unrealized_pnl, time_in_trade
-        - Macro Factors (4): fed_rate, korea_rate, usd_krw, usd_jpy
-        - Time (1): timestamp
+    입력: 256차원 GPU 시장 State (feature_engineer 출력)
+        - 가격 특징 (60): 정규화 가격, MA7/MA14/MA30, 변화율, 변동성 등
+        - 환율 특징 (20): USD/KRW, JPY/KRW, EUR/KRW 정규화
+        - 뉴스 특징 (30): 감성 점수, 기사 수, 긍정/부정 비율
+        - 시장 특징 (20): 판매자 수, 재고 상태
+        - 시간 특징 (20): 요일, 월, 연말 여부
+        - 기술 지표 (106): RSI, MACD, 모멘텀, 패딩
 
     출력: 256차원 Latent State(s_0)
     """
 
     def __init__(
         self,
-        state_dim: int = 22,  # 22차원 시장 State
+        state_dim: int = 256,  # feature_engineer 출력 256차원
         latent_dim: int = 256,  # 256차원 Latent State
         d_ff: int = 512,
         dropout: float = 0.1,
@@ -109,29 +106,31 @@ class RepresentationNetwork(nn.Module):
         x = self.input_embedding(x)  # (batch_size, 1, latent_dim)
         x = self.layer_norm1(x)
 
-        # Position encoding
-        x = self.pos_encoding(x)
+        # Positional Encoding은 seq_len=1에서 의미 없으므로 적용하지 않음
+        # (pos_encoding 모듈은 체크포인트 호환성을 위해 __init__에 유지)
 
-        # Ensemble of FeedForward networks
-        x = self.ff1(x)
-        x = self.ff2(x)
-        x = self.ff3(x)
+        # FeedForward blocks with residual connections
+        # 기존: 잔차 없이 순차 적용 → 깊은 네트워크에서 그래디언트 소실
+        # 수정: 각 블록마다 잔차 연결 추가 (x = x + ff(x))
+        x = x + self.ff1(x)
+        x = x + self.ff2(x)
+        x = x + self.ff3(x)
 
         x = self.layer_norm2(x)
 
         # Output projection
         s_0 = self.output_layer(x)
-        
+
         return s_0.squeeze(1)  # (batch_size, latent_dim)
 
 
 if __name__ == "__main__":
     # 테스트
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-    state_dim = 22
+    state_dim = 256
     model = RepresentationNetwork(state_dim=state_dim).to(device)
 
-    # 샘플 입력 (batch_size=4, state_dim=22)
+    # 샘플 입력 (batch_size=4, state_dim=256)
     batch_size = 4
     dummy_input = torch.randn(batch_size, state_dim).to(device)
 

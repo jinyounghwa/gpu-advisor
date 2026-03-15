@@ -18,11 +18,11 @@ By applying the same Monte Carlo Tree Search (MCTS) principles that power AlphaG
 
 ### Key Features
 
-- 🤖 **AlphaZero Architecture**: 18.9M parameters (Representation, Dynamics, Prediction networks + MCTS)
-- 📊 **Automated Data Collection**: Daily crawling of GPU prices, exchange rates, and news
-- 🧠 **256-Dimensional Features**: Rich feature engineering from 11D to 256D
+- 🤖 **AlphaZero Architecture**: ~19M parameters (Representation h + Dynamics g + Prediction f + ActionModel a + MCTS)
+- 📊 **Automated Data Collection**: Daily crawling of GPU prices, exchange rates, and news via macOS LaunchAgent
+- 🧠 **256-Dimensional Features**: Rich feature engineering from raw market data to 256D state vectors
 - 📈 **Real-time Predictions**: REST API for instant purchase timing recommendations
-- ⏰ **Cron Automation**: Fully automated daily data collection
+- ⏰ **LaunchAgent Automation**: Fully automated daily data collection at midnight (00:00)
 
 ### 🎮 Core Principle: Game Theory Meets Market Analysis
 
@@ -59,10 +59,11 @@ Output: Purchase Score 75% → "Buy Now!"
    - 256-dimensional feature engineering
 
 2. **AI Engine**
-   - Representation Network (h): Encodes market state → latent state
-   - Dynamics Network (g): Predicts next state + reward
-   - Prediction Network (f): Outputs policy + value
-   - MCTS: Simulates future scenarios for optimal decisions
+   - Representation Network h(s): Encodes 256D market state → 256D latent state (3× FeedForward with residual connections)
+   - Dynamics Network g(s,a): Predicts next latent state + Gaussian reward distribution (μ, log σ²)
+   - Prediction Network f(s): Outputs policy logits + value (shared trunk with residual blocks)
+   - Action Model a(z): Learned action prior from latent state (replaces hardcoded heuristic)
+   - MCTS: AlphaZero-style PUCT search with Dirichlet noise for exploration diversity
 
 3. **Backend Server**
    - FastAPI REST API (`backend/simple_server.py`)
@@ -180,20 +181,22 @@ curl -X POST http://localhost:8000/api/ask \
 ## 📊 Data Pipeline
 
 ```
-Crawlers (Daily @ 00:00)
+LaunchAgent (Daily @ 00:00)
   ↓
 Raw Data Collection
-  ├─ GPU Prices (Danawa)
-  ├─ Exchange Rates
-  └─ News + Sentiment
+  ├─ GPU Prices (Danawa, 24 models)
+  ├─ Exchange Rates (USD/KRW, JPY/KRW, EUR/KRW)
+  └─ News + Sentiment (Google News RSS)
   ↓
-Feature Engineering (11D → 256D)
+Feature Engineering → 256D state vector
   ↓
-Training Dataset
+Training Dataset (data/processed/dataset/)
   ↓
-AlphaZero Training
+Auto Training (post-30d): Fine-tune h/g/f/a via AgentFineTuner
   ↓
-Purchase Predictions
+Quality Gates → Release Check
+  ↓
+Purchase Predictions (via MCTS planning)
 ```
 
 Operational note:
@@ -223,10 +226,11 @@ gpu-advisor/
 │   │   ├── evaluator.py           # Backtest evaluator
 │   │   └── release_pipeline.py    # Release quality gates
 │   └── models/                    # AlphaZero networks
-│       ├── representation_network.py  # h(s): State encoder
-│       ├── dynamics_network.py        # g(s,a): World model
-│       ├── prediction_network.py      # f(s): Policy-value
-│       └── mcts_engine.py             # MCTS tree search
+│       ├── representation_network.py  # h(s): 256D state → 256D latent (residual FF)
+│       ├── dynamics_network.py        # g(s,a): latent transition + Gaussian reward
+│       ├── prediction_network.py      # f(s): policy logits + value (residual blocks)
+│       ├── action_model.py            # a(z): learned action prior (ActionEmbedding + ActionPriorNet)
+│       └── mcts_engine.py             # MCTS: PUCT search + Dirichlet noise
 │
 ├── crawlers/                      # Data collection modules
 │   ├── danawa_crawler.py          # GPU price crawler
@@ -294,11 +298,12 @@ gpu-advisor/
 
 ### `docs/models/` Deep Dives
 
-- [`docs/models/01_representation_network.md`](docs/models/01_representation_network.md): Representation Network (`h`) 구조/역할 분석
-- [`docs/models/02_dynamics_network.md`](docs/models/02_dynamics_network.md): Dynamics Network (`g`) 상태전이/보상 예측 분석
-- [`docs/models/03_prediction_network.md`](docs/models/03_prediction_network.md): Prediction Network (`f`) 정책/가치 출력 분석
-- [`docs/models/04_mcts_engine.md`](docs/models/04_mcts_engine.md): MCTS 탐색 엔진 구현 상세 분석
+- [`docs/models/01_representation_network.md`](docs/models/01_representation_network.md): Representation Network (`h`) — 256D input, residual FeedForward, GELU
+- [`docs/models/02_dynamics_network.md`](docs/models/02_dynamics_network.md): Dynamics Network (`g`) — 상태전이 + Gaussian reward (μ, log σ²)
+- [`docs/models/03_prediction_network.md`](docs/models/03_prediction_network.md): Prediction Network (`f`) — 정책/가치 출력, 잔차 블록
+- [`docs/models/04_mcts_engine.md`](docs/models/04_mcts_engine.md): MCTS 탐색 엔진 — PUCT, Dirichlet noise, 5-step rollout
 - [`docs/models/05_transformer_model.md`](docs/models/05_transformer_model.md): Transformer 모듈 구조 및 사용 방식 분석
+- [`docs/models/06_action_model.md`](docs/models/06_action_model.md): Action Model (`a`) — ActionEmbeddingLayer 16D, ActionPriorNetwork 256→5, 정책 보정 통합
 
 ### `docs/reports/` Release Reports
 
@@ -309,9 +314,10 @@ gpu-advisor/
 
 ## 🔄 Roadmap
 
-- **Day 1** (Current): System setup, initial data collection
-- **Day 30**: 30-day real-data window secured across raw/dataset → Begin release-ready training flow
-- **Day 60+**: Production-ready predictions
+- **Day 1** ✅: System setup, initial data collection
+- **Day 30** (2026-03-15 현재 진행 중): 30-day real-data window → auto training + quality gate check
+- **Post-30d**: Auto-retrain every 7 days as new data accumulates (`retrain_every_days=7`)
+- **Day 60+**: Stable production-ready predictions with real-market-trained model
 
 ## 🛠️ Technology Stack
 
@@ -334,11 +340,13 @@ This project was developed with assistance from multiple AI tools, demonstrating
 
 ## 📊 Model Specifications
 
-- **Total Parameters**: 18.9M
-- **Representation Network**: 6.4M params (256D latent state)
-- **Dynamics Network**: 6.5M params (state transition + reward)
-- **Prediction Network**: 6.0M params (policy + value)
-- **MCTS Simulations**: 50 per decision
+- **Total Parameters**: ~19M
+- **Representation Network h**: ~6.4M params (256D latent, 3× FeedForward with residual connections, GELU)
+- **Dynamics Network g**: ~6.5M params (state transition + Gaussian reward μ/log σ², 4 residual blocks)
+- **Prediction Network f**: ~6.0M params (policy + value, 4 residual blocks)
+- **Action Model a**: ~43K params (ActionEmbeddingLayer 16D + ActionPriorNetwork 256→128→64→5)
+- **MCTS Simulations**: 50 per decision (PUCT formula, Dirichlet noise ε=0.25 α=0.03, rollout depth=5)
+- **Policy Calibration**: 4-signal blend — MCTS 45% + Reward 25% + f-net prior 15% + ActionModel 15%
 
 ## 🔢 Token Note (30-Day Trained Agent)
 
@@ -419,6 +427,6 @@ This is a personal research project. Feel free to fork and experiment!
 
 ---
 
-**Last Updated**: 2026-03-04
-**Version**: 0.2.0
+**Last Updated**: 2026-03-15
+**Version**: 0.3.0
 **Project Type**: 0.1B AI Project

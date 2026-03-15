@@ -10,7 +10,6 @@ from pathlib import Path
 import time
 import logging
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -57,7 +56,7 @@ class DanawaCrawler:
     # 다나와 GPU 카테고리 코드
     DANAWA_CATE = "112753"
 
-    def search_gpu_price(self, gpu_model: str) -> dict:
+    def search_gpu_price(self, gpu_model: str) -> dict | None:
         """
         특정 GPU 모델의 최저가 검색 (다나와 실시간 크롤링)
 
@@ -79,7 +78,7 @@ class DanawaCrawler:
             logger.error(f"✗ {gpu_model} 크롤링 오류: {e}")
             return None
 
-    def _crawl_danawa(self, gpu_model: str) -> dict:
+    def _crawl_danawa(self, gpu_model: str) -> dict | None:
         """다나와 검색 페이지에서 GPU 최저가 파싱"""
         search_url = "https://search.danawa.com/dsearch.php"
         params = {
@@ -223,6 +222,7 @@ class DanawaCrawler:
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)  # 독립 실행 시에만 설정
     crawler = DanawaCrawler()
     products = crawler.crawl_all()
     crawler.save(products)

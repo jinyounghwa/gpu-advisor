@@ -16,7 +16,6 @@ from datetime import datetime
 from pathlib import Path
 import numpy as np
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -737,5 +736,6 @@ class FeatureEngineer:
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     engineer = FeatureEngineer()
     engineer.process_all()

@@ -84,8 +84,6 @@ class DynamicsNetwork(nn.Module):
             reward_mean: Reward 분포 평균 μ (batch_size, 1)
             reward_logvar: Reward 분포 로그 분산 log(σ²) (batch_size, 1)
         """
-        batch_size = s_t.size(0)
-
         # Concatenate state and action
         x = torch.cat([s_t, a_t], dim=-1)  # (batch_size, latent_dim + 5)
 
@@ -93,21 +91,24 @@ class DynamicsNetwork(nn.Module):
         x = self.input_layer(x)
         x = self.layer_norm1(x)
 
-        # Transformer blocks
+        # Transformer blocks with residual connections
+        # 기존: 잔차 없이 순차 적용 → 깊은 네트워크에서 그래디언트 소실
+        # 수정: x = x + block(x) (Post-LN 스타일 잔차)
         for block in self.blocks:
-            x = block(x)
+            x = x + block(x)
 
         x = self.layer_norm2(x)
 
         # Next state prediction
         s_tp1 = self.next_state_head(x)  # (batch_size, latent_dim)
 
-        # Reward distribution
-        reward_mean = self.reward_mean_head(x).squeeze(-1)  # (batch_size)
-        reward_logvar = self.reward_logvar_head(x).squeeze(-1)  # (batch_size, 1)
+        # Reward distribution: Gaussian parametrization
+        reward_mean = self.reward_mean_head(x).squeeze(-1)  # (batch_size,)
 
-        # Softplus for log variance stability
-        reward_logvar = F.softplus(reward_logvar, beta=1.0)
+        # log_var: 활성화 없이 raw 출력 → 네트워크가 log(σ²)를 직접 학습
+        # 기존: softplus 적용 후 logvar로 명명 (σ² ≠ log σ² — 의미 불일치)
+        # 수정: 활성화 제거. σ² = exp(log_var) 로 해석. 음수값 = 낮은 불확실성 허용
+        reward_logvar = self.reward_logvar_head(x).squeeze(-1)  # (batch_size,)
 
         return s_tp1, reward_mean, reward_logvar
 
@@ -150,12 +151,12 @@ if __name__ == "__main__":
     a_t = torch.zeros(batch_size, action_dim).to(device)
 
     s_tp1, reward_mean, reward_logvar = model(s_t, a_t)
-    reward_std = torch.exp(reward_logvar)  # σ
+    reward_var = torch.exp(reward_logvar)  # σ² (variance); σ = reward_var.sqrt()
 
     print(f"s_t shape: {s_t.shape}")  # (4, 256)
     print(f"s_{t + 1} shape: {s_tp1.shape}")  # (4, 256)
     print(f"Reward mean: {reward_mean}")  # (4,)
-    print(f"Reward std: {reward_std}")  # (4,)
+    print(f"Reward var (σ²): {reward_var}")  # (4,)
 
     # 파라미터 수
     total_params = sum(p.numel() for p in model.parameters())

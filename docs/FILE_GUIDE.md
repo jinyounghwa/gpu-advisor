@@ -19,8 +19,9 @@
 ## 📁 2. 백엔드 및 서비스 (`backend/`)
 AI 모델을 가동하고, 프론트엔드와 통신하며, 학습 프로세스를 관리하는 서버입니다.
 
-- **`simple_server.py`**: FastAPI 기반의 메인 서버 파일입니다. 검색 API(`/api/ask`)와 학습/릴리즈 점검 API(`/api/training/*`, `/api/agent/*`)를 정의합니다.
+- **`simple_server.py`**: FastAPI 기반의 메인 서버 파일입니다. 검색 API(`/api/ask`)와 학습/릴리즈 점검 API(`/api/training/*`, `/api/agent/*`)를 정의합니다. Server-Sent Events(SSE)로 실시간 학습 진행 상황을 스트리밍합니다.
 - **`train_alphazero_v2.py`**: MuZero 스타일의 자가 학습(Self-play) 과정을 구현한 파일입니다. MCTS를 통해 생성된 데이터를 바탕으로 신경망을 업데이트합니다.
+- **`storage/repository.py`**: SQLite 기반 영속성 레이어입니다. 시장 감성 스냅샷과 에이전트 의사결정 이력을 저장하며, 스레드 안전한 직렬화(Lock)를 통해 동시 쓰기 충돌을 방지합니다.
 - **`requirements.txt`**: PyTorch, FastAPI, uvicorn 등 백엔드 실행에 필요한 파이썬 패키지 목록입니다.
 
 ---
@@ -34,6 +35,7 @@ AlphaZero/MuZero 아키텍처를 구성하는 신경망들입니다.
 - **`mcts_engine.py`**: 운영 경로에서 사용하는 Monte Carlo Tree Search 구현체입니다. 위의 세 신경망을 조합하여 수십 번의 시나리오를 시뮬레이션합니다.
 - **`mcts.py`**: 학습/실험 참고용 MCTS 구현 파일입니다.
 - **`transformer_model.py`**: 신경망 내부에서 시퀀스 데이터를 처리하기 위한 Transformer 블록 구현이 포함되어 있습니다.
+- **`action_model.py`**: 행동 임베딩(ActionEmbeddingLayer)과 행동 Prior 예측(ActionPriorNetwork)을 담당합니다. 잠재 상태를 입력받아 5가지 행동의 사전 확률을 출력하여 정책 보정 4번째 신호로 사용됩니다.
 
 ---
 

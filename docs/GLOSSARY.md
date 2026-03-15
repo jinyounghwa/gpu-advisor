@@ -4,6 +4,9 @@ AI/ML terms used in the GPU Advisor project.
 
 ## A
 
+### Action Model (a)
+A neural network module that outputs a context-aware action prior conditioned on the latent state. Combines ActionEmbeddingLayer (5 actions → 16D semantic embeddings) and ActionPriorNetwork (256D → 5 softmax probabilities). Used as the 4th signal in policy calibration, replacing the hardcoded utility bias heuristic. ~42K parameters.
+
 ### Action Space
 The set of all possible actions the agent can take. In this project: {BUY_NOW, WAIT_SHORT, WAIT_LONG, HOLD, SKIP} — 5 discrete actions.
 
@@ -27,10 +30,10 @@ Number of samples used per training step. Set to 32 in this project.
 ## C
 
 ### Calibration
-The process of blending the MCTS policy with other signals (reward, prior, utility) to produce the final action probabilities.
+The process of blending the MCTS policy with other signals to produce the final action probabilities. Formula: 0.45×MCTS + 0.25×Reward + 0.15×f-net Prior + 0.15×ActionModel Prior. The 4th signal (ActionModel) replaced the former hardcoded utility bias heuristic.
 
 ### Checkpoint
-A saved file containing trained model weights (`.pth`). Includes state_dicts for all three networks (h, g, f) plus metadata.
+A saved file containing trained model weights (`.pth`). Includes state_dicts for networks (h, g, f, and optionally a for ActionModel) plus metadata. Backward-compatible: agents without `a_state_dict` fall back to the utility bias heuristic.
 
 ### Confidence
 The highest probability in the calibrated policy distribution. Range 0.0–1.0. Below 0.25 triggers safe mode.
@@ -132,6 +135,9 @@ Adding position information to vectors using sin/cos functions. Gives each posit
 ### Prediction Network (f)
 Outputs policy (action probabilities) and value from the latent state. Corresponds to AlphaGo's Policy-Value Network.
 
+### PUCT (Predictor + UCT)
+The UCB variant used in AlphaZero/MuZero-style MCTS. Formula: Q + c·P·√N_parent / (1+N_child), where c is the exploration constant (√2 in this project), P is the network prior, and N is visit count. Unlike standard UCB1 which uses ln(N), PUCT uses √N for faster initial exploration.
+
 ### Prior Probability
 The action distribution from training data. Reflects how often each action was optimal in historical data.
 
@@ -153,6 +159,9 @@ Numerical feedback for an action's outcome. BUY_NOW reward = actual price change
 
 ### Rollout
 Simulating multiple steps ahead from a current MCTS node using the Dynamics Network to predict future states.
+
+### Residual Connection
+A shortcut connection that adds the block's input to its output: `x = x + block(x)`. Prevents gradient vanishing in deep networks by ensuring at minimum the identity mapping is preserved. Applied in all three world model networks (h, g, f).
 
 ### RSI (Relative Strength Index)
 A technical indicator expressing price momentum on a 0–100 scale. Above 70 = overbought, below 30 = oversold.
@@ -185,7 +194,7 @@ A 5-tuple of (state, next_state, action, reward, value_target). The fundamental 
 ## U
 
 ### UCB (Upper Confidence Bound)
-A score balancing exploration and exploitation. UCB = Q (exploitation) + exploration bonus. Gives higher bonus to less-visited actions to encourage exploration.
+A score balancing exploration and exploitation. In this project, the PUCT variant is used: Q + c·P·√N_parent / (1+N). Unvisited nodes get UCB = ∞ to ensure initial exploration. See also: PUCT.
 
 ### Uplift
 Measures how much the agent outperforms baseline strategies (always buy, always wait, etc.).
@@ -201,7 +210,7 @@ Long-term expected return from a state. v(s) = expected cumulative reward when s
 A regularization technique adding a penalty proportional to weight magnitudes during training. Prevents overfitting. Also known as L2 regularization.
 
 ### World Model
-A learned model that simulates the environment's dynamics. In this project: Representation (h) + Dynamics (g) + Prediction (f) — three networks.
+A learned model that simulates the environment's dynamics. In this project: Representation (h) + Dynamics (g) + Prediction (f) — three networks. The Action Model (a) complements this triad by providing a latent-conditioned action prior for policy calibration.
 
 ---
 

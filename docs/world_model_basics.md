@@ -131,10 +131,15 @@ a_{t:t+H-1}^*=\arg\max_{a_{t:t+H-1}} J(a_{t:t+H-1})
 \]
 
 실전에서는 CEM(Cross-Entropy Method)으로 근사:
-1. 행동열 샘플 \(N\)개 생성  
-2. 상위 \(K\)개(elite) 선택  
-3. elite 분포로 샘플링 분포 갱신  
+1. 행동열 샘플 \(N\)개 생성
+2. 상위 \(K\)개(elite) 선택
+3. elite 분포로 샘플링 분포 갱신
 4. 반복 후 첫 행동만 실행(MPC)
+
+> **GPU Advisor 참고**: 이 프로젝트는 CEM 대신 **MCTS(AlphaZero 스타일)**를 사용합니다.
+> MCTS는 PUCT(Predictor UCB) 공식 `Q + c·P·√N_parent / (1+N)`으로 트리를 탐색하며,
+> `prediction_network`의 policy prior + Dirichlet noise로 루트 다양성을 확보합니다.
+> 상세 내용: [`docs/MCTS_WALKTHROUGH.md`](MCTS_WALKTHROUGH.md)
 
 ---
 

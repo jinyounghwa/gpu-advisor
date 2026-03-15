@@ -3,7 +3,7 @@
 
 ---
 
-## 📋 개요
+## 개요
 
 이 크롤러 시스템은 **매일 자동으로** GPU 가격, 환율, 뉴스를 수집하고 **256차원 Feature**를 생성합니다.
 실행 직후 `docs/reports/`에 실제 수집 파일 기준 상태 보고서도 자동 생성됩니다.
@@ -16,26 +16,46 @@
 
 ---
 
-## 🚀 빠른 시작
+## 빠른 시작
 
-### 1단계: Cron 자동화 설정 (한 번만 실행)
+### 1단계: 수동 즉시 실행 (테스트)
 
 ```bash
 cd /Users/younghwa.jin/Documents/gpu-advisor
-./setup_cron.sh
+python3 crawlers/run_daily.py
 ```
 
-기본 스케줄은 **매일 00:00**입니다.
+### 2단계: macOS LaunchAgent 자동화 (한 번만 설정)
 
-### 2단계: 수동 실행 (즉시 테스트)
+> **주의**: macOS에서는 `cron` 대신 **LaunchAgent**를 사용해야 합니다.
+> `~/Documents/` 경로는 macOS TCC 보호로 인해 launchd의 stdout/stderr 대상으로 사용할 수 없습니다.
+> 로그는 반드시 `~/Library/Logs/` 하위에 기록해야 합니다.
 
+LaunchAgent plist 경로:
+```
+~/Library/LaunchAgents/com.gpu-advisor.daily-crawl.plist
+```
+
+로드/재로드 명령:
 ```bash
-python3 crawlers/run_daily.py
+# 로드
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.gpu-advisor.daily-crawl.plist
+
+# 언로드
+launchctl bootout gui/$(id -u)/com.gpu-advisor.daily-crawl
+
+# 상태 확인
+launchctl print gui/$(id -u)/com.gpu-advisor.daily-crawl
+```
+
+pmset 웨이크 스케줄 (Mac이 자동으로 깨어나도록):
+```bash
+sudo pmset repeat wakepoweron MTWRFSU 23:58:00
 ```
 
 ---
 
-## 📁 파일 구조
+## 파일 구조
 
 ```text
 gpu-advisor/
@@ -44,78 +64,99 @@ gpu-advisor/
 │   ├── exchange_rate_crawler.py
 │   ├── news_crawler.py
 │   ├── feature_engineer.py
-│   ├── auto_training.py
+│   ├── auto_training.py          # 자동 학습 오케스트레이션
 │   ├── status_report.py
-│   └── run_daily.py
+│   └── run_daily.py              # 일일 배치 오케스트레이터
 ├── data/
 │   ├── raw/
 │   │   ├── danawa/
 │   │   ├── exchange/
 │   │   └── news/
 │   └── processed/
-│       └── dataset/
-├── logs/
-│   ├── cron.log
-│   └── daily_crawl.log
+│       ├── dataset/              # training_data_YYYY-MM-DD.json
+│       └── auto_training_state.json  # 자동 학습 상태
 ├── docs/reports/
 │   ├── YYYY-MM-DD/
 │   │   ├── data_status_*.json
-│   │   └── data_status_*.md
+│   │   ├── data_status_*.md
+│   │   ├── release_report_*.json
+│   │   ├── release_report_*.md
+│   │   └── auto_training_status_*.json
 │   ├── latest_data_status.json
 │   ├── latest_data_status.md
 │   ├── latest_release_report.json
 │   ├── latest_release_report.md
 │   ├── latest_auto_training_status.json
 │   └── latest_auto_training_status.md
-└── setup_cron.sh
+└── ~/Library/LaunchAgents/
+    └── com.gpu-advisor.daily-crawl.plist
 ```
+
+### 로그 경로
+
+| 로그 | 경로 | 설명 |
+|------|------|------|
+| LaunchAgent stdout/stderr | `~/Library/Logs/gpu-advisor/cron.log` | launchd 실행 결과 |
+| 상세 파이썬 로그 | `data/gpu-advisor/logs/daily_crawl.log` | 크롤러 상세 로그 |
+
+> `logs/cron.log` (프로젝트 내부) 경로는 macOS TCC 보호로 launchd 사용 불가.
+> 반드시 `~/Library/Logs/` 경로를 사용해야 합니다.
 
 ---
 
-## 🔄 Cron 스케줄
+## LaunchAgent 스케줄
 
 ### 기본 설정
-- 실행 시간: 매일 00:00
+- 실행 시간: 매일 00:00 (`StartCalendarInterval`)
 - 실행 순서:
+
 1. 다나와 GPU 가격 크롤링
 2. 환율 정보 수집
 3. GPU 뉴스 크롤링
 4. 256차원 Feature 생성
 5. 상태 보고서 생성
-6. 자동 학습 오케스트레이션 실행
-  - 30일 미달: 릴리즈 드라이 체크(`backend/run_release_daily.py`)
-  - 30일 도달/재학습 간격 충족: 학습+평가(`backend/run_release_ready.py`)
+6. 자동 학습 오케스트레이션 (`auto_training.py`)
+   - 30일 미달: 릴리즈 드라이 체크 (`backend/run_release_daily.py`)
+   - 30일 도달 또는 재학습 간격 충족: 학습+평가 (`backend/run_release_ready.py`)
 7. 자동화/릴리즈 결과 보고서 생성
-8. `/usr/bin/time -l`로 메모리/시간 지표를 `logs/cron.log`에 기록
 
-### Cron 관리 명령어
+### LaunchAgent plist 핵심 설정
 
-```bash
-crontab -l
-crontab -e
-crontab -l | grep -v "run_daily.py" | crontab -
-crontab -r
+```xml
+<key>StartCalendarInterval</key>
+<dict>
+    <key>Hour</key><integer>0</integer>
+    <key>Minute</key><integer>0</integer>
+</dict>
+<key>StandardOutPath</key>
+<string>/Users/younghwa.jin/Library/Logs/gpu-advisor/cron.log</string>
+<key>StandardErrorPath</key>
+<string>/Users/younghwa.jin/Library/Logs/gpu-advisor/cron.log</string>
 ```
 
-### 실행 시간 변경 예시
+### LaunchAgent 진단
 
 ```bash
-# 매일 06:00
-0 6 * * * cd /Users/younghwa.jin/Documents/gpu-advisor && /usr/bin/time -l python3 crawlers/run_daily.py >> logs/cron.log 2>&1
+# 상태 확인 (exit code 78 = EX_CONFIG = TCC 로그 경로 오류)
+launchctl print gui/$(id -u)/com.gpu-advisor.daily-crawl
 
-# 매일 00:00, 12:00
-0 0,12 * * * cd /Users/younghwa.jin/Documents/gpu-advisor && /usr/bin/time -l python3 crawlers/run_daily.py >> logs/cron.log 2>&1
+# 수동 트리거
+launchctl kickstart -k gui/$(id -u)/com.gpu-advisor.daily-crawl
+
+# 재로드
+launchctl bootout gui/$(id -u)/com.gpu-advisor.daily-crawl
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.gpu-advisor.daily-crawl.plist
 ```
 
 ---
 
-## 📊 데이터 형식
+## 데이터 형식
 
 ### 1) 다나와 (`data/raw/danawa/YYYY-MM-DD.json`)
 
 ```json
 {
-  "date": "2026-02-21",
+  "date": "2026-03-15",
   "source": "danawa",
   "total_products": 24,
   "products": [
@@ -130,7 +171,7 @@ crontab -r
     }
   ],
   "metadata": {
-    "crawled_at": "2026-02-21T00:00:00",
+    "crawled_at": "2026-03-15T00:00:00",
     "target_models": 24
   }
 }
@@ -140,7 +181,7 @@ crontab -r
 
 ```json
 {
-  "date": "2026-02-21",
+  "date": "2026-03-15",
   "source": "exchange_rate_api",
   "rates": {
     "USD/KRW": 1442.7,
@@ -154,7 +195,7 @@ crontab -r
 
 ```json
 {
-  "date": "2026-02-21",
+  "date": "2026-03-15",
   "source": "google_news_rss",
   "total_articles": 5,
   "statistics": {
@@ -172,18 +213,42 @@ crontab -r
 ```json
 [
   {
-    "date": "2026-02-21",
+    "date": "2026-03-15",
     "gpu_model": "RTX 5060",
-    "state_vector": [0.0606, 0.062, 0.065]
+    "state_vector": [0.0606, 0.062, ...]
   }
 ]
 ```
 
-`state_vector` 길이는 256입니다.
+`state_vector` 길이는 **256**입니다. 구성:
+
+| 그룹 | 차원 |
+|------|------|
+| 가격 피처 | 60D |
+| 환율 피처 | 20D |
+| 뉴스 피처 | 30D |
+| 시장 피처 | 20D |
+| 시간 피처 | 20D |
+| 기술지표 | 106D |
+| **합계** | **256D** |
 
 ---
 
-## 🧪 테스트 및 점검
+## CLI 옵션
+
+`python3 crawlers/run_daily.py` 지원 옵션:
+
+| 옵션 | 설명 |
+|------|------|
+| *(없음)* | 크롤링 + 자동 학습 판정 전체 실행 |
+| `--skip-release` | 크롤링만 실행, 릴리즈 파이프라인 생략 |
+| `--disable-auto-train` | 자동 학습 비활성화 (드라이 체크만) |
+| `--auto-retrain-days N` | 재학습 간격 N일로 오버라이드 |
+| `--auto-target-days N` | 타깃 데이터 윈도우 N일로 오버라이드 |
+
+---
+
+## 테스트 및 점검
 
 ### 전체 파이프라인 실행
 
@@ -191,7 +256,13 @@ crontab -r
 python3 crawlers/run_daily.py
 ```
 
-### 자동 학습 비활성화(드라이 체크만)
+### 크롤링만 (릴리즈 생략)
+
+```bash
+python3 crawlers/run_daily.py --skip-release
+```
+
+### 자동 학습 비활성화 (드라이 체크만)
 
 ```bash
 python3 crawlers/run_daily.py --disable-auto-train
@@ -206,16 +277,20 @@ python3 crawlers/run_daily.py --auto-retrain-days 5
 ### 로그 확인
 
 ```bash
-tail -f logs/cron.log
-tail -f logs/daily_crawl.log
-tail -n 100 logs/daily_crawl.log
+# LaunchAgent 실행 로그
+tail -f ~/Library/Logs/gpu-advisor/cron.log
+
+# 상세 파이썬 로그
+tail -f data/gpu-advisor/logs/daily_crawl.log
+tail -n 100 data/gpu-advisor/logs/daily_crawl.log
 ```
 
-### 자동 상태 보고서 확인
+### 보고서 확인
 
 ```bash
-cat docs/reports/latest_data_status.json | python3 -m json.tool
 cat docs/reports/latest_data_status.md
+cat docs/reports/latest_release_report.md
+cat docs/reports/latest_auto_training_status.md
 ls -la docs/reports/$(date +%Y-%m-%d)
 ```
 
@@ -230,7 +305,7 @@ cat data/processed/dataset/training_data_$(date +%Y-%m-%d).json | python3 -m jso
 
 ---
 
-## ⚙️ 설정 변경
+## 설정 변경
 
 ### 수집 대상 GPU 모델 변경
 - 파일: `crawlers/danawa_crawler.py`
@@ -240,23 +315,24 @@ cat data/processed/dataset/training_data_$(date +%Y-%m-%d).json | python3 -m jso
 - 파일: `crawlers/feature_engineer.py`
 - 각 블록(가격/환율/뉴스/시장/시간/기술지표) 차원과 최종 합계가 일치하도록 함께 수정
 
-### 자동 학습 정책 변경(환경변수)
+### 자동 학습 정책 변경 (환경변수)
 
 ```bash
-export GPU_ADVISOR_AUTO_TRAIN_ENABLED=true
-export GPU_ADVISOR_AUTO_TRAIN_TARGET_DAYS=30
-export GPU_ADVISOR_AUTO_RETRAIN_EVERY_DAYS=7
-export GPU_ADVISOR_AUTO_TRAIN_STEPS=500
-export GPU_ADVISOR_AUTO_TRAIN_BATCH_SIZE=32
-export GPU_ADVISOR_AUTO_TRAIN_LR=0.0001
-export GPU_ADVISOR_AUTO_TRAIN_SEED=42
-export GPU_ADVISOR_AUTO_TRAIN_LOOKBACK_DAYS=30
-export GPU_ADVISOR_AUTO_TRAIN_TIMEOUT_SEC=5400
+export GPU_ADVISOR_AUTO_TRAIN_ENABLED=true        # 자동 학습 on/off
+export GPU_ADVISOR_AUTO_TRAIN_TARGET_DAYS=30      # 학습 기준 일수
+export GPU_ADVISOR_AUTO_RETRAIN_EVERY_DAYS=7      # 재학습 간격 (신규 누적 일수)
+export GPU_ADVISOR_AUTO_TRAIN_STEPS=500           # 학습 스텝 수
+export GPU_ADVISOR_AUTO_TRAIN_BATCH_SIZE=32       # 배치 크기
+export GPU_ADVISOR_AUTO_TRAIN_LR=0.0001           # 학습률
+export GPU_ADVISOR_AUTO_TRAIN_SEED=42             # 재현성 시드
+export GPU_ADVISOR_AUTO_TRAIN_LOOKBACK_DAYS=30    # 학습 데이터 범위
+export GPU_ADVISOR_AUTO_TRAIN_TIMEOUT_SEC=5400    # 학습 타임아웃 (초)
+export GPU_ADVISOR_AUTO_TRAIN_STATE_PATH=data/processed/auto_training_state.json
 ```
 
 ---
 
-## 📈 누적 데이터 확인
+## 누적 데이터 확인
 
 ```bash
 # 소스별 날짜 수
@@ -265,36 +341,45 @@ ls -1 data/raw/exchange/*.json | wc -l
 ls -1 data/raw/news/*.json | wc -l
 ls -1 data/processed/dataset/training_data_*.json | wc -l
 
-# 최신 상태 보고서의 준비도 확인
+# 최신 상태 보고서
 cat docs/reports/latest_data_status.json | python3 -m json.tool
 ```
 
-30일 준비 여부는 상태 보고서의 `ready_for_30d_training` 필드와
-릴리즈 파이프라인의 readiness 결과(`backend/run_release_ready.py`)로 확인합니다.
+30일 준비 여부는 상태 보고서의 `current_min_days` / `ready_for_target` 필드와
+릴리즈 파이프라인(`python3 backend/run_release_ready.py`)으로 확인합니다.
 
 ---
 
-## 🚀 30일 이후 자동 동작
+## 30일 이후 자동 동작
 
-`python3 crawlers/run_daily.py` 실행 시 자동으로:
+`python3 crawlers/run_daily.py` 실행 시 `auto_training.py`가 자동 판정:
 
-1. 첫 30일 도달 시 학습+릴리즈 실행
-2. 이후 `GPU_ADVISOR_AUTO_RETRAIN_EVERY_DAYS` 누적마다 재학습+릴리즈 실행
-3. 누적이 부족한 날에는 드라이 체크만 실행
-4. 결과물은 `latest_release_report.*`, `latest_auto_training_status.*`에 최신본 저장
+| 조건 | 동작 |
+|------|------|
+| 30일 미달 | 드라이 체크만 (`backend/run_release_daily.py`) |
+| 30일 도달 (첫 학습) | 학습+평가+릴리즈 (`backend/run_release_ready.py`) |
+| 30일 이후 + 신규 7일 누적 | 재학습+평가+릴리즈 |
+| 30일 이후 + 누적 미달 | 드라이 체크만 |
+
+결과물:
+- `docs/reports/latest_release_report.{json,md}`
+- `docs/reports/latest_auto_training_status.{json,md}`
+- `data/processed/auto_training_state.json` (다음 판정 기준 저장)
 
 ---
 
-## ✅ 체크리스트
+## 운영 체크리스트
 
-- [ ] Cron 설정 완료 (`./setup_cron.sh`)
+- [ ] LaunchAgent 등록 (`launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.gpu-advisor.daily-crawl.plist`)
+- [ ] pmset 웨이크 스케줄 설정 (`sudo pmset repeat wakepoweron MTWRFSU 23:58:00`)
 - [ ] 수동 실행 테스트 (`python3 crawlers/run_daily.py`)
 - [ ] raw/processed 파일 생성 확인
+- [ ] LaunchAgent 로그 경로 확인 (`~/Library/Logs/gpu-advisor/cron.log`)
 - [ ] `docs/reports/latest_data_status.*` 갱신 확인
 - [ ] `docs/reports/latest_auto_training_status.*` 확인
 - [ ] `docs/reports/latest_release_report.*` 확인
 
 ---
 
-**작성/갱신:** 2026-03-04
+**작성/갱신:** 2026-03-15
 **프로젝트:** GPU Purchase Timing Advisor

@@ -152,7 +152,8 @@ repository: Optional[RepositoryProtocol] = None
 def get_gpu_agent() -> GPUPurchaseAgent:
     global gpu_agent
     if gpu_agent is None:
-        gpu_agent = GPUPurchaseAgent()
+        # project_root 명시 전달: 배포 환경에서도 경로 탐색 신뢰성 보장
+        gpu_agent = GPUPurchaseAgent(project_root=PROJECT_ROOT)
     return gpu_agent
 
 
@@ -534,7 +535,7 @@ async def start_training(config: TrainingConfig):
 
     return {
         "status": "started",
-        "config": config.dict(),
+        "config": config.model_dump(),  # Pydantic v2: dict() deprecated → model_dump()
         "total_steps": config.num_steps,
     }
 
@@ -573,11 +574,13 @@ async def stream_metrics():
             if last_index < len(training_state.metrics_history):
                 new_metrics = training_state.metrics_history[last_index:]
                 for metric in new_metrics:
-                    yield f"data: {json.dumps(metric)}\\n\\n"
+                    # SSE 규격: 각 이벤트는 실제 개행 2개로 종료
+                    # 기존: \\n\\n (리터럴 백슬래시-n) → SSE 파싱 불가
+                    yield f"data: {json.dumps(metric)}\n\n"
                 last_index = len(training_state.metrics_history)
 
             if not training_state.is_training and last_index >= len(training_state.metrics_history):
-                yield f"data: {json.dumps({'type': 'done'})}\\n\\n"
+                yield f"data: {json.dumps({'type': 'done'})}\n\n"
                 break
 
             await asyncio.sleep(0.2)

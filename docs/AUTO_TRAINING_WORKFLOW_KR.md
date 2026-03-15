@@ -32,17 +32,35 @@
 - 조건 충족 시: `backend/run_release_ready.py` 재실행
 - 조건 미충족 시: 드라이 체크(`backend/run_release_daily.py`)만 실행
 
-## 3. 상태 저장 및 재실행 판단
+## 3. 의사결정 로직
+
+`decide_auto_training_action()` 함수가 아래 순서로 판정합니다:
+
+| 조건 | 결정 | 이유 코드 |
+|------|------|-----------|
+| `auto_training_enabled = false` | `release_check` | `auto_training_disabled` |
+| `current_min_days < target_days` | `release_check` | `insufficient_data_window` |
+| `dataset_last_date` 없음 | `release_check` | `dataset_last_date_missing` |
+| 학습 이력 없음 (`last_trained_data_date` 없음) | `train_release` | `first_training_after_target` |
+| `newly_accumulated_days >= retrain_every_days` | `train_release` | `retrain_accumulation_met` |
+| 나머지 | `release_check` | `retrain_accumulation_not_met` |
+
+## 4. 상태 저장 및 재실행 판단
+
 - 상태 파일 기본 경로: `data/processed/auto_training_state.json`
 - 주요 필드:
-  - `last_trained_data_date`
-  - `last_training_run_at`
-  - `last_pipeline_status`
-  - `last_decision`
+
+| 필드 | 설명 |
+|------|------|
+| `last_trained_data_date` | 마지막 학습에 사용된 데이터 최신일 |
+| `last_training_run_at` | 마지막 학습 실행 시각 (ISO 8601) |
+| `last_pipeline_status` | `train_release` / `release_check` / `error` |
+| `last_decision` | `AutoTrainingDecision` 전체 스냅샷 |
 
 다음 실행에서 이 상태를 읽어 재학습 필요 여부를 판정합니다.
 
-## 4. 환경변수 설정
+## 5. 환경변수 설정
+
 아래 변수로 자동화 동작을 제어할 수 있습니다.
 
 ```bash
@@ -67,7 +85,7 @@ export GPU_ADVISOR_AUTO_TRAIN_TIMEOUT_SEC=5400
 export GPU_ADVISOR_AUTO_TRAIN_STATE_PATH=data/processed/auto_training_state.json
 ```
 
-## 5. 실행 방법
+## 6. 실행 방법
 
 ### 기본 실행 (권장)
 ```bash
@@ -85,23 +103,61 @@ python3 crawlers/run_daily.py --disable-auto-train
 python3 crawlers/run_daily.py --auto-retrain-days 5
 ```
 
-## 6. 생성되는 결과물
+### 타깃 데이터 윈도우 오버라이드
+```bash
+python3 crawlers/run_daily.py --auto-target-days 20
+```
 
-### 6.1 릴리즈 결과
+### 릴리즈 파이프라인 생략 (크롤링만 실행)
+```bash
+python3 crawlers/run_daily.py --skip-release
+```
+
+## 7. 생성되는 결과물
+
+### 7.1 릴리즈 결과
 - `docs/reports/latest_release_report.json`
 - `docs/reports/latest_release_report.md`
 
-### 6.2 자동화 결과
+### 7.2 자동화 결과
 - `docs/reports/latest_auto_training_status.json`
 - `docs/reports/latest_auto_training_status.md`
 
-### 6.3 날짜별 보관
+### 7.3 날짜별 보관
 - `docs/reports/YYYY-MM-DD/auto_training_status_*.{json,md}`
 - `docs/reports/YYYY-MM-DD/release_report_*.{json,md}`
 
-## 7. 운영 체크리스트
-1. `setup_cron.sh`로 daily cron 등록
-2. `logs/daily_crawl.log`에서 자동화 action 확인
-3. `latest_auto_training_status.md`에서 재학습 트리거 여부 확인
-4. `latest_release_report.md`의 게이트 통과 여부 확인
-5. `blocked`면 하이퍼파라미터/데이터 품질 조정 후 다음 누적 주기에서 재학습
+### 7.4 체크포인트 구조
+학습 완료 시 체크포인트(`alphazero_model_agent_latest.pth`)에 포함되는 항목:
+
+| 키 | 설명 |
+|----|------|
+| `h_state_dict` | 표현 네트워크 (RepresentationNetwork) |
+| `g_state_dict` | 역학 네트워크 (DynamicsNetwork) |
+| `f_state_dict` | 예측 네트워크 (PredictionNetwork) |
+| `a_state_dict` | 행동 모델 (ActionModel) |
+| `optimizer_state_dict` | AdamW 옵티마이저 상태 |
+
+## 8. 운영 체크리스트
+
+1. **LaunchAgent 등록**: `~/Library/LaunchAgents/com.gpu-advisor.daily-crawl.plist`
+   - macOS TCC 보호로 인해 로그는 반드시 `~/Library/Logs/` 경로 사용
+2. **LaunchAgent 로그 확인**: `~/Library/Logs/gpu-advisor/cron.log`
+3. **상세 파이썬 로그**: `data/gpu-advisor/logs/daily_crawl.log`에서 자동화 action 확인
+4. **자동화 상태 확인**: `docs/reports/latest_auto_training_status.md`에서 재학습 트리거 여부 확인
+5. **릴리즈 게이트 확인**: `docs/reports/latest_release_report.md`의 게이트 통과 여부 확인
+6. `blocked`면 하이퍼파라미터/데이터 품질 조정 후 다음 누적 주기에서 재학습
+
+### LaunchAgent 진단 명령
+
+```bash
+# 상태 확인
+launchctl print gui/$(id -u)/com.gpu-advisor.daily-crawl
+
+# 재로드
+launchctl bootout gui/$(id -u)/com.gpu-advisor.daily-crawl.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.gpu-advisor.daily-crawl.plist
+
+# 수동 실행
+python3 crawlers/run_daily.py
+```

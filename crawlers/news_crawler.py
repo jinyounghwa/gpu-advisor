@@ -10,7 +10,6 @@ from pathlib import Path
 import logging
 import time
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # 감성 키워드
@@ -188,5 +187,6 @@ class NewsCrawler:
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     crawler = NewsCrawler()
     crawler.run()

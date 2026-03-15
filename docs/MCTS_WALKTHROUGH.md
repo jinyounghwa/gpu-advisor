@@ -45,7 +45,7 @@ f(s_0) → Policy logits: [-0.23, 0.45, 0.12, -0.08, -0.31]
          Value: v = 0.15
 ```
 
-Five child nodes are created:
+Five child nodes are created (with Dirichlet noise applied to root priors for exploration diversity):
 
 ```
 Root (N=0, W=0)
@@ -55,6 +55,7 @@ Root (N=0, W=0)
 ├── [HOLD]       Prior P=0.183, N=0, W=0
 └── [SKIP]       Prior P=0.125, N=0, W=0
 ```
+Note: Root priors = 0.75 × f(s_0) probs + 0.25 × Dirichlet(α=0.03) noise. This prevents over-exploitation of the network prior at the root.
 
 ### Step 3: Rollout (Simulation)
 
@@ -101,15 +102,15 @@ Root node:       N = 0→1, W = 0→0.1350, Q = 0.1350
 ### Step 1: UCB Score Calculation
 
 ```
-UCB(a) = Q(a) + c × P(a) × √(ln(N_parent + 1) / (1 + N_child))
+UCB(a) = Q(a) + c × P(a) × √(N_parent) / (1 + N_child)   ← PUCT (AlphaZero style)
 
 Root visits N_parent = 1, c = √2 ≈ 1.414
 
-BUY_NOW:    Q=0     + 1.414 × 0.158 × √(ln(2)/1) = 0 + 0.186 = 0.186
-WAIT_SHORT: Q=0.135 + 1.414 × 0.311 × √(ln(2)/2) = 0.135 + 0.259 = 0.394
-WAIT_LONG:  Q=0     + 1.414 × 0.224 × √(ln(2)/1) = 0 + 0.264 = 0.264
-HOLD:       Q=0     + 1.414 × 0.183 × √(ln(2)/1) = 0 + 0.215 = 0.215
-SKIP:       Q=0     + 1.414 × 0.125 × √(ln(2)/1) = 0 + 0.147 = 0.147
+BUY_NOW:    N=0 → UCB = ∞  (unvisited)
+WAIT_SHORT: Q=0.135 + 1.414 × 0.311 × √1 / (1+1) = 0.135 + 0.220 = 0.355
+WAIT_LONG:  N=0 → UCB = ∞  (unvisited)
+HOLD:       N=0 → UCB = ∞  (unvisited)
+SKIP:       N=0 → UCB = ∞  (unvisited)
 
 * Unvisited nodes (N=0) have UCB = ∞, so they are explored first
 → BUY_NOW selected (one of the unvisited nodes)
@@ -150,11 +151,11 @@ Root (N=5, Q=0.080)
 ```
 UCB scores (N_parent = 5):
 
-BUY_NOW:    0.082 + 1.414 × 0.158 × √(ln(6)/2) = 0.082 + 0.237 = 0.319
-WAIT_SHORT: 0.135 + 1.414 × 0.311 × √(ln(6)/2) = 0.135 + 0.467 = 0.602 ← max
-WAIT_LONG:  0.112 + 1.414 × 0.224 × √(ln(6)/2) = 0.112 + 0.337 = 0.449
-HOLD:       0.045 + 1.414 × 0.183 × √(ln(6)/2) = 0.045 + 0.275 = 0.320
-SKIP:       0.028 + 1.414 × 0.125 × √(ln(6)/2) = 0.028 + 0.188 = 0.216
+BUY_NOW:    0.082 + 1.414 × 0.158 × √5 / (1+1) = 0.082 + 0.250 = 0.332
+WAIT_SHORT: 0.135 + 1.414 × 0.311 × √5 / (1+1) = 0.135 + 0.491 = 0.626 ← max
+WAIT_LONG:  0.112 + 1.414 × 0.224 × √5 / (1+1) = 0.112 + 0.354 = 0.466
+HOLD:       0.045 + 1.414 × 0.183 × √5 / (1+1) = 0.045 + 0.289 = 0.334
+SKIP:       0.028 + 1.414 × 0.125 × √5 / (1+1) = 0.028 + 0.198 = 0.226
 
 → WAIT_SHORT selected (both Q-value and prior are high)
 ```
@@ -189,12 +190,12 @@ Visit counts converted via temperature (τ):
 MCTS policy is blended with other signals:
 
 ```
-MCTS policy:   [0.16, 0.36, 0.24, 0.14, 0.10]
-Reward policy: [0.15, 0.30, 0.25, 0.18, 0.12]
-Prior:         [0.20, 0.25, 0.22, 0.18, 0.15]
-Utility bias:  [0.10, 0.28, 0.30, 0.17, 0.15]
+MCTS policy:      [0.16, 0.36, 0.24, 0.14, 0.10]
+Reward policy:    [0.15, 0.30, 0.25, 0.18, 0.12]
+Prior (f-net):    [0.20, 0.25, 0.22, 0.18, 0.15]
+ActionModel prior:[0.10, 0.28, 0.30, 0.17, 0.15]  ← latent-conditioned learned prior
 
-Calibrated = 0.45×MCTS + 0.25×Reward + 0.15×Prior + 0.15×Utility
+Calibrated = 0.45×MCTS + 0.25×Reward + 0.15×Prior + 0.15×ActionModel
            = [0.148, 0.318, 0.249, 0.157, 0.114]
 
 → Final action: WAIT_SHORT (31.8%)
@@ -214,11 +215,12 @@ Entropy 1.52 ≤ 1.58 (max threshold) → PASS ✓
 
 ## Key Takeaways
 
-1. **UCB balances exploration and exploitation**: Sum of Q-value (exploitation) and visit-count bonus (exploration)
+1. **PUCT formula**: Q + c·P·√N_parent / (1+N) — exploration constant c=√2 is now properly applied
 2. **Unvisited nodes have UCB = ∞**: First 5 simulations try each action once
 3. **Visit count = action probability**: More visits → better action (intuition)
 4. **Rollout depth 5**: Dynamics Network simulates 5 days into the future
-5. **Policy calibration**: MCTS alone can collapse to one action; blending with other signals prevents this
+5. **Dirichlet noise at root**: 25% noise added to root priors to prevent over-exploitation
+6. **Policy calibration**: 4-signal blend (MCTS 45% + Reward 25% + f-net Prior 15% + ActionModel Prior 15%)
 
 ---
 

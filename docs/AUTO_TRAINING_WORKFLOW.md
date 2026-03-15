@@ -32,17 +32,35 @@ Applied path:
 - If met: re-run `backend/run_release_ready.py`
 - If not met: run dry-check only (`backend/run_release_daily.py`)
 
-## 3. State Persistence and Triggering
+## 3. Decision Logic
+
+`decide_auto_training_action()` evaluates conditions in this order:
+
+| Condition | Decision | Reason Code |
+|-----------|----------|-------------|
+| `auto_training_enabled = false` | `release_check` | `auto_training_disabled` |
+| `current_min_days < target_days` | `release_check` | `insufficient_data_window` |
+| `dataset_last_date` missing | `release_check` | `dataset_last_date_missing` |
+| No training history (`last_trained_data_date` absent) | `train_release` | `first_training_after_target` |
+| `newly_accumulated_days >= retrain_every_days` | `train_release` | `retrain_accumulation_met` |
+| Otherwise | `release_check` | `retrain_accumulation_not_met` |
+
+## 4. State Persistence and Triggering
+
 - Default state file: `data/processed/auto_training_state.json`
 - Key fields:
-  - `last_trained_data_date`
-  - `last_training_run_at`
-  - `last_pipeline_status`
-  - `last_decision`
+
+| Field | Description |
+|-------|-------------|
+| `last_trained_data_date` | Latest data date used in the last training run |
+| `last_training_run_at` | Timestamp of last training run (ISO 8601) |
+| `last_pipeline_status` | `train_release` / `release_check` / `error` |
+| `last_decision` | Full `AutoTrainingDecision` snapshot |
 
 The next daily run reads this state and decides whether retraining is required.
 
-## 4. Environment Variables
+## 5. Environment Variables
+
 Use these variables to control automation behavior:
 
 ```bash
@@ -67,7 +85,7 @@ export GPU_ADVISOR_AUTO_TRAIN_TIMEOUT_SEC=5400
 export GPU_ADVISOR_AUTO_TRAIN_STATE_PATH=data/processed/auto_training_state.json
 ```
 
-## 5. How to Run
+## 6. How to Run
 
 ### Default (recommended)
 ```bash
@@ -85,23 +103,61 @@ python3 crawlers/run_daily.py --disable-auto-train
 python3 crawlers/run_daily.py --auto-retrain-days 5
 ```
 
-## 6. Generated Artifacts
+### Override target data window for one run
+```bash
+python3 crawlers/run_daily.py --auto-target-days 20
+```
 
-### 6.1 Release outputs
+### Skip release pipeline (crawling only)
+```bash
+python3 crawlers/run_daily.py --skip-release
+```
+
+## 7. Generated Artifacts
+
+### 7.1 Release outputs
 - `docs/reports/latest_release_report.json`
 - `docs/reports/latest_release_report.md`
 
-### 6.2 Automation outputs
+### 7.2 Automation outputs
 - `docs/reports/latest_auto_training_status.json`
 - `docs/reports/latest_auto_training_status.md`
 
-### 6.3 Date-versioned history
+### 7.3 Date-versioned history
 - `docs/reports/YYYY-MM-DD/auto_training_status_*.{json,md}`
 - `docs/reports/YYYY-MM-DD/release_report_*.{json,md}`
 
-## 7. Operator Checklist
-1. Register daily cron via `setup_cron.sh`
-2. Verify automation action in `logs/daily_crawl.log`
-3. Check retrain trigger details in `latest_auto_training_status.md`
-4. Review gate outcomes in `latest_release_report.md`
-5. If `blocked`, tune hyperparameters/data quality and continue with the next accumulation cycle
+### 7.4 Checkpoint structure
+When training completes, `alphazero_model_agent_latest.pth` contains:
+
+| Key | Description |
+|-----|-------------|
+| `h_state_dict` | Representation Network |
+| `g_state_dict` | Dynamics Network |
+| `f_state_dict` | Prediction Network |
+| `a_state_dict` | Action Model |
+| `optimizer_state_dict` | AdamW optimizer state |
+
+## 8. Operator Checklist
+
+1. **Register LaunchAgent**: `~/Library/LaunchAgents/com.gpu-advisor.daily-crawl.plist`
+   - Due to macOS TCC protection, log paths must be under `~/Library/Logs/`
+2. **LaunchAgent log**: `~/Library/Logs/gpu-advisor/cron.log`
+3. **Detailed Python log**: `data/gpu-advisor/logs/daily_crawl.log` — verify automation action
+4. **Automation status**: `docs/reports/latest_auto_training_status.md` — check retrain trigger
+5. **Release gates**: `docs/reports/latest_release_report.md` — check gate outcomes
+6. If `blocked`, tune hyperparameters/data quality and continue with the next accumulation cycle
+
+### LaunchAgent Diagnostics
+
+```bash
+# Check status
+launchctl print gui/$(id -u)/com.gpu-advisor.daily-crawl
+
+# Reload
+launchctl bootout gui/$(id -u)/com.gpu-advisor.daily-crawl.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.gpu-advisor.daily-crawl.plist
+
+# Manual run
+python3 crawlers/run_daily.py
+```

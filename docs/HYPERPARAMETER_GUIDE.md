@@ -6,19 +6,30 @@ This document explains every key hyperparameter in the GPU Advisor project and t
 
 | Item | Value |
 |------|-------|
-| Input dimension | 22D (market state) |
+| Input dimension | 256D (GPU market state vector) |
 | Latent space | 256D |
-| Expansion ratio | ~11.6× |
+| Expansion ratio | 1:1 (input = latent) |
+
+**Input vector composition (256D)**:
+
+| Feature group | Dim | Content |
+|--------------|-----|---------|
+| Price features | 60D | Normalized price, MA7/MA14/MA30, % change, volatility, etc. |
+| Exchange features | 20D | USD/KRW, JPY/KRW, EUR/KRW normalized |
+| News features | 30D | Sentiment score, article count, positive/negative ratio |
+| Market features | 20D | Seller count, inventory status |
+| Time features | 20D | Day of week, month, year-end flag |
+| Technical indicators | 106D | RSI, MACD, momentum, padding |
 
 **Why 256?**
 
-- **Information capacity**: 256D is sufficient to compress 6 feature categories (price 60D, exchange 20D, news 30D, market 20D, time 20D, technical 106D) into a single vector.
-- **Power of two**: 2^8 = 256 is optimal for GPU tensor operations — memory alignment and SIMD instructions benefit from powers of two.
-- **MuZero reference**: The original MuZero used 256 channels for Go (19×19 board = 361 intersections). Our input (22D) is much smaller, so 256D is more than adequate.
+- **Information capacity**: 256D is sufficient to compress 6 feature categories into a single vector.
+- **Power of two**: 2^8 = 256 is optimal for GPU tensor operations — memory alignment and SIMD instructions.
+- **MuZero reference**: The original MuZero used 256 channels for Go (19×19 board = 361 intersections).
 - **128 vs 256 vs 512**:
   - 128D: Potential bottleneck for 6 feature categories
   - 256D: ~42D allocation per category, good expressiveness
-  - 512D: 2× parameters but risk of overfitting on 22D input
+  - 512D: 2× parameters but risk of overfitting
 
 ## 2. MCTS Simulations: 50
 
@@ -46,24 +57,41 @@ Simulations vs estimated quality:
 
 | Action | Meaning | Design Rationale |
 |--------|---------|-----------------|
-| BUY_NOW | Buy immediately | Price dip detected |
-| WAIT_SHORT | Wait ~1 week | Slight decline expected |
-| WAIT_LONG | Wait ~1 month | Significant decline expected |
-| HOLD | Observe | High uncertainty |
-| SKIP | Skip this cycle | Avoid purchase entirely |
+| BUY_NOW (0) | Buy immediately | Price dip detected |
+| WAIT_SHORT (1) | Wait ~1 week | Slight decline expected |
+| WAIT_LONG (2) | Wait ~1 month | Significant decline expected |
+| HOLD (3) | Observe | High uncertainty |
+| SKIP (4) | Skip this cycle | Avoid purchase entirely |
+
+**Action labeling thresholds** (`_action_from_delta()`):
+
+| Price change | Label |
+|-------------|-------|
+| `pct >= +2%` | BUY_NOW (0) |
+| `-0.5% > pct >= -2%` | WAIT_SHORT (1) |
+| `pct <= -2%` | WAIT_LONG (2) |
+| Otherwise | HOLD (3) |
+
+> **Note**: SKIP(4) is never labeled from price data because the evaluator's reward function creates a reverse-direction learning signal. For a -6% price move, WAIT_LONG reward (+0.06) > SKIP reward (-0.009), so labeling SKIP from price downturns would train the model in the wrong direction.
 
 **Why 5?**
 
 - **3 actions (buy/wait/hold)**: Too simple. Cannot express "how long to wait"
 - **5 actions**: Covers both time axis (now/short/medium) and intensity axis (buy/wait/skip)
 - **7+ actions**: No practical differentiation for GPU purchase decisions
-- **Go analogy**: In Go, a move is "place stone at position X". In GPU buying, a move is "act at time T". The natural temporal granularity has 5 levels.
 
-## 4. Exploration Constant (UCB): c = √2 ≈ 1.414
+## 4. Exploration Constant (PUCT): c = √2 ≈ 1.414
+
+MCTS uses AlphaZero-style PUCT (Predictor + UCT):
 
 ```
-UCB(s, a) = Q(s, a) + c × P(s, a) × √(ln(N_parent) / (1 + N_child))
+UCB(s, a) = Q(s, a) + c × P(s, a) × √N_parent / (1 + N_child)
 ```
+
+- `Q(s, a)`: Action value estimate (average backup reward)
+- `P(s, a)`: Prior probability from prediction network f
+- `N_parent`: Parent node visit count
+- `N_child`: Current node visit count
 
 **Why √2?**
 
@@ -74,7 +102,25 @@ UCB(s, a) = Q(s, a) + c × P(s, a) × √(ln(N_parent) / (1 + N_child))
   - c = 2.0: Over-exploration, slow convergence
 - **AlphaGo**: Uses PUCT variant with c_puct = 1.5–2.5. Our value falls within this range.
 
-## 5. Rollout Depth: 5 Steps
+## 5. Dirichlet Noise (Root Exploration Diversity)
+
+| Item | Value |
+|------|-------|
+| epsilon (ε) | 0.25 |
+| alpha (α) | 0.03 |
+| Applied to | Root node priors only |
+
+```python
+noise = Dirichlet([α] * action_dim)
+policy_probs = (1 - ε) * policy_probs + ε * noise
+```
+
+**Design rationale**:
+- Same method as AlphaZero: noise applied only to the root node to increase search diversity
+- ε=0.25: 75% of original prior preserved, 25% noise mixed in
+- α=0.03: Low value = concentrated spike noise (one action gets most noise) → stronger exploration pressure
+
+## 6. Rollout Depth: 5 Steps
 
 | Item | Value |
 |------|-------|
@@ -89,35 +135,54 @@ UCB(s, a) = Q(s, a) + c × P(s, a) × √(ln(N_parent) / (1 + N_child))
 - **Error accumulation**: Dynamics Network prediction error compounds at each step. Beyond 5 steps, predictions become unreliable.
 - **Compute budget**: Rollout depth × simulations = total network calls. 5 × 50 = 250, suitable for real-time inference.
 
-## 6. Network Architecture
+## 7. Network Architecture
 
-### Hidden Dimension: 512D
+### World Model: 3 Networks (h, g, f)
 
 ```
-Input 256D → Hidden 512D (×4 blocks) → Output 256D/5D/1D
+Input 256D → Hidden 512D (×4 residual blocks) → Output 256D/5D/1D
 ```
 
+- **Residual connections**: All blocks apply `x = x + block(x)` → training stability for deep networks
 - **2× expansion**: 512D = 2× the 256D input provides sufficient nonlinear capacity.
-- **4× FFN**: Each block internally expands 512 → 2048 → 512 (Transformer convention).
-- **Parameter budget**: 18.9M total parameters distributed evenly across 3 networks (~6M each).
 
-### Layer Count: 4 Blocks
+| Network | Role | Parameters |
+|---------|------|------------|
+| h (Representation) | 256D input → 256D latent state | ~6M |
+| g (Dynamics) | Latent state + action → next state + reward (μ, σ²) | ~6M |
+| f (Prediction) | Latent state → policy + value | ~6M |
+| a (Action Model) | Action embedding + prior network | ~43K |
 
-- **Depth vs width**: 4 blocks × 512D has more expressive power than 2 blocks × 1024D.
-- **Gradient flow**: 4 blocks is stable for training even without residual connections.
-- **MuZero reference**: Original uses 16 ResNet blocks, but our 22D input is much simpler, so 4 blocks suffice.
+### ActionModel (a)
 
-## 7. Training Hyperparameters
+```
+ActionEmbeddingLayer(num_actions=5, embed_dim=16)
+ActionPriorNetwork: 256 → 128 → 64 → 5
+Total parameters: ~43K
+```
+
+- Predicts action prior distribution from the current latent state
+- Used with 15% weight in the 4-signal calibration blend
+- Replaces the hardcoded `utility_bias` heuristic with learned priors
+
+### Dynamics Network Reward Uncertainty Head
+
+```
+g(s, a) → (next_state, reward_mean μ, reward_logvar)
+σ² = exp(reward_logvar)    # variance
+σ  = reward_var.sqrt()     # standard deviation
+```
+
+## 8. Training Hyperparameters
 
 | Parameter | Value | Rationale |
 |-----------|-------|-----------|
 | Learning rate | 1e-4 | Stable convergence range for AdamW |
-| Batch size | 32 | Efficient sampling for ~168 transition samples |
+| Batch size | 32 | Efficient sampling for ~24 GPU models × days |
 | Training steps | 500 | Prevents overfitting on small dataset |
 | Weight decay | 1e-5 | L2 regularization against overfitting |
-| Gradient clipping | 1.0 | Training stability |
-| Entropy coefficient | 0.001 | Maintains policy diversity without disrupting learning |
-| Prior regularization | 0.02 | Prevents policy from drifting too far from data distribution |
+| Gradient clipping | 1.0 | `clip_grad_norm_()` return value captured and tracked |
+| Optimizer | AdamW | Decoupled weight decay application |
 
 ### Learning Rate 1e-4
 
@@ -127,24 +192,40 @@ Input 256D → Hidden 512D (×4 blocks) → Output 256D/5D/1D
 1e-5: Too slow, needs 5000+ steps
 ```
 
-### Batch Size 32
+## 9. Loss Function Weights
 
-- Total data: ~24 GPU models × days (~168 transition samples)
-- Batch 32 samples ~19% of the dataset each step
-- Large batches on small data → overfitting; small batches → excessive noise
-
-## 8. Policy Calibration Weights
+Total loss is a weighted sum of 5 components:
 
 ```python
-calibrated = 0.45 × MCTS_policy + 0.25 × reward_policy + 0.15 × prior + 0.15 × utility_bias
+total_loss = (
+    1.0 * latent_loss          # Latent state consistency (world model core)
+  + 1.0 * policy_loss          # Policy KL loss
+  + 1.0 * value_loss           # Value MSE loss
+  + 0.5 * reward_nll_loss      # Gaussian NLL (trains uncertainty head)
+  + 0.3 * action_prior_loss    # ActionModel supervised learning
+)
+```
+
+**Gaussian NLL formula**:
+```
+NLL = 0.5 × ((r - μ)² × exp(-logvar) + logvar)
+```
+- Passes real gradients to the `logvar` head, enabling reward uncertainty learning
+
+**action_prior_loss**: CrossEntropy — trains ActionModel to match price-derived action labels
+
+## 10. Policy Calibration Weights (4-Signal Blend)
+
+```python
+calibrated = 0.45 × MCTS_policy + 0.25 × reward_policy + 0.15 × f_prior + 0.15 × action_model_prior
 ```
 
 | Source | Weight | Role |
 |--------|--------|------|
 | MCTS policy | 0.45 | Core decision (planning-based) |
 | Reward policy | 0.25 | Expected reward correction |
-| Prior probability | 0.15 | Data distribution regularization |
-| Utility bias | 0.15 | Observable feature-based common sense |
+| f-net prior | 0.15 | Data distribution regularization |
+| ActionModel prior | 0.15 | Learned action prior (replaces utility_bias) |
 
 **Why 0.45 for MCTS?**
 
@@ -152,7 +233,23 @@ calibrated = 0.45 × MCTS_policy + 0.25 × reward_policy + 0.15 × prior + 0.15 
 - 0.45 gives MCTS the leading role while allowing other signals to calibrate
 - Weights sum to 1.0, guaranteeing a valid probability distribution
 
-## 9. Safety Thresholds
+## 11. Anti-Collapse Regularizer
+
+```python
+min_entropy_target = 0.65  # bits
+
+if entropy(calibrated) < min_entropy_target:
+    alpha = min(0.55, (min_entropy_target - entropy_now) / max(min_entropy_target, 1e-6))
+    uniform = ones(num_actions) / num_actions   # unbiased uniform
+    calibrated = (1 - alpha) * calibrated + alpha * uniform
+```
+
+**Design rationale**:
+- **Uniform distribution** (not empirical prior): The empirical prior (e.g., 60% HOLD) amplifies training bias. Uniform distribution is neutral.
+- `alpha` cap at 0.55: Prevents over-regularization
+- `min_entropy_target = 0.65`: ~40% of maximum entropy ln(5)≈1.609 for 5 actions
+
+## 12. Safety Thresholds
 
 | Threshold | Value | Rationale |
 |-----------|-------|-----------|
@@ -164,7 +261,7 @@ calibrated = 0.45 × MCTS_policy + 0.25 × reward_policy + 0.15 × prior + 0.15 
 
 See [SAFETY_MECHANISMS.md](SAFETY_MECHANISMS.md) for detailed safety mechanism documentation.
 
-## 10. Discount Factor: γ = 0.99
+## 13. Discount Factor: γ = 0.99
 
 - **Meaning**: Present value ratio of future rewards.
 - **Why 0.99**: GPU purchase decisions require a long-term perspective. Rewards 5 days ahead retain 95.1% of their value.

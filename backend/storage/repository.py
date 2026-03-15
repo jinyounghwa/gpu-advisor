@@ -81,7 +81,9 @@ class SQLiteRepository:
     def save_market_sentiment(self, snapshot: Dict[str, Any]) -> None:
         self.initialize()
         now = datetime.now(timezone.utc).isoformat()
-        with self._connect() as conn:
+        # _lock으로 쓰기 직렬화: SQLite는 파일 잠금 기반이므로
+        # 동시 쓰기 시 "database is locked" 오류를 예방
+        with self._lock, self._connect() as conn:
             conn.execute(
                 """
                 INSERT INTO market_sentiment_snapshots (
@@ -118,7 +120,7 @@ class SQLiteRepository:
             decision_payload = asdict(decision)
         else:
             decision_payload = dict(decision)
-        with self._connect() as conn:
+        with self._lock, self._connect() as conn:
             conn.execute(
                 """
                 INSERT INTO agent_decisions (

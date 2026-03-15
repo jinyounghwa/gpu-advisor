@@ -43,6 +43,11 @@ class MCTSNode:
 
     @property
     def ucb_score(self) -> float:
+        """
+        [Deprecated] 이 프로퍼티는 UCB1 스타일 공식을 사용하며 exploration=1.0 고정.
+        실제 탐색에서는 MCTSEngine._ucb_score() (PUCT, c=√2)를 사용한다.
+        체크포인트/직렬화 호환성을 위해 삭제하지 않고 유지.
+        """
         if self.visits == 0:
             return float("inf")
         return self.value + self.prior * math.sqrt(
@@ -82,6 +87,8 @@ class MCTSEngine:
             tree: search tree
         """
         root = MCTSNode(state=root_state)
+        # 루트를 먼저 확장하여 Dirichlet 노이즈 적용 (AlphaZero 탐색 다양성)
+        self._expand(root, policy_network, device, add_dirichlet=True)
 
         for _ in range(self.config.num_simulations):
             node = self._select(root)
@@ -100,13 +107,38 @@ class MCTSEngine:
 
         return action_probs, root.value, root
 
+    def _ucb_score(self, node: MCTSNode) -> float:
+        """
+        PUCT 공식 (AlphaZero/MuZero 스타일):
+            UCB = Q(s,a) + c_puct * P(s,a) * sqrt(N(s)) / (1 + N(s,a))
+
+        기존: node.ucb_score 프로퍼티는 exploration 상수(c_puct)를 항상 1.0으로 고정
+        수정: MCTSConfig.exploration (기본값 √2) 을 실제로 적용
+        """
+        if node.visits == 0:
+            return float("inf")
+        parent_visits = node.parent.visits if node.parent else 1
+        exploration = (
+            self.config.exploration
+            * node.prior
+            * math.sqrt(parent_visits)
+            / (1 + node.visits)
+        )
+        return node.value + exploration
+
     def _select(self, node: MCTSNode) -> MCTSNode:
-        """Select node for expansion using UCB"""
+        """Select node for expansion using PUCT"""
         while node.is_expanded and not node.is_terminal and node.children:
-            node = max(node.children, key=lambda n: n.ucb_score)
+            node = max(node.children, key=self._ucb_score)
         return node
 
-    def _expand(self, node: MCTSNode, policy_network, device: str = "cpu") -> MCTSNode:
+    def _expand(
+        self,
+        node: MCTSNode,
+        policy_network,
+        device: str = "cpu",
+        add_dirichlet: bool = False,
+    ) -> MCTSNode:
         """Expand node by adding children"""
         state_tensor = (
             torch.tensor(node.state, dtype=torch.float32).unsqueeze(0).to(device)
@@ -131,6 +163,15 @@ class MCTSEngine:
             )
 
         policy_probs = policy_probs / policy_probs.sum()
+
+        # Dirichlet 노이즈: 루트 노드에만 적용하여 탐색 다양성 확보 (AlphaZero 방식)
+        # 기존: dirichlet_alpha/epsilon 설정값이 있었지만 전혀 적용되지 않음
+        if add_dirichlet and self.config.dirichlet_epsilon > 0:
+            noise = np.random.dirichlet(
+                [self.config.dirichlet_alpha] * self.action_dim
+            )
+            eps = self.config.dirichlet_epsilon
+            policy_probs = (1 - eps) * policy_probs + eps * noise
 
         node.is_expanded = True
         node.children = []
@@ -172,11 +213,7 @@ class MCTSEngine:
             action_onehot = np.zeros(self.action_dim)
             action_onehot[action] = 1.0
 
-            state_tensor = (
-                torch.tensor(current_node.state, dtype=torch.float32)
-                .unsqueeze(0)
-                .to(device)
-            )
+            # state_tensor은 위에서 이미 생성됨 — 재사용
             action_tensor = (
                 torch.tensor(action_onehot, dtype=torch.float32).unsqueeze(0).to(device)
             )

@@ -36,7 +36,7 @@ Monte Carlo Tree Search는 **트리 구조로 가능한 미래를 탐색**하는
 |------|-----------|-------------------|
 | 복잡도 | 간결(172줄) | 상세(343줄) |
 | 데이터 타입 | `torch.Tensor` 기반 | `numpy.ndarray` 기반 |
-| UCB 공식 | PUCT (AlphaZero 스타일) | 전통 UCB + prior |
+| UCB 공식 | PUCT (AlphaZero 스타일) | PUCT (AlphaZero 스타일, 수정됨) |
 | Rollout | 없음 (1단계 확장) | 5단계 롤아웃 |
 | Self-play | 미포함 | `MCTSTrainer` 클래스 포함 |
 | 주 용도 | 레퍼런스/실험 | 운영 추론 + 학습 데이터 생성 |
@@ -237,6 +237,32 @@ def _backpropagate(self, search_path: List[Node], value: float):
 ---
 
 ## 4. `mcts_engine.py` 상세 분석 (학습용)
+
+### 4.0 수정된 UCB 공식 (버그 수정)
+
+**기존 문제**: `MCTSNode.ucb_score` 프로퍼티가 `MCTSConfig.exploration` 상수를 완전히 무시했음.
+```python
+# 기존 (버그): exploration 상수 항상 1.0
+return self.value + self.prior * math.sqrt(log(parent.visits+1) / (1+self.visits))
+```
+
+**수정 후**: `MCTSEngine._ucb_score()` 메서드가 PUCT 공식을 올바르게 구현:
+```python
+# 수정: AlphaZero PUCT 공식
+# UCB = Q(s,a) + c_puct * P(s,a) * sqrt(N(s)) / (1 + N(s,a))
+def _ucb_score(self, node):
+    exploration = self.config.exploration * node.prior * math.sqrt(parent_visits) / (1 + node.visits)
+    return node.value + exploration
+```
+
+**Dirichlet 노이즈 추가**: 설정값(`dirichlet_alpha`, `dirichlet_epsilon`)이 존재했으나 실제로 적용되지 않았음.
+수정 후 루트 노드 확장 시 탐색 다양성을 위해 노이즈가 적용됨:
+```python
+# 루트를 먼저 확장 + Dirichlet 노이즈 적용
+self._expand(root, policy_network, device, add_dirichlet=True)
+```
+
+---
 
 ### 4.1 핵심 차이: `_simulate()` 롤아웃
 

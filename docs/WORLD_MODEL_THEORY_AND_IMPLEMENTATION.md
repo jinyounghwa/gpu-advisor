@@ -48,11 +48,18 @@ GPU Advisor의 MuZero 스타일 분해:
 
 ## 4. 현재 코드와 1:1 매핑
 
-- Representation: `backend/models/representation_network.py`
-- Dynamics: `backend/models/dynamics_network.py`
-- Prediction: `backend/models/prediction_network.py`
+- Representation (h): `backend/models/representation_network.py`
+- Dynamics (g): `backend/models/dynamics_network.py`
+- Prediction (f): `backend/models/prediction_network.py`
+- Action Prior (a): `backend/models/action_model.py`
 - Planner(MCTS): `backend/models/mcts_engine.py`
 - Orchestration: `backend/agent/gpu_purchase_agent.py`
+
+수식 보완:
+- `z_t = h(x_t)`
+- `(z_{t+1}, r_t) = g(z_t, a_t)`
+- `(pi_t, v_t) = f(z_t)`
+- `prior_a = a(action_id)` — ActionModel: 학습된 행동 임베딩 기반 사전 확률
 
 운영 액션 라벨:
 - `BUY_NOW`
@@ -62,9 +69,10 @@ GPU Advisor의 MuZero 스타일 분해:
 - `SKIP`
 
 운영 경로 요약:
-1. 상태 벡터 -> `representation_network`로 latent 변환
+1. 상태 벡터(256D) -> `representation_network`로 256D latent 변환
 2. `mcts_engine.search`가 `prediction_network`와 `dynamics_network`를 반복 호출
-3. 방문수 기반 정책 + 보조 정책/바이어스 + 안전 게이트를 거쳐 최종 액션 선택
+3. 방문수 기반 정책(45%) + 보상 신호(25%) + f-net prior(15%) + ActionModel prior(15%) 4-신호 혼합
+4. 안전 게이트(신뢰도/엔트로피)를 거쳐 최종 액션 선택
 
 ## 5. 학습 프레임: 무엇을 공부해야 하는가
 
