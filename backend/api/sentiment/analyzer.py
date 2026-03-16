@@ -78,6 +78,9 @@ class NewsSentimentAnalyzer:
         return self.scorer.score(text)
 
     def aggregate(self, articles: Iterable[Dict]) -> Dict[str, float | int]:
+        pos_threshold = float(os.getenv("GPU_ADVISOR_SENTIMENT_POS_THRESHOLD", "0.1"))
+        neg_threshold = float(os.getenv("GPU_ADVISOR_SENTIMENT_NEG_THRESHOLD", "-0.1"))
+
         scores: List[float] = []
         for article in articles:
             title = str(article.get("title", ""))
@@ -102,8 +105,8 @@ class NewsSentimentAnalyzer:
                 "neutral_count": 0,
             }
 
-        positive_count = sum(1 for score in scores if score > 0.1)
-        negative_count = sum(1 for score in scores if score < -0.1)
+        positive_count = sum(1 for score in scores if score > pos_threshold)
+        negative_count = sum(1 for score in scores if score < neg_threshold)
         neutral_count = len(scores) - positive_count - negative_count
         return {
             "total": len(scores),

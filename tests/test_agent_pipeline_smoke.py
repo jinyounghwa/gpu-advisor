@@ -1,25 +1,15 @@
-"""
-Smoke tests for production-agent path (no crawler dependency changes).
-Run: python3 backend/test_agent_pipeline.py
-"""
-
 from pathlib import Path
-import sys
-
-ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
 
 from backend.agent import (
-    GPUPurchaseAgent,
     AgentEvaluator,
     AgentReleasePipeline,
+    GPUPurchaseAgent,
     PipelineConfig,
 )
 
 
-def main() -> int:
-    root = ROOT
+def test_agent_pipeline_smoke() -> None:
+    root = Path(__file__).resolve().parents[1]
 
     agent = GPUPurchaseAgent(project_root=root)
     info = agent.get_model_info()
@@ -52,9 +42,3 @@ def main() -> int:
     )
     assert "status" in result
     assert "reports" in result
-    print("agent pipeline smoke tests passed")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

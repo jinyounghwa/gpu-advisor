@@ -8,23 +8,18 @@ from __future__ import annotations
 import json
 import difflib
 import hashlib
-from pathlib import Path
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Dict, List, Tuple, Any
-import sys
 
 import numpy as np
 import torch
 
-BACKEND_ROOT = Path(__file__).resolve().parents[1]
-if str(BACKEND_ROOT) not in sys.path:
-    sys.path.insert(0, str(BACKEND_ROOT))
-
-from models.representation_network import RepresentationNetwork
-from models.dynamics_network import DynamicsNetwork
-from models.prediction_network import PredictionNetwork
-from models.mcts_engine import MCTSConfig, MCTSEngine
-from models.action_model import ActionModel
+from ..models.representation_network import RepresentationNetwork
+from ..models.dynamics_network import DynamicsNetwork
+from ..models.prediction_network import PredictionNetwork
+from ..models.mcts_engine import MCTSConfig, MCTSEngine
+from ..models.action_model import ActionModel
 
 
 ACTION_LABELS = {
@@ -95,7 +90,7 @@ class GPUPurchaseAgent:
             raise FileNotFoundError(f"Checkpoint not found: {self.checkpoint_path}")
 
         checkpoint = torch.load(
-            self.checkpoint_path, map_location=self.device, weights_only=False
+            self.checkpoint_path, map_location=self.device, weights_only=True
         )
         self.model_meta = checkpoint.get("meta", {})
         prior = self.model_meta.get("action_prior")

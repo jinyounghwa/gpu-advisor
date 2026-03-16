@@ -43,34 +43,11 @@ class AgentReleasePipeline:
         self.reports_dir.mkdir(parents=True, exist_ok=True)
 
     def check_readiness(self, target_days: int = 30) -> Dict[str, Any]:
-        from datetime import datetime as _dt
-
-        targets = {
-            "danawa": self.project_root / "data" / "raw" / "danawa",
-            "exchange": self.project_root / "data" / "raw" / "exchange",
-            "news": self.project_root / "data" / "raw" / "news",
-            "dataset": self.project_root / "data" / "processed" / "dataset",
-        }
-        details: Dict[str, Any] = {}
-        min_days = None
-        for name, root in targets.items():
-            dates = []
-            for f in sorted(root.glob("*.json")):
-                stem = f.stem.replace("training_data_", "")
-                try:
-                    dates.append(_dt.strptime(stem, "%Y-%m-%d").date())
-                except ValueError:
-                    continue
-            dates = sorted(set(dates))
-            range_days = (dates[-1] - dates[0]).days + 1 if dates else 0
-            details[name] = {
-                "dated_files": len(dates),
-                "range_days": range_days,
-                "first_date": str(dates[0]) if dates else None,
-                "last_date": str(dates[-1]) if dates else None,
-            }
-            min_days = range_days if min_days is None else min(min_days, range_days)
-        min_days = min_days or 0
+        details = self._collect_readiness_details()
+        min_days = min(
+            (item["range_days"] for item in details.values()),
+            default=0,
+        )
         return {
             "target_days": target_days,
             "current_min_days": min_days,
@@ -78,6 +55,31 @@ class AgentReleasePipeline:
             "ready_for_target": min_days >= target_days,
             "details": details,
         }
+
+    def _collect_readiness_details(self) -> Dict[str, Any]:
+        targets = {
+            "danawa": self.project_root / "data" / "raw" / "danawa",
+            "exchange": self.project_root / "data" / "raw" / "exchange",
+            "news": self.project_root / "data" / "raw" / "news",
+            "dataset": self.project_root / "data" / "processed" / "dataset",
+        }
+        details: Dict[str, Any] = {}
+        for name, root in targets.items():
+            dates = []
+            for f in sorted(root.glob("*.json")):
+                stem = f.stem.replace("training_data_", "")
+                try:
+                    dates.append(datetime.strptime(stem, "%Y-%m-%d").date())
+                except ValueError:
+                    continue
+            dates = sorted(set(dates))
+            details[name] = {
+                "dated_files": len(dates),
+                "range_days": (dates[-1] - dates[0]).days + 1 if dates else 0,
+                "first_date": str(dates[0]) if dates else None,
+                "last_date": str(dates[-1]) if dates else None,
+            }
+        return details
 
     def train(self, cfg: PipelineConfig) -> Dict[str, Any]:
         trainer = AgentFineTuner(project_root=self.project_root)

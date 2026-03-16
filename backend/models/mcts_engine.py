@@ -199,7 +199,7 @@ class MCTSEngine:
 
         for step in range(self.config.rollout_steps):
             state_tensor = (
-                torch.tensor(current_node.state, dtype=torch.float32)
+                torch.from_numpy(current_node.state.astype(np.float32))
                 .unsqueeze(0)
                 .to(device)
             )
@@ -210,12 +210,12 @@ class MCTSEngine:
 
             action = torch.multinomial(policy_probs, num_samples=1).item()
 
-            action_onehot = np.zeros(self.action_dim)
-            action_onehot[action] = 1.0
+            action_onehot = np.zeros(self.action_dim, dtype=np.float32)
+            action_onehot[int(action)] = 1.0
 
             # state_tensor은 위에서 이미 생성됨 — 재사용
             action_tensor = (
-                torch.tensor(action_onehot, dtype=torch.float32).unsqueeze(0).to(device)
+                torch.from_numpy(action_onehot).unsqueeze(0).to(device)
             )
 
             with torch.no_grad():
@@ -233,7 +233,7 @@ class MCTSEngine:
             current_node = MCTSNode(state=next_state_np)
 
         final_state_tensor = (
-            torch.tensor(current_node.state, dtype=torch.float32)
+            torch.from_numpy(current_node.state.astype(np.float32))
             .unsqueeze(0)
             .to(device)
         )

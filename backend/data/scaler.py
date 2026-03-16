@@ -3,12 +3,13 @@ Numerical Data Scaler
 가격, 환율 등 5가지 수치 데이터를 0~1로 정규화
 """
 
-import numpy as np
-import torch
-from typing import Dict, List, Tuple, Optional
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
 import json
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
+import numpy as np
+import torch
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 
 class NumericalScaler:
@@ -105,7 +106,9 @@ class NumericalScaler:
         Returns:
             정규화된 데이터
         """
-        return self.scaler.fit_transform(data)
+        transformed = self.scaler.fit_transform(data)
+        self.is_fitted = True
+        return transformed
 
     def inverse_transform(self, data: np.ndarray) -> np.ndarray:
         """
@@ -137,14 +140,23 @@ class NumericalScaler:
             "scale_": self.scaler.scale_.tolist()
             if hasattr(self.scaler, "scale_")
             else None,
-            "min_": self.scaler.data_min_.tolist()
+            "min_": self.scaler.min_.tolist()
+            if hasattr(self.scaler, "min_")
+            else None,
+            "data_min_": self.scaler.data_min_.tolist()
             if hasattr(self.scaler, "data_min_")
             else None,
-            "max_": self.scaler.data_max_.tolist()
+            "data_max_": self.scaler.data_max_.tolist()
             if hasattr(self.scaler, "data_max_")
+            else None,
+            "data_range_": self.scaler.data_range_.tolist()
+            if hasattr(self.scaler, "data_range_")
             else None,
             "mean_": self.scaler.mean_.tolist()
             if hasattr(self.scaler, "mean_")
+            else None,
+            "n_features_in_": int(self.scaler.n_features_in_)
+            if hasattr(self.scaler, "n_features_in_")
             else None,
         }
 
@@ -170,16 +182,29 @@ class NumericalScaler:
 
         if self.is_fitted:
             if self.method == "minmax":
-                self.scaler.min_ = np.array(scaler_data["min_"])
-                self.scaler.max_ = np.array(scaler_data["max_"])
-                self.scaler.scale_ = (self.scaler.max_ - self.scaler.min_) / (
-                    self.scaler.data_range_
-                    if hasattr(self.scaler, "data_range_")
-                    else 1
+                self.scaler.min_ = np.array(scaler_data["min_"], dtype=np.float64)
+                self.scaler.scale_ = np.array(scaler_data["scale_"], dtype=np.float64)
+                self.scaler.data_min_ = np.array(
+                    scaler_data["data_min_"], dtype=np.float64
+                )
+                self.scaler.data_max_ = np.array(
+                    scaler_data["data_max_"], dtype=np.float64
+                )
+                self.scaler.data_range_ = np.array(
+                    scaler_data["data_range_"], dtype=np.float64
+                )
+                self.scaler.n_features_in_ = int(
+                    scaler_data.get("n_features_in_", len(self.feature_names))
                 )
             elif self.method == "standard":
-                self.scaler.mean_ = np.array(scaler_data["mean_"])
-                self.scaler.scale_ = np.array(scaler_data["scale_"])
+                self.scaler.mean_ = np.array(scaler_data["mean_"], dtype=np.float64)
+                self.scaler.scale_ = np.array(
+                    scaler_data["scale_"], dtype=np.float64
+                )
+                self.scaler.var_ = np.square(self.scaler.scale_)
+                self.scaler.n_features_in_ = int(
+                    scaler_data.get("n_features_in_", len(self.feature_names))
+                )
 
         print(f"Scaler loaded from {filepath}")
 

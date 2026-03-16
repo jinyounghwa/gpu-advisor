@@ -7,11 +7,47 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple, Any, TypedDict
 
 import numpy as np
 
 from .gpu_purchase_agent import GPUPurchaseAgent
+
+
+class BaselineResult(TypedDict):
+    always_buy_reward: float
+    always_wait_reward: float
+    always_hold_reward: float
+    always_buy_accuracy: float
+    always_wait_accuracy: float
+
+
+class EvaluationResult(TypedDict):
+    samples: int
+    date_from: str
+    date_to: str
+    avg_reward_per_decision: float
+    avg_reward_per_decision_raw: float
+    directional_accuracy_buy_vs_wait: float
+    directional_accuracy_buy_vs_wait_raw: float
+    abstain_ratio: float
+    safe_override_ratio: float
+    avg_confidence: float
+    action_distribution: Dict[str, int]
+    raw_action_distribution: Dict[str, int]
+    action_entropy: float
+    action_entropy_raw: float
+    mode_collapse: bool
+    mode_collapse_raw: bool
+    std_reward: float
+    std_reward_raw: float
+    baseline: BaselineResult
+    uplift_vs_always_buy: float
+    uplift_raw_vs_always_buy: float
+    uplift_vs_always_wait: float
+    uplift_raw_vs_always_wait: float
+    uplift_vs_always_hold: float
+    uplift_raw_vs_always_hold: float
 
 
 class AgentEvaluator:
@@ -60,7 +96,7 @@ class AgentEvaluator:
             return -abs(pct_change) * 0.15
         return 0.0
 
-    def run(self, lookback_days: int = 30) -> Dict[str, Any]:
+    def run(self, lookback_days: int = 30) -> EvaluationResult:
         processed = self._load_processed()
         prices = self._load_prices()
         dates = sorted(set(processed.keys()) & set(prices.keys()))

@@ -14,8 +14,11 @@ class PostgresRepository:
             raise ValueError("Postgres DSN is empty")
         self.dsn = dsn
         self._psycopg = None
+        self._pool = None
 
     def _connect(self):
+        if self._pool is not None:
+            return self._pool.connection()
         if self._psycopg is None:
             try:
                 import psycopg  # type: ignore
@@ -24,6 +27,14 @@ class PostgresRepository:
                     "PostgreSQL backend requires `psycopg` package. Install with `pip install psycopg[binary]`."
                 ) from e
             self._psycopg = psycopg
+            try:
+                from psycopg_pool import ConnectionPool  # type: ignore
+            except Exception:
+                self._pool = None
+            else:
+                self._pool = ConnectionPool(self.dsn, open=True)
+        if self._pool is not None:
+            return self._pool.connection()
         return self._psycopg.connect(self.dsn)
 
     def initialize(self) -> None:

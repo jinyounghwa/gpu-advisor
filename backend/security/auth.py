@@ -89,7 +89,7 @@ class SecurityConfig:
             self.users[default_user] = default_password
 
         self.jwt_expiry_seconds = int(os.getenv("GPU_ADVISOR_JWT_EXP_SECONDS", "3600"))
-        self.jwt_secret = os.getenv("GPU_ADVISOR_JWT_SECRET", "gpu-advisor-dev-secret")
+        self.jwt_secret = self._load_jwt_secret()
         self.jwt = JWTAuthManager(secret_key=self.jwt_secret, expiry_seconds=self.jwt_expiry_seconds)
 
         self.rate_limit_per_minute = int(os.getenv("GPU_ADVISOR_RATE_LIMIT_PER_MINUTE", "60"))
@@ -106,11 +106,24 @@ class SecurityConfig:
                 result[user.strip()] = pw
         return result
 
+    def _load_jwt_secret(self) -> str:
+        configured = os.getenv("GPU_ADVISOR_JWT_SECRET", "").strip()
+        if configured:
+            return configured
+        if self.auth_mode in {AuthMode.JWT, AuthMode.HYBRID}:
+            raise ValueError(
+                "GPU_ADVISOR_JWT_SECRET must be set when JWT authentication is enabled"
+            )
+        return "gpu-advisor-dev-secret"
+
     def authenticate_api_key(self, api_key: str | None) -> bool:
         return bool(api_key and api_key in self.api_keys)
 
     def authenticate_password(self, username: str, password: str) -> bool:
-        return bool(username in self.users and self.users[username] == password)
+        stored = self.users.get(username)
+        if stored is None:
+            return False
+        return hmac.compare_digest(stored, password)
 
     def requires_auth(self) -> bool:
         return self.auth_mode != AuthMode.NONE

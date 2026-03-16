@@ -109,32 +109,6 @@ class PredictionNetwork(nn.Module):
         value = self.value_head(x).squeeze(-1)  # (batch_size)
 
         return policy_logits, value
-
-
-class TransitionModel(nn.Module):
-    """
-    Transition Model
-    P(s_{t+1} | s_t, a_t) ∝ P(s_t+1)
-    = P(s_t) (Gaussian with learned dynamics)
-    """
-
-    def __init__(self, latent_dim: int = 256, hidden_dim: int = 512):
-        super().__init__()
-        self.transition = nn.Sequential(
-            nn.Linear(latent_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, latent_dim),
-        )
-
-    def forward(self, s_t: torch.Tensor) -> torch.Tensor:
-        """
-        Prior: P(s_t+1 | s_t, a_t)
-        """
-        return self.transition(s_t)
-
-
 if __name__ == "__main__":
     # 테스트
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")

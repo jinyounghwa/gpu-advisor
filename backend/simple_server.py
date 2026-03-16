@@ -100,6 +100,7 @@ class PipelineRequest(BaseModel):
 
 class TrainingState:
     def __init__(self):
+        self._lock = Lock()
         self.is_training = False
         self.current_step = 0
         self.total_steps = 0
@@ -108,12 +109,46 @@ class TrainingState:
         self.config = None
 
     def reset(self):
-        self.is_training = False
-        self.current_step = 0
-        self.total_steps = 0
-        self.metrics_history = []
-        self.start_time = None
-        self.config = None
+        with self._lock:
+            self.is_training = False
+            self.current_step = 0
+            self.total_steps = 0
+            self.metrics_history = []
+            self.start_time = None
+            self.config = None
+
+    def snapshot(self) -> dict:
+        with self._lock:
+            return {
+                "is_training": self.is_training,
+                "current_step": self.current_step,
+                "total_steps": self.total_steps,
+                "metrics_history": list(self.metrics_history),
+                "start_time": self.start_time,
+                "config": self.config,
+            }
+
+    def configure(self, *, total_steps: int, start_time: float, config: TrainingConfig) -> None:
+        with self._lock:
+            self.is_training = True
+            self.current_step = 0
+            self.total_steps = total_steps
+            self.start_time = start_time
+            self.config = config
+
+    def append_metric(self, metric: dict) -> None:
+        with self._lock:
+            self.metrics_history.append(metric)
+            if "step" in metric:
+                self.current_step = metric["step"]
+
+    def stop(self) -> None:
+        with self._lock:
+            self.is_training = False
+
+    def should_stop(self) -> bool:
+        with self._lock:
+            return not self.is_training
 
 
 class RateLimiter:
@@ -147,25 +182,29 @@ PUBLIC_API_PATHS = {"/api/auth/token"}
 
 gpu_agent: Optional[GPUPurchaseAgent] = None
 repository: Optional[RepositoryProtocol] = None
+gpu_agent_lock = Lock()
+repository_lock = Lock()
 
 
 def get_gpu_agent() -> GPUPurchaseAgent:
     global gpu_agent
-    if gpu_agent is None:
-        # project_root 명시 전달: 배포 환경에서도 경로 탐색 신뢰성 보장
-        gpu_agent = GPUPurchaseAgent(project_root=PROJECT_ROOT)
+    with gpu_agent_lock:
+        if gpu_agent is None:
+            # project_root 명시 전달: 배포 환경에서도 경로 탐색 신뢰성 보장
+            gpu_agent = GPUPurchaseAgent(project_root=PROJECT_ROOT)
     return gpu_agent
 
 
 def get_repository() -> RepositoryProtocol:
     global repository
-    if repository is None:
-        backend = os.getenv("GPU_ADVISOR_DB_BACKEND", "sqlite").strip().lower()
-        db_path_env = os.getenv("GPU_ADVISOR_DB_PATH", "").strip()
-        sqlite_path = Path(db_path_env) if db_path_env else (PROJECT_ROOT / "data" / "processed" / "gpu_advisor.db")
-        postgres_dsn = os.getenv("GPU_ADVISOR_POSTGRES_DSN", "").strip() or None
-        repository = create_repository(backend=backend, sqlite_path=sqlite_path, postgres_dsn=postgres_dsn)
-        repository.initialize()
+    with repository_lock:
+        if repository is None:
+            backend = os.getenv("GPU_ADVISOR_DB_BACKEND", "sqlite").strip().lower()
+            db_path_env = os.getenv("GPU_ADVISOR_DB_PATH", "").strip()
+            sqlite_path = Path(db_path_env) if db_path_env else (PROJECT_ROOT / "data" / "processed" / "gpu_advisor.db")
+            postgres_dsn = os.getenv("GPU_ADVISOR_POSTGRES_DSN", "").strip() or None
+            repository = create_repository(backend=backend, sqlite_path=sqlite_path, postgres_dsn=postgres_dsn)
+            repository.initialize()
     return repository
 
 
@@ -198,45 +237,9 @@ def _apply_realtime_news_to_state(state_vec: np.ndarray, project_root: Path) -> 
 
 
 def _data_readiness() -> dict:
-    targets = {
-        "danawa": PROJECT_ROOT / "data" / "raw" / "danawa",
-        "exchange": PROJECT_ROOT / "data" / "raw" / "exchange",
-        "news": PROJECT_ROOT / "data" / "raw" / "news",
-        "dataset": PROJECT_ROOT / "data" / "processed" / "dataset",
-    }
-    details = {}
-    min_days = None
-
-    for name, root in targets.items():
-        dates = []
-        for f in sorted(root.glob("*.json")):
-            stem = f.stem.replace("training_data_", "")
-            try:
-                dates.append(datetime.strptime(stem, "%Y-%m-%d").date())
-            except ValueError:
-                continue
-        dates = sorted(set(dates))
-        range_days = (dates[-1] - dates[0]).days + 1 if dates else 0
-        details[name] = {
-            "dated_files": len(dates),
-            "range_days": range_days,
-            "first_date": str(dates[0]) if dates else None,
-            "last_date": str(dates[-1]) if dates else None,
-        }
-        if min_days is None:
-            min_days = range_days
-        else:
-            min_days = min(min_days, range_days)
-
-    min_days = min_days or 0
-    target_days = 30
-    return {
-        "target_days": target_days,
-        "current_min_days": min_days,
-        "remaining_days": max(target_days - min_days, 0),
-        "ready_for_30d_training": min_days >= target_days,
-        "details": details,
-    }
+    readiness = AgentReleasePipeline(project_root=PROJECT_ROOT).check_readiness(target_days=30)
+    readiness["ready_for_30d_training"] = readiness["ready_for_target"]
+    return readiness
 
 
 def _load_latest_release_result() -> Optional[dict]:
@@ -273,7 +276,7 @@ async def security_and_logging_middleware(request: Request, call_next):
     client_ip = request.client.host if request.client else "unknown"
     path = request.url.path
 
-    remaining = rate_limiter.per_minute
+    remaining = ""
     auth_subject = "anonymous"
 
     if path.startswith("/api/"):
@@ -434,16 +437,11 @@ def ask_gpu(query: GPUQuery):
     try:
         agent = get_gpu_agent()
 
-        resolve_state = getattr(agent, "resolve_state", None)
-        decide_from_state = getattr(agent, "decide_from_state", None)
-        resolved = None
-        if callable(resolve_state) and callable(decide_from_state):
-            resolved = resolve_state(query.model_name)
-
+        resolved = agent.resolve_state(query.model_name)
         if isinstance(resolved, tuple) and len(resolved) == 3:
             resolved_model, state_vec, data_date = resolved
             enriched_state_vec, news_context = _apply_realtime_news_to_state(state_vec, PROJECT_ROOT)
-            decision = decide_from_state(resolved_model, enriched_state_vec, data_date)
+            decision = agent.decide_from_state(resolved_model, enriched_state_vec, data_date)
 
             repo = get_repository()
             if news_context.get("applied"):
@@ -494,14 +492,15 @@ def ask_gpu(query: GPUQuery):
 
 @app.post("/api/training/start")
 async def start_training(config: TrainingConfig):
-    if training_state.is_training:
+    if training_state.snapshot()["is_training"]:
         raise HTTPException(status_code=400, detail="Training already running")
 
     training_state.reset()
-    training_state.is_training = True
-    training_state.total_steps = config.num_steps
-    training_state.start_time = time.time()
-    training_state.config = config
+    training_state.configure(
+        total_steps=config.num_steps,
+        start_time=time.time(),
+        config=config,
+    )
 
     async def training_loop():
         global gpu_agent
@@ -509,11 +508,10 @@ async def start_training(config: TrainingConfig):
             trainer = AgentFineTuner(project_root=PROJECT_ROOT)
 
             def on_step(metric: dict) -> None:
-                training_state.metrics_history.append(metric)
-                training_state.current_step = metric["step"]
+                training_state.append_metric(metric)
 
             def should_stop() -> bool:
-                return not training_state.is_training
+                return training_state.should_stop()
 
             await asyncio.to_thread(
                 trainer.run,
@@ -524,12 +522,15 @@ async def start_training(config: TrainingConfig):
                 should_stop,
                 config.seed,
             )
-            gpu_agent = None
+            with gpu_agent_lock:
+                gpu_agent = None
         except Exception as e:
             logger.exception("Training loop failed")
-            training_state.metrics_history.append({"type": "error", "message": str(e), "timestamp": time.time()})
+            training_state.append_metric(
+                {"type": "error", "message": str(e), "timestamp": time.time()}
+            )
         finally:
-            training_state.is_training = False
+            training_state.stop()
 
     asyncio.create_task(training_loop())
 
@@ -542,28 +543,31 @@ async def start_training(config: TrainingConfig):
 
 @app.post("/api/training/stop")
 async def stop_training():
-    training_state.is_training = False
-    return {"status": "stopped", "steps_completed": training_state.current_step}
+    snapshot = training_state.snapshot()
+    training_state.stop()
+    return {"status": "stopped", "steps_completed": snapshot["current_step"]}
 
 
 @app.get("/api/training/status")
 async def training_status():
-    latest = training_state.metrics_history[-1] if training_state.metrics_history else None
+    snapshot = training_state.snapshot()
+    latest = snapshot["metrics_history"][-1] if snapshot["metrics_history"] else None
     return {
-        "is_training": training_state.is_training,
-        "current_step": training_state.current_step,
-        "total_steps": training_state.total_steps,
+        "is_training": snapshot["is_training"],
+        "current_step": snapshot["current_step"],
+        "total_steps": snapshot["total_steps"],
         "latest_metrics": latest,
-        "history_length": len(training_state.metrics_history),
+        "history_length": len(snapshot["metrics_history"]),
     }
 
 
 @app.get("/api/training/metrics")
 async def get_metrics(last_n: int = 50):
-    history = training_state.metrics_history
+    snapshot = training_state.snapshot()
+    history = snapshot["metrics_history"]
     if last_n > 0:
         history = history[-last_n:]
-    return {"metrics": history, "total": len(training_state.metrics_history)}
+    return {"metrics": history, "total": len(snapshot["metrics_history"])}
 
 
 @app.get("/api/training/metrics/stream")
@@ -571,15 +575,16 @@ async def stream_metrics():
     async def event_generator():
         last_index = 0
         while True:
-            if last_index < len(training_state.metrics_history):
-                new_metrics = training_state.metrics_history[last_index:]
+            snapshot = training_state.snapshot()
+            if last_index < len(snapshot["metrics_history"]):
+                new_metrics = snapshot["metrics_history"][last_index:]
                 for metric in new_metrics:
                     # SSE 규격: 각 이벤트는 실제 개행 2개로 종료
                     # 기존: \\n\\n (리터럴 백슬래시-n) → SSE 파싱 불가
                     yield f"data: {json.dumps(metric)}\n\n"
-                last_index = len(training_state.metrics_history)
+                last_index = len(snapshot["metrics_history"])
 
-            if not training_state.is_training and last_index >= len(training_state.metrics_history):
+            if not snapshot["is_training"] and last_index >= len(snapshot["metrics_history"]):
                 yield f"data: {json.dumps({'type': 'done'})}\n\n"
                 break
 
@@ -590,10 +595,11 @@ async def stream_metrics():
 
 @app.get("/api/training/summary")
 async def training_summary():
-    if not training_state.metrics_history:
+    snapshot = training_state.snapshot()
+    if not snapshot["metrics_history"]:
         return {"message": "No training data available"}
 
-    history = [m for m in training_state.metrics_history if isinstance(m, dict) and "loss" in m]
+    history = [m for m in snapshot["metrics_history"] if isinstance(m, dict) and "loss" in m]
     if not history:
         return {"message": "No numeric training metrics available yet"}
     recent = history[-50:] if len(history) > 50 else history
@@ -616,6 +622,7 @@ async def training_summary():
 async def system_status():
     process = psutil.Process(os.getpid())
     memory = process.memory_info()
+    snapshot = training_state.snapshot()
 
     return {
         "cpu_percent": psutil.cpu_percent(interval=None),
@@ -623,8 +630,8 @@ async def system_status():
         "memory_mb": round(memory.rss / (1024 * 1024), 1),
         "memory_percent": round(psutil.virtual_memory().percent, 1),
         "disk_percent": round(psutil.disk_usage("/").percent, 1),
-        "is_training": training_state.is_training,
-        "uptime": round(time.time() - (training_state.start_time or time.time()), 1),
+        "is_training": snapshot["is_training"],
+        "uptime": round(time.time() - (snapshot["start_time"] or time.time()), 1),
         "security": {
             "auth_mode": security_config.auth_mode.value,
             "jwt_enabled": security_config.allows_jwt(),

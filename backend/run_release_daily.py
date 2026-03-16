@@ -6,13 +6,10 @@ Run daily release check and print machine-readable JSON result.
 from __future__ import annotations
 
 import json
-import sys
 import traceback
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
 
 from backend.agent import AgentReleasePipeline, PipelineConfig
 

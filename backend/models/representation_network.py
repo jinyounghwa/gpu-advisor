@@ -72,8 +72,10 @@ class RepresentationNetwork(nn.Module):
     ):
         super().__init__()
 
-        # Positional Encoding
+        # seq_len=1 입력에서는 위치 인코딩이 사실상 상수 오프셋이므로
+        # 체크포인트 키 호환성만 유지하는 버퍼 모듈로 둔다.
         self.pos_encoding = PositionalEncoding(latent_dim, max_seq_len)
+        self.pos_encoding.requires_grad_(False)
 
         # Input embedding
         self.input_embedding = nn.Linear(state_dim, latent_dim)

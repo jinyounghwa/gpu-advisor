@@ -18,10 +18,10 @@ import torch
 import torch.nn.functional as F
 
 from .gpu_purchase_agent import ACTION_LABELS
-from models.representation_network import RepresentationNetwork
-from models.dynamics_network import DynamicsNetwork
-from models.prediction_network import PredictionNetwork
-from models.action_model import ActionModel
+from ..models.representation_network import RepresentationNetwork
+from ..models.dynamics_network import DynamicsNetwork
+from ..models.prediction_network import PredictionNetwork
+from ..models.action_model import ActionModel
 
 
 @dataclass
@@ -55,6 +55,7 @@ class AgentFineTuner:
         self.f: PredictionNetwork
         self.a: ActionModel
         self.optimizer: torch.optim.Optimizer
+        self.action_dim = len(ACTION_LABELS)
 
         self._load_models()
         self._build_transition_dataset()
@@ -64,7 +65,7 @@ class AgentFineTuner:
     def _load_models(self) -> None:
         if not self.base_checkpoint.exists():
             raise FileNotFoundError(f"Checkpoint not found: {self.base_checkpoint}")
-        ckpt = torch.load(self.base_checkpoint, map_location=self.device, weights_only=False)
+        ckpt = torch.load(self.base_checkpoint, map_location=self.device, weights_only=True)
 
         h_state = ckpt["h_state_dict"]
         g_state = ckpt["g_state_dict"]
@@ -73,6 +74,7 @@ class AgentFineTuner:
         input_dim = h_state["input_embedding.weight"].shape[1]
         latent_dim = h_state["input_embedding.weight"].shape[0]
         action_dim = g_state["input_layer.weight"].shape[1] - latent_dim
+        self.action_dim = action_dim
 
         self.h = RepresentationNetwork(state_dim=input_dim, latent_dim=latent_dim).to(self.device)
         self.g = DynamicsNetwork(latent_dim=latent_dim, action_dim=action_dim, hidden_dim=512, num_layers=4).to(
@@ -255,7 +257,7 @@ class AgentFineTuner:
             latent_next_target = self.h(next_states)
 
         policy_logits, value_pred = self.f(latent)
-        action_onehot = F.one_hot(actions, num_classes=5).float()
+        action_onehot = F.one_hot(actions, num_classes=self.action_dim).float()
         latent_next_pred, reward_pred, reward_logvar = self.g(latent, action_onehot)
 
         # ActionModel: latent state → 행동 사전 분포 (감지된 레이블로 지도학습)
@@ -353,6 +355,15 @@ class AgentFineTuner:
             + list(self.f.parameters()) + list(self.a.parameters())
         )
         self.optimizer = torch.optim.AdamW(params, lr=learning_rate, weight_decay=1e-5)
+        # Warm restart: 이전 fine-tune 체크포인트에 optimizer state가 있으면 복원
+        if self.output_checkpoint.exists():
+            try:
+                prev_ckpt = torch.load(self.output_checkpoint, map_location=self.device, weights_only=True)
+                opt_state = prev_ckpt.get("optimizer_state_dict")
+                if opt_state is not None:
+                    self.optimizer.load_state_dict(opt_state)
+            except Exception:
+                pass  # 복원 실패 시 새 optimizer 상태로 계속 진행
         start_time = time.time()
 
         for step in range(1, num_steps + 1):
@@ -415,4 +426,6 @@ class AgentFineTuner:
                 "schema_version": "agent-v1",
             },
         }
+        if hasattr(self, "optimizer") and self.optimizer is not None:
+            payload["optimizer_state_dict"] = self.optimizer.state_dict()
         torch.save(payload, self.output_checkpoint)

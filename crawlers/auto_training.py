@@ -268,7 +268,7 @@ def _extract_first_json_object(text: str) -> Dict[str, Any]:
 
 
 def run_release_daily_check(project_root: Path, timeout_sec: int) -> Dict[str, Any]:
-    cmd = [sys.executable, str(project_root / "backend" / "run_release_daily.py")]
+    cmd = [sys.executable, "-m", "backend.run_release_daily"]
     rc, stdout, stderr = _run_subprocess(cmd, cwd=project_root, timeout_sec=timeout_sec)
     if rc != 0:
         detail = (stderr or stdout).strip() or f"exit_code={rc}"
@@ -288,7 +288,8 @@ def run_release_daily_check(project_root: Path, timeout_sec: int) -> Dict[str, A
 def run_release_ready_training(project_root: Path, config: AutoTrainingConfig) -> Dict[str, Any]:
     cmd = [
         sys.executable,
-        str(project_root / "backend" / "run_release_ready.py"),
+        "-m",
+        "backend.run_release_ready",
         "--steps",
         str(config.train_steps),
         "--batch-size",

@@ -3,17 +3,13 @@
 This module is intentionally minimized.
 - Primary production API lives in `backend.simple_server`.
 - Kept only for backward compatibility with older scripts importing this path.
+- NOTE: This router is NOT auto-registered. Callers must explicitly call
+  `app.include_router(alphazero_routes.router)` if needed.
 """
 
 from __future__ import annotations
 
 from fastapi import APIRouter
-
-try:
-    from simple_server import app as app  # type: ignore
-except ModuleNotFoundError:  # pragma: no cover
-    from backend.simple_server import app as app  # type: ignore
-
 
 router = APIRouter(prefix="/api/alphazero", tags=["alphazero-legacy"])
 
@@ -29,6 +25,3 @@ def legacy_info():
             "training_status": "/api/training/status",
         },
     }
-
-
-app.include_router(router)
