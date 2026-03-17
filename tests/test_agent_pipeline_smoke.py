@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from backend.agent import (
     AgentEvaluator,
     AgentReleasePipeline,
@@ -10,6 +12,10 @@ from backend.agent import (
 
 def test_agent_pipeline_smoke() -> None:
     root = Path(__file__).resolve().parents[1]
+    dataset_dir = root / "data" / "processed" / "dataset"
+    has_dataset = any(dataset_dir.glob("training_data*.json"))
+    if not has_dataset:
+        pytest.skip("No processed dataset found; skipping smoke test")
 
     agent = GPUPurchaseAgent(project_root=root)
     info = agent.get_model_info()

@@ -83,7 +83,10 @@ class GPUPurchaseAgent:
         self._models_cache: List[str] = []
 
         self._load_models()
-        self._refresh_dataset_cache(force=True)
+        try:
+            self._refresh_dataset_cache(force=True)
+        except FileNotFoundError:
+            pass  # dataset is loaded lazily when needed
 
     def _load_models(self) -> None:
         if not self.checkpoint_path.exists():
