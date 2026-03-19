@@ -1,19 +1,19 @@
 {
-  "generated_at": "2026-03-20T00:01:46.237442",
-  "run_started_at": "2026-03-20T00:00:04.658650",
-  "date": "2026-03-20",
+  "generated_at": "2026-03-19T00:01:52.700490",
+  "run_started_at": "2026-03-19T00:00:09.495849",
+  "date": "2026-03-19",
   "steps": {
     "danawa": true,
     "exchange": true,
     "news": true,
     "feature": true
   },
-  "feature_file": "/Users/younghwa.jin/Documents/gpu-advisor/data/processed/dataset/training_data_2026-03-20.json",
+  "feature_file": "/Users/younghwa.jin/Documents/gpu-advisor/data/processed/dataset/training_data_2026-03-19.json",
   "today_files": {
-    "danawa": "/Users/younghwa.jin/Documents/gpu-advisor/data/raw/danawa/2026-03-20.json",
-    "exchange": "/Users/younghwa.jin/Documents/gpu-advisor/data/raw/exchange/2026-03-20.json",
-    "news": "/Users/younghwa.jin/Documents/gpu-advisor/data/raw/news/2026-03-20.json",
-    "dataset": "/Users/younghwa.jin/Documents/gpu-advisor/data/processed/dataset/training_data_2026-03-20.json"
+    "danawa": "/Users/younghwa.jin/Documents/gpu-advisor/data/raw/danawa/2026-03-19.json",
+    "exchange": "/Users/younghwa.jin/Documents/gpu-advisor/data/raw/exchange/2026-03-19.json",
+    "news": "/Users/younghwa.jin/Documents/gpu-advisor/data/raw/news/2026-03-19.json",
+    "dataset": "/Users/younghwa.jin/Documents/gpu-advisor/data/processed/dataset/training_data_2026-03-19.json"
   },
   "today_exists": {
     "danawa": true,
@@ -23,47 +23,47 @@
   },
   "coverage": {
     "danawa": {
-      "dated_files": 31,
-      "range_days": 38,
+      "dated_files": 30,
+      "range_days": 37,
       "first_date": "2026-02-11",
-      "last_date": "2026-03-20"
+      "last_date": "2026-03-19"
     },
     "exchange": {
-      "dated_files": 28,
-      "range_days": 28,
+      "dated_files": 27,
+      "range_days": 27,
       "first_date": "2026-02-21",
-      "last_date": "2026-03-20"
+      "last_date": "2026-03-19"
     },
     "news": {
-      "dated_files": 28,
-      "range_days": 28,
+      "dated_files": 27,
+      "range_days": 27,
       "first_date": "2026-02-21",
-      "last_date": "2026-03-20"
+      "last_date": "2026-03-19"
     },
     "dataset": {
-      "dated_files": 28,
-      "range_days": 28,
+      "dated_files": 27,
+      "range_days": 27,
       "first_date": "2026-02-21",
-      "last_date": "2026-03-20"
+      "last_date": "2026-03-19"
     }
   },
   "ready_for_30d_training": false,
   "next_steps": {
-    "generated_at": "2026-03-20T00:01:46.238719",
+    "generated_at": "2026-03-19T00:01:52.701894",
     "target_days": 30,
-    "current_min_days": 28,
-    "remaining_days": 2,
+    "current_min_days": 27,
+    "remaining_days": 3,
     "ready_for_target": false,
     "release_status": null,
     "release_reason": null,
-    "summary_ko": "아직 30일 기준에 도달하지 않았습니다. 남은 2일 동안 일일 수집을 유지하고 릴리즈 드라이런만 수행하세요.",
-    "summary_en": "The 30-day window is not ready yet. Keep daily collection running for the remaining 2 days and run dry checks only.",
+    "summary_ko": "아직 30일 기준에 도달하지 않았습니다. 남은 3일 동안 일일 수집을 유지하고 릴리즈 드라이런만 수행하세요.",
+    "summary_en": "The 30-day window is not ready yet. Keep daily collection running for the remaining 3 days and run dry checks only.",
     "steps": [
       {
         "order": 1,
         "id": "collect_daily_data",
         "status": "in_progress",
-        "condition": "current_min_days=28 < target_days=30",
+        "condition": "current_min_days=27 < target_days=30",
         "command": "python3 crawlers/run_daily.py",
         "title_ko": "일일 데이터 수집 유지",
         "title_en": "Keep Daily Data Collection Running",
@@ -96,7 +96,7 @@
         "order": 4,
         "id": "wait_for_30d_unlock",
         "status": "blocked",
-        "condition": "remaining_days=2",
+        "condition": "remaining_days=3",
         "command": null,
         "title_ko": "30일 게이트 해제 대기",
         "title_en": "Wait for 30-Day Gate Unlock",

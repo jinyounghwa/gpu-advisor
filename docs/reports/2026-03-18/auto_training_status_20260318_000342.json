@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-20T00:03:39.367649",
+  "generated_at": "2026-03-18T00:03:42.462851",
   "summary_ko": "자동 학습 조건 미충족이므로 평가/리포트 루틴만 실행되었습니다.",
   "summary_en": "Training condition was not met, so evaluation/report routine ran only.",
   "config": {
@@ -16,33 +16,33 @@
   },
   "readiness": {
     "target_days": 30,
-    "current_min_days": 28,
-    "remaining_days": 2,
+    "current_min_days": 26,
+    "remaining_days": 4,
     "ready_for_target": false,
     "details": {
       "danawa": {
-        "dated_files": 31,
-        "range_days": 38,
+        "dated_files": 29,
+        "range_days": 36,
         "first_date": "2026-02-11",
-        "last_date": "2026-03-20"
+        "last_date": "2026-03-18"
       },
       "exchange": {
-        "dated_files": 28,
-        "range_days": 28,
+        "dated_files": 26,
+        "range_days": 26,
         "first_date": "2026-02-21",
-        "last_date": "2026-03-20"
+        "last_date": "2026-03-18"
       },
       "news": {
-        "dated_files": 28,
-        "range_days": 28,
+        "dated_files": 26,
+        "range_days": 26,
         "first_date": "2026-02-21",
-        "last_date": "2026-03-20"
+        "last_date": "2026-03-18"
       },
       "dataset": {
-        "dated_files": 28,
-        "range_days": 28,
+        "dated_files": 26,
+        "range_days": 26,
         "first_date": "2026-02-21",
-        "last_date": "2026-03-20"
+        "last_date": "2026-03-18"
       }
     }
   },
@@ -50,9 +50,9 @@
     "action": "release_check",
     "reason": "insufficient_data_window",
     "target_days": 30,
-    "current_min_days": 28,
+    "current_min_days": 26,
     "ready_for_target": false,
-    "dataset_last_date": "2026-03-20",
+    "dataset_last_date": "2026-03-18",
     "last_trained_data_date": null,
     "newly_accumulated_days": 0,
     "retrain_every_days": 7
@@ -81,81 +81,81 @@
     },
     "readiness": {
       "target_days": 30,
-      "current_min_days": 28,
-      "remaining_days": 2,
+      "current_min_days": 26,
+      "remaining_days": 4,
       "ready_for_target": false,
       "details": {
         "danawa": {
-          "dated_files": 31,
-          "range_days": 38,
+          "dated_files": 29,
+          "range_days": 36,
           "first_date": "2026-02-11",
-          "last_date": "2026-03-20"
+          "last_date": "2026-03-18"
         },
         "exchange": {
-          "dated_files": 28,
-          "range_days": 28,
+          "dated_files": 26,
+          "range_days": 26,
           "first_date": "2026-02-21",
-          "last_date": "2026-03-20"
+          "last_date": "2026-03-18"
         },
         "news": {
-          "dated_files": 28,
-          "range_days": 28,
+          "dated_files": 26,
+          "range_days": 26,
           "first_date": "2026-02-21",
-          "last_date": "2026-03-20"
+          "last_date": "2026-03-18"
         },
         "dataset": {
-          "dated_files": 28,
-          "range_days": 28,
+          "dated_files": 26,
+          "range_days": 26,
           "first_date": "2026-02-21",
-          "last_date": "2026-03-20"
+          "last_date": "2026-03-18"
         }
       }
     },
     "status": "blocked",
     "evaluation": {
       "samples": 308,
-      "date_from": "2026-03-06",
-      "date_to": "2026-03-20",
-      "avg_reward_per_decision": -0.000593444217967381,
-      "avg_reward_per_decision_raw": -0.005149461237682912,
-      "directional_accuracy_buy_vs_wait": 0.8246753246753247,
+      "date_from": "2026-03-04",
+      "date_to": "2026-03-18",
+      "avg_reward_per_decision": -0.0021866453990730225,
+      "avg_reward_per_decision_raw": -0.003946045687346404,
+      "directional_accuracy_buy_vs_wait": 0.8311688311688312,
       "directional_accuracy_buy_vs_wait_raw": 0.711038961038961,
-      "abstain_ratio": 0.7175324675324676,
-      "safe_override_ratio": 0.5064935064935064,
-      "avg_confidence": 0.23537106928802856,
+      "abstain_ratio": 0.7694805194805194,
+      "safe_override_ratio": 0.5584415584415584,
+      "avg_confidence": 0.2221884075134807,
       "action_distribution": {
-        "HOLD": 211,
-        "WAIT_LONG": 61,
-        "WAIT_SHORT": 6,
-        "BUY_NOW": 20,
-        "SKIP": 10
+        "HOLD": 225,
+        "WAIT_LONG": 55,
+        "BUY_NOW": 14,
+        "SKIP": 12,
+        "WAIT_SHORT": 2
       },
       "raw_action_distribution": {
-        "WAIT_LONG": 98,
-        "HOLD": 55,
+        "WAIT_SHORT": 47,
+        "HOLD": 53,
         "BUY_NOW": 65,
-        "WAIT_SHORT": 40,
-        "SKIP": 50
+        "WAIT_LONG": 92,
+        "SKIP": 51
       },
-      "action_entropy": 0.945371150970459,
-      "action_entropy_raw": 1.560549020767212,
+      "action_entropy": 0.8366650342941284,
+      "action_entropy_raw": 1.5767061710357666,
       "mode_collapse": false,
       "mode_collapse_raw": false,
-      "std_reward": 0.022861701588635885,
-      "std_reward_raw": 0.05794418393196983,
+      "std_reward": 0.04001439114223633,
+      "std_reward_raw": 0.06619730062066513,
       "baseline": {
-        "always_buy_reward": 0.0017118615130901687,
-        "always_wait_reward": -0.0017118615130901687,
-        "always_hold_reward": -0.0022370491338354562,
-        "always_buy_accuracy": 0.11038961038961038,
-        "always_wait_accuracy": 0.8896103896103896
+        "always_buy_reward": 0.004534006262748149,
+        "always_wait_reward": -0.004534006262748149,
+        "always_hold_reward": -0.0023705323760739153,
+        "always_buy_accuracy": 0.12337662337662338,
+        "always_wait_accuracy": 0.8766233766233766
       },
-      "uplift_vs_always_buy": -0.0023053057310575497,
-      "uplift_raw_vs_always_buy": -0.00686132275077308,
-      "uplift_vs_always_wait": 0.0011184172951227878,
-      "uplift_raw_vs_always_wait": -0.003437599724592743,
-      "uplift_vs_always_hold": 0.0016436049158680753,
-      "uplift_raw_vs_always_hold": -0.0029124121038474554
+      "uplift_vs_always_buy": -0.006720651661821172,
+      "uplift_raw_vs_always_buy": -0.008480051950094554,
+      "uplift_vs_always_wait": 0.0023473608636751264,
+      "uplift_raw_vs_always_wait": 0.0005879605754017447,
+      "uplift_vs_always_hold": 0.0001838869770008928,
+      "uplift_raw_vs_always_hold": -0.0015755133112724889
     },
     "gates": {
       "accuracy_raw": true,
@@ -168,21 +168,21 @@
     },
     "reason": "quality_gates_failed",
     "next_steps": {
-      "generated_at": "2026-03-20T00:03:39.260382",
+      "generated_at": "2026-03-18T00:03:42.364617",
       "target_days": 30,
-      "current_min_days": 28,
-      "remaining_days": 2,
+      "current_min_days": 26,
+      "remaining_days": 4,
       "ready_for_target": false,
       "release_status": "blocked",
       "release_reason": "quality_gates_failed",
-      "summary_ko": "아직 30일 기준에 도달하지 않았습니다. 남은 2일 동안 일일 수집을 유지하고 릴리즈 드라이런만 수행하세요.",
-      "summary_en": "The 30-day window is not ready yet. Keep daily collection running for the remaining 2 days and run dry checks only.",
+      "summary_ko": "아직 30일 기준에 도달하지 않았습니다. 남은 4일 동안 일일 수집을 유지하고 릴리즈 드라이런만 수행하세요.",
+      "summary_en": "The 30-day window is not ready yet. Keep daily collection running for the remaining 4 days and run dry checks only.",
       "steps": [
         {
           "order": 1,
           "id": "collect_daily_data",
           "status": "in_progress",
-          "condition": "current_min_days=28 < target_days=30",
+          "condition": "current_min_days=26 < target_days=30",
           "command": "python3 crawlers/run_daily.py",
           "title_ko": "일일 데이터 수집 유지",
           "title_en": "Keep Daily Data Collection Running",
@@ -215,7 +215,7 @@
           "order": 4,
           "id": "wait_for_30d_unlock",
           "status": "blocked",
-          "condition": "remaining_days=2",
+          "condition": "remaining_days=4",
           "command": null,
           "title_ko": "30일 게이트 해제 대기",
           "title_en": "Wait for 30-Day Gate Unlock",
@@ -225,16 +225,16 @@
       ]
     },
     "reports": {
-      "report_dir": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-03-20",
-      "json_report": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-03-20/release_report_20260320_000339.json",
-      "markdown_report": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-03-20/release_report_20260320_000339.md",
+      "report_dir": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-03-18",
+      "json_report": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-03-18/release_report_20260318_000342.json",
+      "markdown_report": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-03-18/release_report_20260318_000342.md",
       "latest_json": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/latest_release_report.json",
       "latest_markdown": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/latest_release_report.md"
     }
   },
   "state_path": "/Users/younghwa.jin/Documents/gpu-advisor/data/processed/auto_training_state.json",
   "state_before": {
-    "updated_at": "2026-03-19T00:03:42.731419",
+    "updated_at": "2026-03-17T00:03:39.096328",
     "last_action": "release_check",
     "last_reason": "insufficient_data_window",
     "last_pipeline_status": "blocked",
@@ -242,23 +242,23 @@
       "action": "release_check",
       "reason": "insufficient_data_window",
       "target_days": 30,
-      "current_min_days": 27,
+      "current_min_days": 25,
       "ready_for_target": false,
-      "dataset_last_date": "2026-03-19",
+      "dataset_last_date": "2026-03-17",
       "last_trained_data_date": null,
       "newly_accumulated_days": 0,
       "retrain_every_days": 7
     },
     "last_pipeline_reports": {
-      "report_dir": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-03-19",
-      "json_report": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-03-19/release_report_20260319_000342.json",
-      "markdown_report": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-03-19/release_report_20260319_000342.md",
+      "report_dir": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-03-17",
+      "json_report": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-03-17/release_report_20260317_000338.json",
+      "markdown_report": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-03-17/release_report_20260317_000338.md",
       "latest_json": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/latest_release_report.json",
       "latest_markdown": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/latest_release_report.md"
     }
   },
   "state_after": {
-    "updated_at": "2026-03-20T00:03:39.367649",
+    "updated_at": "2026-03-18T00:03:42.462851",
     "last_action": "release_check",
     "last_reason": "insufficient_data_window",
     "last_pipeline_status": "blocked",
@@ -266,17 +266,17 @@
       "action": "release_check",
       "reason": "insufficient_data_window",
       "target_days": 30,
-      "current_min_days": 28,
+      "current_min_days": 26,
       "ready_for_target": false,
-      "dataset_last_date": "2026-03-20",
+      "dataset_last_date": "2026-03-18",
       "last_trained_data_date": null,
       "newly_accumulated_days": 0,
       "retrain_every_days": 7
     },
     "last_pipeline_reports": {
-      "report_dir": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-03-20",
-      "json_report": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-03-20/release_report_20260320_000339.json",
-      "markdown_report": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-03-20/release_report_20260320_000339.md",
+      "report_dir": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-03-18",
+      "json_report": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-03-18/release_report_20260318_000342.json",
+      "markdown_report": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-03-18/release_report_20260318_000342.md",
       "latest_json": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/latest_release_report.json",
       "latest_markdown": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/latest_release_report.md"
     }
