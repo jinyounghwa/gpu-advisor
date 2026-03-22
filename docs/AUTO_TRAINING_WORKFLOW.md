@@ -1,6 +1,9 @@
 # Automatic Training and Artifact Workflow (EN)
 
 ## 1. Objective
+
+> ✅ **2026-03-22 Completed**: 30-day data window achieved, auto train+evaluate+release pipeline ran successfully, release tag `release-agent-20260322-105138` pushed. Now in post-30d periodic retraining mode (every 7 days).
+
 This document explains how the production path now automates:
 
 1. Automatic training once the 30-day data window is reached
