@@ -1,0 +1,6 @@
+requests
+beautifulsoup4
+numpy
+torch
+pytest
+pytest-cov
