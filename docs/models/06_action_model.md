@@ -372,3 +372,45 @@ Raw Market State (256D)
         ▼
   Final Decision (BUY_NOW / WAIT_SHORT / WAIT_LONG / HOLD / SKIP)
 ```
+
+## 10. 30일 실데이터 학습 결과 (2026-03-22)
+
+### 10.1 학습 후 ActionModel 동작 변화
+
+ActionModel을 포함한 4-신호 블렌드가 달성한 결과:
+
+| 지표 | 값 |
+|------|-----|
+| 방향정확도 (BUY vs WAIT) | **89.4%** |
+| 평균 보상 | **+0.0064** |
+| action_entropy | **1.459** (다양한 행동, 모드 붕괴 없음) |
+| win_rate (학습 중) | **75%** |
+| 관망비율 | **78.8%** |
+
+ActionModel이 하드코딩 utility_bias를 대체한 뒤, 에이전트는 기존보다 다양한 맥락에서 적응적 행동 분포를 출력합니다.
+
+### 10.2 실제 행동 분포 (631 샘플 백테스트)
+
+```
+안전모드 적용 후 분포:
+  HOLD:       518개 (82.1%) ← 불확실 구간 보수적 처리
+  BUY_NOW:     45개  (7.1%)
+  WAIT_SHORT:  38개  (6.0%)
+  WAIT_LONG:   30개  (4.8%)
+
+원시(raw) 분포:
+  HOLD:       265개 (42.0%)
+  BUY_NOW:    134개 (21.2%)
+  WAIT_LONG:  105개 (16.6%)
+  WAIT_SHORT:  82개 (13.0%)
+  SKIP:        45개  (7.1%)
+```
+
+원시 분포에서 BUY_NOW가 21.2%를 차지하지만, safe_mode를 거치면 고신뢰 BUY_NOW만 7.1%로 필터링됩니다.
+
+### 10.3 릴리즈 정보
+
+- 체크포인트: `alphazero_model_agent_latest.pth` (227MB, `a_state_dict` 포함)
+- 릴리즈 태그: `release-agent-20260322-105138`
+- Dockerfile에 포함: `COPY alphazero_model_agent_latest.pth alphazero_model_agent_latest.pth`
+- Docker 배포 검증: backend:8000 + frontend:3000 정상 동작 확인

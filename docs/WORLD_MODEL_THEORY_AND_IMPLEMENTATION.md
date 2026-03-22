@@ -139,5 +139,186 @@ GPU Advisor의 MuZero 스타일 분해:
 - "데이터 기반 의사결정"을 넘어서는 것이 아니라
 - "데이터를 이용한 세계모사 + 계획 기반 의사결정"으로 진화한다.
 
-GPU Advisor의 현재 구조는 이미 이 방향(`h/g/f + MCTS`) 위에 있으므로,  
+GPU Advisor의 현재 구조는 이미 이 방향(`h/g/f + MCTS`) 위에 있으므로,
 앞으로의 핵심 과제는 모델 구조 변경보다 `데이터 품질`, `계획 KPI`, `운영 안전정책`의 체계화입니다.
+
+## 10. 강화학습 기초 — GPU Advisor 관점에서
+
+### 10.1 강화학습이란
+
+강화학습(Reinforcement Learning, RL)은 **에이전트(agent)가 환경(environment)과 상호작용하면서 보상(reward)을 최대화하는 정책(policy)을 학습**하는 방법론입니다.
+
+```
+에이전트: GPU 구매 의사결정 AI
+환경:     한국 GPU 시장 (다나와 가격, 환율, 뉴스)
+상태:     256D 시장 벡터 (가격·환율·뉴스·기술지표)
+행동:     BUY_NOW / WAIT_SHORT / WAIT_LONG / HOLD / SKIP
+보상:     다음 날 가격 변화율 기반 수익률
+```
+
+지도학습(Supervised Learning)이 "정답 레이블"을 필요로 하는 반면, 강화학습은 **행동의 결과로 얻는 보상**으로부터 학습합니다. GPU 시장에서 "최적 구매 타이밍"의 정답 레이블은 존재하지 않으므로, RL 접근이 적합합니다.
+
+### 10.2 MDP 정식화
+
+GPU 구매 문제를 마르코프 결정 과정(Markov Decision Process)으로 정식화:
+
+| MDP 구성요소 | GPU Advisor 매핑 |
+|-------------|----------------|
+| 상태 S | 256D 시장 상태 벡터 (가격, 환율, 뉴스, 기술지표) |
+| 행동 A | {BUY_NOW, WAIT_SHORT, WAIT_LONG, HOLD, SKIP} |
+| 전이 T(s,a,s') | Dynamics Network g(s,a) → s' (학습된 시장 시뮬레이터) |
+| 보상 R(s,a) | pct_change(가격) × 행동 방향 부호 |
+| 할인율 γ | 0.99 (미래 보상의 현재 가치 할인) |
+| 정책 π(a|s) | MCTS 탐색 결과 (4-신호 블렌드) |
+
+**핵심 통찰**: 전통적 RL에서는 환경 모델이 주어지지만, GPU 시장은 모델이 없습니다. 이 프로젝트는 **World Model(Dynamics Network g)을 함께 학습**하여 이 문제를 해결합니다. 이것이 MuZero 스타일 접근의 핵심입니다.
+
+### 10.3 모델 기반 RL vs 모델 프리 RL
+
+| 구분 | 모델 프리 (Model-Free) | 모델 기반 (Model-Based) |
+|------|----------------------|----------------------|
+| 대표 알고리즘 | Q-Learning, PPO, SAC | MuZero, AlphaZero, Dreamer |
+| 환경 모델 | 불필요 | 함께 학습 |
+| 데이터 효율성 | 낮음 (많은 샘플 필요) | 높음 (시뮬레이션으로 보완) |
+| 계획 능력 | 없음 (즉흥적 결정) | 있음 (미래 시나리오 탐색) |
+| GPU Advisor 선택 이유 | - | 데이터 희소 + 멀티스텝 계획 필요 |
+
+GPU 시장은 하루 24개 GPU × 30일 = 720개 샘플이라는 극단적 데이터 희소성을 가집니다. 모델 기반 RL은 World Model로 시뮬레이션 데이터를 생성하여 이 한계를 보완합니다.
+
+### 10.4 AlphaZero vs MuZero vs GPU Advisor
+
+| 특성 | AlphaZero | MuZero | GPU Advisor |
+|------|-----------|--------|-------------|
+| 환경 시뮬레이터 | 완벽 제공 (게임 규칙) | 학습 (World Model) | 학습 (Dynamics Network g) |
+| 자기 대전 | ✅ | ✅ | ❌ (실제 시장 데이터) |
+| 보상 함수 | 명확 (승/패) | 환경에서 수집 | 가격 변화율로 근사 |
+| MCTS | ✅ | ✅ | ✅ (50 시뮬레이션, 5 rollout) |
+| 핵심 차이 | h+g+f+MCTS | h+g+f+MCTS | **h+g+f+a+MCTS** (Action Model 추가) |
+
+GPU Advisor는 MuZero 구조에 **Action Model(a)**을 추가하여 행동 사전 분포를 별도로 학습합니다. 이는 데이터가 극히 희소한 실세계 도메인에서 MCTS 탐색의 수렴을 돕는 역할을 합니다.
+
+### 10.5 손실 함수 — 5개 목표의 동시 최적화
+
+Fine-tuner는 5개의 손실 함수를 동시에 최적화합니다:
+
+```python
+total_loss = (
+    1.0 * latent_loss         # World Model: 상태 전이 일관성
+  + 1.0 * policy_loss         # f(s): MCTS 탐색 결과를 타겟으로
+  + 1.0 * value_loss          # f(s): 기댓값 예측 정확도
+  + 0.5 * reward_nll_loss     # g(s,a): Gaussian 보상 예측 (μ, σ²)
+  + 0.3 * action_prior_loss   # a(s): 실제 가격 레이블 기반 행동 학습
+)
+```
+
+각 손실이 학습하는 것:
+- `latent_loss`: World Model이 실제 시장 전이를 얼마나 잘 시뮬레이션하는가
+- `policy_loss`: f(s)가 MCTS가 찾은 최적 분포를 닮아가도록 (점차 MCTS 필요성 감소)
+- `value_loss`: f(s)가 미래 기댓값을 정확히 추정하도록
+- `reward_nll_loss`: g(s,a)가 보상의 평균과 불확실성(σ²)을 동시에 학습하도록
+- `action_prior_loss`: a(s)가 실제 가격 데이터에서 도출된 행동 레이블을 학습하도록
+
+### 10.6 30일 실데이터 학습 결과 (2026-03-22)
+
+500 스텝 학습 후 달성된 성능:
+
+| 지표 | 값 | 의미 |
+|------|-----|------|
+| win_rate | **75%** | 에피소드의 75%에서 양의 보상 달성 |
+| 방향정확도 | **89.4%** | BUY vs WAIT 방향 예측 정확도 |
+| 평균 보상 | **+0.0064** | always_buy 전략 대비 uplift: +0.0040 |
+| action_entropy | **1.459** | 다양한 행동 탐색 (모드 붕괴 없음) |
+| 관망비율 | **78.8%** | 불확실 구간에서 보수적 HOLD 선택 |
+| 게이트 | **7/7 PASS** | 모든 품질 기준 통과 |
+
+**해석**: 방향정확도 89.4%는 "지금 사는 것이 이득인가 손해인가"를 10번 중 9번 올바르게 판단함을 의미합니다. 관망비율 78.8%는 에이전트가 불확실한 상황에서 과감한 행동을 자제하고 보수적으로 운영됨을 보여줍니다.
+
+## 11. World Model 심층 분석 — Dynamics Network g(s,a)
+
+### 11.1 시장 물리학으로서의 World Model
+
+World Model은 "GPU 시장이 어떻게 작동하는가"를 신경망으로 학습합니다.
+
+```
+입력:  현재 시장 latent state s_t (256D) + 행동 a_t (one-hot 5D)
+출력:  다음 시장 상태 s_{t+1} (256D)
+      보상 기댓값 μ (scalar)
+      보상 불확실성 log σ² (scalar)
+```
+
+이 과정에서 신경망은 다음을 내재화합니다:
+- "BUY_NOW를 선택하면 시장 상태가 어떻게 변하는가"
+- "WAIT_SHORT 후 가격이 떨어질 확률과 그 폭의 분포"
+- "환율 상승 구간에서 HOLD가 초래하는 기댓값 변화"
+
+### 11.2 Gaussian NLL — 불확실성의 명시적 모델링
+
+단순 MSE 손실 대신 **가우시안 음의 로그우도(Gaussian NLL)** 를 사용합니다:
+
+```python
+# MSE (점추정만):  loss = (r - μ)²
+# Gaussian NLL (불확실성 포함):
+reward_nll_loss = 0.5 * ((reward - mu)² * exp(-logvar) + logvar)
+```
+
+- `μ (mu)`: 예측 보상의 기댓값
+- `exp(logvar) = σ²`: 예측의 불확실성 (분산)
+
+**왜 중요한가**: GPU 시장은 본질적으로 예측 불가능한 이벤트(신제품 출시, 재고 쇼크)가 존재합니다. 불확실성이 큰 상황을 σ²로 표현하면, MCTS 탐색 중 에이전트가 암묵적으로 리스크를 고려할 수 있습니다.
+
+### 11.3 잔차 연결 (Residual Connection) — 학습 안정성
+
+모든 네트워크 블록에 `x = x + block(x)` 형태의 잔차 연결이 적용됩니다:
+
+```
+입력 x (256D)
+    │
+    ├──────────────────────────┐
+    │                          │
+    ▼                          │
+Linear(256→256)               │
+GELU                          │
+Linear(256→256)               │
+    │                          │
+    ▼                          │
+출력 + ────────────────────────┘ (잔차 합산)
+```
+
+잔차 연결의 역할:
+1. **그래디언트 소실 방지**: 깊은 네트워크에서 그래디언트가 0으로 사라지는 현상 억제
+2. **항등 사상 기본값**: 네트워크가 "아무것도 하지 않음"을 기본값으로 학습 시작
+3. **표현 재사용**: 하위 레이어의 풍부한 표현을 상위 레이어가 직접 활용
+
+## 12. 운영 아키텍처 전체도 (2026-03-22 기준)
+
+```
+[데이터 수집 레이어]
+LaunchAgent (매일 00:00)
+  ├── danawa_crawler.py    → data/raw/danawa/YYYY-MM-DD.json (24 GPU 모델)
+  ├── exchange_rate.py     → data/raw/exchange/YYYY-MM-DD.json (USD/JPY/EUR)
+  ├── news_crawler.py      → data/raw/news/YYYY-MM-DD.json (감정 분석 포함)
+  └── feature_engineer.py → data/processed/dataset/training_data_YYYY-MM-DD.json
+
+[학습 레이어]
+auto_training.py → decide_auto_training_action()
+  ├── < 30일: release dry-check
+  ├── = 30일 최초: train_release (500 steps)  ✅ 2026-03-22 실행 완료
+  └── 매 7일 누적: retrain (재학습)
+
+[AI 모델 레이어]
+  h(s): RepresentationNetwork  256D → 256D latent (6.4M params)
+  g(s,a): DynamicsNetwork      256D+5D → 256D + μ,σ² (6.5M params)
+  f(s): PredictionNetwork      256D → policy(5D) + value(1D) (6.0M params)
+  a(s): ActionModel            256D → 5D prior (43K params)
+  MCTS: 50 simulations × 5 rollout steps
+
+[추론 레이어]
+GPUPurchaseAgent.decide_from_state()
+  policy = 0.45×MCTS + 0.25×Reward + 0.15×f-prior + 0.15×ActionModel
+  safe_mode: confidence < 0.25 → HOLD / entropy > 1.58 → HOLD
+
+[서비스 레이어]
+FastAPI (backend/simple_server.py) → localhost:8000
+Next.js 프론트엔드             → localhost:3000
+릴리즈 태그: release-agent-20260322-105138
+```

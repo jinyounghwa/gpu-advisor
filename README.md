@@ -203,6 +203,72 @@ Operational note:
 - Production data/agent path uses `crawlers/run_daily.py` + `backend/simple_server.py` + `backend/agent/*`.
 - Legacy synthetic benchmark modules under `backend/main.py` and `backend/api/*` are not used for production decisions.
 
+## 🤖 Reinforcement Learning Architecture
+
+### Learning Paradigm
+
+Unlike supervised learning that requires labeled answers, this project uses **Model-Based Reinforcement Learning** — the same paradigm as MuZero — to learn optimal GPU purchase decisions from market data alone.
+
+```
+Supervised Learning: "Here is the correct action" (requires oracle)
+Reinforcement Learning: "Here is the reward for your action" (learns from consequences)
+```
+
+The key challenge: GPU market has no "game rules" or perfect simulator. Solution: **learn the market simulator** (World Model = Dynamics Network `g`) simultaneously with the decision policy.
+
+### MDP Formulation
+
+| MDP Element | GPU Advisor Mapping |
+|------------|---------------------|
+| State S | 256D market vector (prices, exchange rates, news, technical indicators) |
+| Action A | {BUY_NOW, WAIT_SHORT, WAIT_LONG, HOLD, SKIP} |
+| Transition T | Dynamics Network `g(s,a) → s'` — learned market simulator |
+| Reward R | Next-day price change × action direction |
+| Discount γ | 0.99 — time-value of money |
+| Policy π | 4-signal blend: 0.45×MCTS + 0.25×Reward + 0.15×f-net + 0.15×ActionModel |
+
+### Training Loop (Post-30-Day)
+
+```
+Real Market Data (30 days)
+    ↓
+feature_engineer.py → 256D state vectors
+    ↓
+AgentFineTuner (500 steps, batch=32, lr=1e-4)
+    ├── h(s_t) → latent z_t
+    ├── g(z_t, a_t) → ẑ_{t+1}, μ, σ²     [World Model]
+    ├── f(z_t) → policy, value             [Prediction]
+    └── a(z_t) → action prior              [Action Model]
+    ↓ (5-loss joint optimization)
+alphazero_model_agent_latest.pth
+    ↓
+AgentEvaluator (7 quality gates)
+    ↓
+Release: tag release-agent-20260322-105138
+```
+
+**5-loss joint optimization:**
+```python
+total_loss = (
+    1.0 * latent_loss          # World Model consistency
+  + 1.0 * policy_loss          # Policy learning
+  + 1.0 * value_loss           # Value estimation
+  + 0.5 * reward_nll_loss      # Gaussian reward (μ, σ²)
+  + 0.3 * action_prior_loss    # Action Model supervision
+)
+```
+
+### Post-30-Day Performance (2026-03-22)
+
+| Metric | Value | Benchmark |
+|--------|-------|-----------|
+| Directional Accuracy | **89.4%** | always_buy: 11.1% |
+| Avg Reward | **+0.0064** | always_buy: +0.0023 |
+| Uplift vs always_buy | **+0.0040** | baseline: 0 |
+| Win Rate (training) | **75%** | random: ~50% |
+| Action Entropy | **1.459** | mode collapse threshold: 0.25 |
+| Quality Gates | **7/7 PASS** | — |
+
 ## 🧠 Feature Engineering (256 Dimensions)
 
 | Feature Category | Dimensions | Description |
@@ -285,6 +351,8 @@ gpu-advisor/
 - [`docs/POST_30D_NEXT_STEPS.md`](docs/POST_30D_NEXT_STEPS.md): Post-30-day operational runbook (English)
 - [`docs/AUTO_TRAINING_WORKFLOW_KR.md`](docs/AUTO_TRAINING_WORKFLOW_KR.md): 자동 학습/재학습 및 결과물 생성 워크플로우(한국어)
 - [`docs/AUTO_TRAINING_WORKFLOW.md`](docs/AUTO_TRAINING_WORKFLOW.md): Auto training/retraining and artifact workflow (English)
+- [`docs/RL_TRAINING_DEEP_DIVE.md`](docs/RL_TRAINING_DEEP_DIVE.md): 강화학습 학습 루프 심층 분석 — MDP 정식화, 손실 함수, 품질 게이트 상세 해설
+- [`docs/WORLD_MODEL_THEORY_AND_IMPLEMENTATION.md`](docs/WORLD_MODEL_THEORY_AND_IMPLEMENTATION.md): World Model 이론과 GPU Advisor 구현 — RL 기초, Gaussian NLL, 30d 학습 결과
 
 ### `docs/` Learning Pairs (EN/KR)
 
@@ -322,11 +390,19 @@ gpu-advisor/
 
 ## 🛠️ Technology Stack
 
-- **AI Framework**: PyTorch (with Apple MPS acceleration)
-- **Web Framework**: FastAPI
-- **Data Processing**: NumPy, Pandas, scikit-learn
-- **Crawling**: Requests, BeautifulSoup4
-- **Automation**: Cron
+| Layer | Technology |
+|-------|-----------|
+| **AI Framework** | PyTorch ≥ 2.0 (Apple MPS acceleration) |
+| **RL Architecture** | MuZero-style (h + g + f + a + MCTS) |
+| **Web Framework** | FastAPI + uvicorn |
+| **Frontend** | Next.js 16 + React 19 + Tailwind CSS |
+| **Data Processing** | NumPy, scikit-learn, pandas |
+| **Crawling** | Requests, BeautifulSoup4 |
+| **Automation** | macOS LaunchAgent (daily @ 00:00) |
+| **Containerization** | Docker + Docker Compose |
+| **CI/CD** | GitHub Actions (Python 3.10/3.11/3.12, Node 20) |
+| **Persistence** | SQLite (default) / PostgreSQL (optional) |
+| **Auth** | JWT (OAuth2) + API Key + Hybrid mode |
 
 ## 🤖 Development Tools & AI Assistance
 
