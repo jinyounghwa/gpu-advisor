@@ -1,8 +1,8 @@
 {
   "config": {
     "target_days": 30,
-    "lookback_days": 7,
-    "num_simulations": 50,
+    "lookback_days": 14,
+    "num_simulations": 17,
     "num_steps": 500,
     "batch_size": 32,
     "learning_rate": 0.0001,
@@ -50,48 +50,48 @@
   },
   "status": "pass",
   "evaluation": {
-    "samples": 153,
-    "date_from": "2026-03-16",
+    "samples": 307,
+    "date_from": "2026-03-09",
     "date_to": "2026-03-23",
-    "avg_reward_per_decision": 0.009021909726629813,
-    "avg_reward_per_decision_raw": 0.009077132313879728,
-    "directional_accuracy_buy_vs_wait": 0.9150326797385621,
-    "directional_accuracy_buy_vs_wait_raw": 0.7843137254901961,
-    "abstain_ratio": 0.738562091503268,
-    "safe_override_ratio": 0.32679738562091504,
-    "avg_confidence": 0.32392265699770567,
+    "avg_reward_per_decision": 0.007443585547230738,
+    "avg_reward_per_decision_raw": 0.006818328388756047,
+    "directional_accuracy_buy_vs_wait": 0.8990228013029316,
+    "directional_accuracy_buy_vs_wait_raw": 0.7850162866449512,
+    "abstain_ratio": 0.7654723127035831,
+    "safe_override_ratio": 0.41368078175895767,
+    "avg_confidence": 0.297486025378681,
     "action_distribution": {
-      "HOLD": 113,
-      "WAIT_LONG": 7,
-      "WAIT_SHORT": 26,
-      "BUY_NOW": 7
+      "HOLD": 235,
+      "BUY_NOW": 17,
+      "WAIT_SHORT": 38,
+      "WAIT_LONG": 17
     },
     "raw_action_distribution": {
-      "HOLD": 63,
-      "BUY_NOW": 27,
-      "WAIT_LONG": 23,
-      "WAIT_SHORT": 33,
-      "SKIP": 7
+      "HOLD": 108,
+      "SKIP": 27,
+      "WAIT_SHORT": 55,
+      "BUY_NOW": 54,
+      "WAIT_LONG": 63
     },
-    "action_entropy": 0.8072478771209717,
-    "action_entropy_raw": 1.4282970428466797,
+    "action_entropy": 0.7836551666259766,
+    "action_entropy_raw": 1.520060420036316,
     "mode_collapse": false,
     "mode_collapse_raw": false,
-    "std_reward": 0.05746805568857383,
-    "std_reward_raw": 0.05760275433539463,
+    "std_reward": 0.055856520392888506,
+    "std_reward_raw": 0.060217733410698186,
     "baseline": {
-      "always_buy_reward": -0.0013198087639797068,
-      "always_wait_reward": 0.0013198087639797068,
-      "always_hold_reward": -0.001354166200039248,
-      "always_buy_accuracy": 0.0915032679738562,
-      "always_wait_accuracy": 0.9084967320261438
+      "always_buy_reward": 0.0021563497439948454,
+      "always_wait_reward": -0.0021563497439948454,
+      "always_hold_reward": -0.0017030651863988884,
+      "always_buy_accuracy": 0.11074918566775244,
+      "always_wait_accuracy": 0.8892508143322475
     },
-    "uplift_vs_always_buy": 0.01034171849060952,
-    "uplift_raw_vs_always_buy": 0.010396941077859434,
-    "uplift_vs_always_wait": 0.007702100962650107,
-    "uplift_raw_vs_always_wait": 0.007757323549900021,
-    "uplift_vs_always_hold": 0.010376075926669061,
-    "uplift_raw_vs_always_hold": 0.010431298513918975
+    "uplift_vs_always_buy": 0.005287235803235892,
+    "uplift_raw_vs_always_buy": 0.004661978644761202,
+    "uplift_vs_always_wait": 0.009599935291225584,
+    "uplift_raw_vs_always_wait": 0.008974678132750892,
+    "uplift_vs_always_hold": 0.009146650733629627,
+    "uplift_raw_vs_always_hold": 0.008521393575154934
   },
   "gates": {
     "accuracy_raw": true,
@@ -103,7 +103,7 @@
     "no_mode_collapse_raw": true
   },
   "next_steps": {
-    "generated_at": "2026-03-23T00:10:03.078862",
+    "generated_at": "2026-03-23T00:03:55.184721",
     "target_days": 30,
     "current_min_days": 31,
     "remaining_days": 0,
