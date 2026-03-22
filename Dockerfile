@@ -16,6 +16,7 @@ COPY backend/ backend/
 COPY crawlers/ crawlers/
 COPY data/ data/
 COPY alphazero_model.pth alphazero_model.pth
+COPY alphazero_model_agent_latest.pth alphazero_model_agent_latest.pth
 
 EXPOSE 8000
 

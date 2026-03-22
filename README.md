@@ -315,8 +315,9 @@ gpu-advisor/
 ## 🔄 Roadmap
 
 - **Day 1** ✅: System setup, initial data collection
-- **Day 30** (2026-03-15 현재 진행 중): 30-day real-data window → auto training + quality gate check
-- **Post-30d**: Auto-retrain every 7 days as new data accumulates (`retrain_every_days=7`)
+- **Day 30** ✅ (2026-03-22 완료): 30-day real-data window → auto training + quality gate check → all 7 gates PASS
+- **Release** ✅ (2026-03-22): Tag `release-agent-20260322-105138` pushed — directional accuracy 89.4%, win_rate 75%
+- **Post-30d** (진행 중): Auto-retrain every 7 days as new data accumulates (`retrain_every_days=7`)
 - **Day 60+**: Stable production-ready predictions with real-market-trained model
 
 ## 🛠️ Technology Stack
@@ -427,6 +428,6 @@ This is a personal research project. Feel free to fork and experiment!
 
 ---
 
-**Last Updated**: 2026-03-15
-**Version**: 0.3.0
+**Last Updated**: 2026-03-22
+**Version**: 0.4.0 (First Production Release — `release-agent-20260322-105138`)
 **Project Type**: 0.1B AI Project
