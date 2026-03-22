@@ -90,3 +90,11 @@ htmlcov/
 tmp/
 temp/
 *.tmp
+
+# Frontend & Backend (removed locally, kept on GitHub)
+frontend/
+backend/
+backend_pid.txt
+frontend_pid.txt
+run_all.sh
+simple_run.sh
