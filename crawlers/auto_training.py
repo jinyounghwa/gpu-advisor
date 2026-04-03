@@ -31,7 +31,7 @@ class AutoTrainingConfig:
     target_days: int = 30
     retrain_every_days: int = 7
     timeout_sec: int = 5400
-    train_steps: int = 500
+    train_steps: int = 2000
     train_batch_size: int = 32
     train_learning_rate: float = 1e-4
     train_seed: int = 42

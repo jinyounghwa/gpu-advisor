@@ -54,7 +54,7 @@ class GPUPurchaseAgent:
         self,
         project_root: Path | None = None,
         checkpoint_path: Path | None = None,
-        num_simulations: int = 50,
+        num_simulations: int = 120,
         min_confidence: float = 0.25,
         max_entropy: float = 1.58,
     ):
@@ -296,10 +296,10 @@ class GPUPurchaseAgent:
             util_policy = util_policy / util_policy.sum()
 
         calibrated = (
-            0.45 * mcts_probs_np
-            + 0.25 * reward_policy
-            + 0.15 * prior_policy
-            + 0.15 * util_policy
+            0.60 * mcts_probs_np
+            + 0.20 * reward_policy
+            + 0.10 * prior_policy
+            + 0.10 * util_policy
         )
         calibrated = np.maximum(calibrated, 0.02)
         calibrated = calibrated / calibrated.sum()
@@ -308,7 +308,7 @@ class GPUPurchaseAgent:
         # ※ 수정: 기존 prior_policy(경험적 행동 분포)로 평탄화하면 훈련 데이터 편향을 강화함.
         #   예: HOLD가 60%인 prior_policy로 평탄화 시 모든 붕괴 상황이 HOLD 쪽으로 수렴.
         #   균등 분포(uniform)로 평탄화하여 어느 방향으로도 편향 없이 엔트로피를 회복.
-        min_entropy_target = 0.65
+        min_entropy_target = 0.45
         ent_now = float(-(calibrated * np.log(calibrated + 1e-10)).sum())
         if ent_now < min_entropy_target:
             alpha = min(0.55, (min_entropy_target - ent_now) / max(min_entropy_target, 1e-6))

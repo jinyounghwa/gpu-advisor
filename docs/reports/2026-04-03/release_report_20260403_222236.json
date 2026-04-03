@@ -1,116 +1,147 @@
 {
   "config": {
     "target_days": 30,
-    "lookback_days": 14,
-    "num_simulations": 17,
-    "num_steps": 500,
+    "lookback_days": 42,
+    "num_simulations": 50,
+    "num_steps": 1500,
     "batch_size": 32,
     "learning_rate": 0.0001,
     "seed": 42,
     "min_accuracy": 0.55,
     "min_avg_reward": 0.0,
-    "max_abstain_ratio": 0.93,
+    "max_abstain_ratio": 0.9,
     "max_safe_override_ratio": 0.9,
     "min_action_entropy": 0.25,
     "min_uplift_vs_buy": 0.0,
-    "require_30d": false,
-    "run_training": false
+    "require_30d": true,
+    "run_training": true
   },
   "readiness": {
     "target_days": 30,
-    "current_min_days": 43,
+    "current_min_days": 42,
     "remaining_days": 0,
     "ready_for_target": true,
     "details": {
       "danawa": {
-        "dated_files": 46,
-        "range_days": 53,
+        "dated_files": 45,
+        "range_days": 52,
         "first_date": "2026-02-11",
-        "last_date": "2026-04-04"
+        "last_date": "2026-04-03"
       },
       "exchange": {
-        "dated_files": 43,
-        "range_days": 43,
+        "dated_files": 42,
+        "range_days": 42,
         "first_date": "2026-02-21",
-        "last_date": "2026-04-04"
+        "last_date": "2026-04-03"
       },
       "news": {
-        "dated_files": 43,
-        "range_days": 43,
+        "dated_files": 42,
+        "range_days": 42,
         "first_date": "2026-02-21",
-        "last_date": "2026-04-04"
+        "last_date": "2026-04-03"
       },
       "dataset": {
-        "dated_files": 43,
-        "range_days": 43,
+        "dated_files": 42,
+        "range_days": 42,
         "first_date": "2026-02-21",
-        "last_date": "2026-04-04"
+        "last_date": "2026-04-03"
       }
     }
   },
-  "status": "blocked",
+  "status": "pass",
+  "training": {
+    "status": "completed",
+    "latest_metric": {
+      "step": 1500,
+      "episode": 30,
+      "timestamp": 1775221593.2804532,
+      "elapsed_time": 89.07433772087097,
+      "loss": -0.8769,
+      "policy_loss": 0.079,
+      "value_loss": 0.0035,
+      "reward": 0.0025,
+      "entropy": 0.1208,
+      "prior_reg": 0.021,
+      "tps": 17.3,
+      "vram_mb": 364.4,
+      "ram_mb": 520.1,
+      "cpu_percent": 0.0,
+      "learning_rate": 0.0001,
+      "grad_norm": 6.1765,
+      "win_rate": 0.9375,
+      "episode_length": 32,
+      "action_probs": [
+        0.0305,
+        0.1536,
+        0.0069,
+        0.809,
+        0.0
+      ],
+      "progress": 100.0
+    },
+    "checkpoint": "/Users/younghwa.jin/Documents/gpu-advisor/alphazero_model_agent_latest.pth"
+  },
   "evaluation": {
-    "samples": 304,
-    "date_from": "2026-03-21",
-    "date_to": "2026-04-04",
-    "avg_reward_per_decision": 0.003790559967769492,
-    "avg_reward_per_decision_raw": 0.0034657990240924337,
-    "directional_accuracy_buy_vs_wait": 0.9276315789473685,
-    "directional_accuracy_buy_vs_wait_raw": 0.8256578947368421,
-    "abstain_ratio": 0.9407894736842105,
-    "safe_override_ratio": 0.40460526315789475,
-    "avg_confidence": 0.3867195651137383,
+    "samples": 891,
+    "date_from": "2026-02-21",
+    "date_to": "2026-04-03",
+    "avg_reward_per_decision": 0.005731278298841886,
+    "avg_reward_per_decision_raw": 0.005990247207138222,
+    "directional_accuracy_buy_vs_wait": 0.9124579124579124,
+    "directional_accuracy_buy_vs_wait_raw": 0.792368125701459,
+    "abstain_ratio": 0.8765432098765432,
+    "safe_override_ratio": 0.3658810325476992,
+    "avg_confidence": 0.3889688387329613,
     "action_distribution": {
-      "HOLD": 286,
-      "WAIT_SHORT": 6,
-      "BUY_NOW": 8,
-      "WAIT_LONG": 4
+      "HOLD": 781,
+      "WAIT_SHORT": 42,
+      "BUY_NOW": 37,
+      "WAIT_LONG": 31
     },
     "raw_action_distribution": {
-      "HOLD": 163,
-      "BUY_NOW": 45,
-      "WAIT_LONG": 33,
-      "SKIP": 33,
-      "WAIT_SHORT": 30
+      "BUY_NOW": 152,
+      "HOLD": 455,
+      "WAIT_LONG": 123,
+      "WAIT_SHORT": 92,
+      "SKIP": 69
     },
-    "action_entropy": 0.28760361671447754,
-    "action_entropy_raw": 1.3275984525680542,
+    "action_entropy": 0.5084511637687683,
+    "action_entropy_raw": 1.350793719291687,
     "mode_collapse": false,
     "mode_collapse_raw": false,
-    "std_reward": 0.034710318990368146,
-    "std_reward_raw": 0.03670782603237818,
+    "std_reward": 0.04294109295936868,
+    "std_reward_raw": 0.04945381029297539,
     "baseline": {
-      "always_buy_reward": 0.0016704963824641767,
-      "always_wait_reward": -0.0016704963824641767,
-      "always_hold_reward": -0.0007123151032183969,
-      "always_buy_accuracy": 0.09210526315789473,
-      "always_wait_accuracy": 0.9078947368421053
+      "always_buy_reward": 0.0022003721677600315,
+      "always_wait_reward": -0.0022003721677600315,
+      "always_hold_reward": -0.0013322006318377286,
+      "always_buy_accuracy": 0.10437710437710437,
+      "always_wait_accuracy": 0.8956228956228957
     },
-    "uplift_vs_always_buy": 0.0021200635853053152,
-    "uplift_raw_vs_always_buy": 0.001795302641628257,
-    "uplift_vs_always_wait": 0.005461056350233669,
-    "uplift_raw_vs_always_wait": 0.00513629540655661,
-    "uplift_vs_always_hold": 0.004502875070987889,
-    "uplift_raw_vs_always_hold": 0.00417811412731083
+    "uplift_vs_always_buy": 0.003530906131081855,
+    "uplift_raw_vs_always_buy": 0.0037898750393781907,
+    "uplift_vs_always_wait": 0.007931650466601919,
+    "uplift_raw_vs_always_wait": 0.008190619374898254,
+    "uplift_vs_always_hold": 0.007063478930679615,
+    "uplift_raw_vs_always_hold": 0.0073224478389759505
   },
   "gates": {
     "accuracy_raw": true,
     "reward_raw": true,
-    "abstain": false,
+    "abstain": true,
     "safe_override": true,
     "action_entropy_raw": true,
     "uplift_raw_vs_buy": true,
     "no_mode_collapse_raw": true
   },
-  "reason": "quality_gates_failed",
   "next_steps": {
-    "generated_at": "2026-04-04T00:03:34.573543",
+    "generated_at": "2026-04-03T22:22:36.215907",
     "target_days": 30,
-    "current_min_days": 43,
+    "current_min_days": 42,
     "remaining_days": 0,
     "ready_for_target": true,
-    "release_status": "blocked",
-    "release_reason": "quality_gates_failed",
+    "release_status": "pass",
+    "release_reason": null,
     "summary_ko": "30일 데이터 윈도우가 확보되었습니다. 이제 학습-평가-릴리즈 게이트를 실행하고 pass/blocked 결과에 따라 후속 단계를 진행하세요.",
     "summary_en": "The 30-day data window is ready. Run train-evaluate-release gates and proceed according to pass/blocked outcomes.",
     "steps": [
@@ -118,7 +149,7 @@
         "order": 1,
         "id": "run_release_pipeline",
         "status": "completed",
-        "condition": "current_min_days=43 >= target_days=30",
+        "condition": "current_min_days=42 >= target_days=30",
         "command": "python3 backend/run_release_ready.py",
         "title_ko": "전체 릴리즈 파이프라인 실행",
         "title_en": "Run Full Release Pipeline",
@@ -139,8 +170,8 @@
       {
         "order": 3,
         "id": "blocked_retrain_loop",
-        "status": "ready",
-        "condition": "release_status=blocked",
+        "status": "optional",
+        "condition": "release_status=pass",
         "command": "python3 backend/run_release_ready.py --steps 1000 --lookback-days 30",
         "title_ko": "Blocked 시 재학습 루프",
         "title_en": "Retraining Loop for Blocked Result",
@@ -150,8 +181,8 @@
       {
         "order": 4,
         "id": "tag_release_candidate",
-        "status": "optional",
-        "condition": "release_status=blocked",
+        "status": "ready",
+        "condition": "release_status=pass",
         "command": "python3 backend/run_release_ready.py --tag --push-tag",
         "title_ko": "Pass 시 릴리즈 태그 생성",
         "title_en": "Create Release Tag on Pass",
