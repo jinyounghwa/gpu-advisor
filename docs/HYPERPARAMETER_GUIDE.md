@@ -216,27 +216,36 @@ NLL = 0.5 × ((r - μ)² × exp(-logvar) + logvar)
 
 ## 10. Policy Calibration Weights (4-Signal Blend)
 
+> **2026-04-03 Update**: MCTS weight raised from 0.45 to 0.60 to prioritize planning results.
+
 ```python
-calibrated = 0.45 × MCTS_policy + 0.25 × reward_policy + 0.15 × f_prior + 0.15 × action_model_prior
+# Current (v3.1, 2026-04-03+)
+calibrated = 0.60 × MCTS_policy + 0.20 × reward_policy + 0.10 × f_prior + 0.10 × action_model_prior
+
+# Previous (v3.0, ~2026-04-02)
+# calibrated = 0.45 × MCTS_policy + 0.25 × reward_policy + 0.15 × f_prior + 0.15 × action_model_prior
 ```
 
 | Source | Weight | Role |
 |--------|--------|------|
-| MCTS policy | 0.45 | Core decision (planning-based) |
-| Reward policy | 0.25 | Expected reward correction |
-| f-net prior | 0.15 | Data distribution regularization |
-| ActionModel prior | 0.15 | Learned action prior (replaces utility_bias) |
+| MCTS policy | **0.60** | Core decision (planning-based) — increased |
+| Reward policy | **0.20** | Expected reward correction |
+| f-net prior | **0.10** | Data distribution regularization |
+| ActionModel prior | **0.10** | Learned action prior (replaces utility_bias) |
 
-**Why 0.45 for MCTS?**
+**Why raise MCTS to 0.60?**
 
-- MCTS alone (1.0) risks mode collapse (100% on one action)
-- 0.45 gives MCTS the leading role while allowing other signals to calibrate
+- At 0.45, MCTS planning results were being diluted by reward/prior signals
+- 0.60 makes planning the dominant signal while retaining calibration
 - Weights sum to 1.0, guaranteeing a valid probability distribution
 
 ## 11. Anti-Collapse Regularizer
 
+> **2026-04-03 Update**: Threshold lowered from 0.65 to 0.45 to allow more confident decisions.
+
 ```python
-min_entropy_target = 0.65  # bits
+# Current (v3.1, 2026-04-03+)
+min_entropy_target = 0.45  # bits (was: 0.65)
 
 if entropy(calibrated) < min_entropy_target:
     alpha = min(0.55, (min_entropy_target - entropy_now) / max(min_entropy_target, 1e-6))
@@ -247,7 +256,7 @@ if entropy(calibrated) < min_entropy_target:
 **Design rationale**:
 - **Uniform distribution** (not empirical prior): The empirical prior (e.g., 60% HOLD) amplifies training bias. Uniform distribution is neutral.
 - `alpha` cap at 0.55: Prevents over-regularization
-- `min_entropy_target = 0.65`: ~40% of maximum entropy ln(5)≈1.609 for 5 actions
+- `min_entropy_target = 0.45` (changed): Relaxed from 0.65 so that anti-collapse does not dilute high-confidence decisions. Theoretical maximum confidence rises from ~0.587 to ~0.80.
 
 ## 12. Safety Thresholds
 
@@ -256,7 +265,7 @@ if entropy(calibrated) < min_entropy_target:
 | Min confidence | 0.25 | Must be higher than uniform probability (1/5 = 0.20) |
 | Max entropy | 1.58 | 98% of maximum entropy ln(5) ≈ 1.609 |
 | Min action entropy | 0.25 | Prevents mode collapse (0 = single action only) |
-| Max abstain ratio | 0.85 | Agent becomes useless if it abstains >85% of the time |
+| Max abstain ratio | **0.93** | Updated 2026-04-03: 0.85→0.90→0.93 — allows conservative behavior in uncertain markets |
 | Min accuracy | 0.55 | Must be statistically significant above random (50%) |
 
 See [SAFETY_MECHANISMS.md](SAFETY_MECHANISMS.md) for detailed safety mechanism documentation.

@@ -225,7 +225,7 @@ The key challenge: GPU market has no "game rules" or perfect simulator. Solution
 | Transition T | Dynamics Network `g(s,a) → s'` — learned market simulator |
 | Reward R | Next-day price change × action direction |
 | Discount γ | 0.99 — time-value of money |
-| Policy π | 4-signal blend: 0.45×MCTS + 0.25×Reward + 0.15×f-net + 0.15×ActionModel |
+| Policy π | 4-signal blend: 0.60×MCTS + 0.20×Reward + 0.10×f-net + 0.10×ActionModel |
 
 ### Training Loop (Post-30-Day)
 
@@ -234,7 +234,7 @@ Real Market Data (30 days)
     ↓
 feature_engineer.py → 256D state vectors
     ↓
-AgentFineTuner (500 steps, batch=32, lr=1e-4)
+AgentFineTuner (2000 steps, batch=32, lr=1e-4)
     ├── h(s_t) → latent z_t
     ├── g(z_t, a_t) → ẑ_{t+1}, μ, σ²     [World Model]
     ├── f(z_t) → policy, value             [Prediction]
@@ -258,16 +258,19 @@ total_loss = (
 )
 ```
 
-### Post-30-Day Performance (2026-03-22)
+### Production Performance
 
-| Metric | Value | Benchmark |
-|--------|-------|-----------|
-| Directional Accuracy | **89.4%** | always_buy: 11.1% |
-| Avg Reward | **+0.0064** | always_buy: +0.0023 |
-| Uplift vs always_buy | **+0.0040** | baseline: 0 |
-| Win Rate (training) | **75%** | random: ~50% |
-| Action Entropy | **1.459** | mode collapse threshold: 0.25 |
-| Quality Gates | **7/7 PASS** | — |
+| Metric | v3.0 (2026-03-22) | **v3.1 (2026-04-08)** |
+|--------|-------------------|----------------------|
+| Data Window | 30 days | **47 days** |
+| Samples Evaluated | 631 | **302** (rolling window) |
+| Directional Accuracy | 89.4% | **89.1%** |
+| Avg Reward | +0.0064 | **+0.00172** |
+| Avg Confidence | 0.335 | **0.373** |
+| Abstain Ratio | 78.8% | **93.4%** |
+| Quality Gates | 7/7 PASS | **6/7 BLOCKED** (abstain 0.38% over) |
+
+> Current status (2026-04-08): Pipeline BLOCKED — abstain gate 93.38% vs 93% threshold. Next auto-retrain ~2026-04-10 (5/7 days accumulated since last training on 2026-04-03).
 
 ## 🧠 Feature Engineering (256 Dimensions)
 
@@ -383,10 +386,11 @@ gpu-advisor/
 ## 🔄 Roadmap
 
 - **Day 1** ✅: System setup, initial data collection
-- **Day 30** ✅ (2026-03-22 완료): 30-day real-data window → auto training + quality gate check → all 7 gates PASS
-- **Release** ✅ (2026-03-22): Tag `release-agent-20260322-105138` pushed — directional accuracy 89.4%, win_rate 75%
-- **Post-30d** (진행 중): Auto-retrain every 7 days as new data accumulates (`retrain_every_days=7`)
-- **Day 60+**: Stable production-ready predictions with real-market-trained model
+- **Day 30** ✅ (2026-03-22): 30-day real-data window → auto training + quality gate check → all 7 gates PASS
+- **Release** ✅ (2026-03-22): Tag `release-agent-20260322-105138` pushed — directional accuracy 89.4%
+- **Post-30d** ✅ (진행 중): Auto-retrain every 7 days. Parameter tuning applied (MCTS 60%, entropy 0.45, 2000 steps).
+- **Day 47** (2026-04-08): 47 days accumulated. Pipeline BLOCKED (abstain 93.38% vs 93% gate). Next retrain ~2026-04-10.
+- **Day 60+**: Stable production-ready predictions with continuously retrained model
 
 ## 🛠️ Technology Stack
 
@@ -423,7 +427,7 @@ This project was developed with assistance from multiple AI tools, demonstrating
 - **Prediction Network f**: ~6.0M params (policy + value, 4 residual blocks)
 - **Action Model a**: ~43K params (ActionEmbeddingLayer 16D + ActionPriorNetwork 256→128→64→5)
 - **MCTS Simulations**: 50 per decision (PUCT formula, Dirichlet noise ε=0.25 α=0.03, rollout depth=5)
-- **Policy Calibration**: 4-signal blend — MCTS 45% + Reward 25% + f-net prior 15% + ActionModel 15%
+- **Policy Calibration**: 4-signal blend — MCTS 60% + Reward 20% + f-net prior 10% + ActionModel 10% (tuned 2026-04-03)
 
 ## 🔢 Token Note (30-Day Trained Agent)
 
@@ -504,6 +508,6 @@ This is a personal research project. Feel free to fork and experiment!
 
 ---
 
-**Last Updated**: 2026-03-22
-**Version**: 0.4.0 (First Production Release — `release-agent-20260322-105138`)
+**Last Updated**: 2026-04-08
+**Version**: 0.4.1 (Post-Release Tuning — 47 days data, MCTS 60%, abstain gate pending)
 **Project Type**: 0.1B AI Project

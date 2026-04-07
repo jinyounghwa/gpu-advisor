@@ -78,10 +78,10 @@
             │
             ▼
    GPUPurchaseAgent.decide_from_state()
-     calibrated = 0.45 * mcts_probs
-                + 0.25 * reward_policy
-                + 0.15 * prior_policy
-                + 0.15 * util_policy  ← a(s)의 출력이 여기에 사용됨
+     calibrated = 0.60 * mcts_probs      ← MCTS 가중치 상향 (0.45→0.60, 2026-04-03)
+                + 0.20 * reward_policy
+                + 0.10 * prior_policy
+                + 0.10 * util_policy  ← a(s)의 출력이 여기에 사용됨
 ```
 
 ---
@@ -258,12 +258,12 @@ else:
     utility_bias = ...
     util_policy = softmax(utility_bias / 0.8)
 
-# Policy calibration (4-way blend)
+# Policy calibration (4-way blend) — 2026-04-03 튜닝 적용
 calibrated = (
-    0.45 * mcts_probs      # MCTS 탐색 결과
-    + 0.25 * reward_policy  # 기댓값 기반 정책
-    + 0.15 * prior_policy   # 경험적 행동 분포
-    + 0.15 * util_policy    # ← ActionModel 사전 분포
+    0.60 * mcts_probs      # MCTS 탐색 결과 (↑ 0.45→0.60)
+    + 0.20 * reward_policy  # 기댓값 기반 정책 (↓ 0.25→0.20)
+    + 0.10 * prior_policy   # 경험적 행동 분포 (↓ 0.15→0.10)
+    + 0.10 * util_policy    # ← ActionModel 사전 분포 (↓ 0.15→0.10)
 )
 ```
 
@@ -367,50 +367,60 @@ Raw Market State (256D)
         │
         ▼
   Policy Calibration (4-way blend)
-  = 0.45×MCTS + 0.25×Reward + 0.15×Prior + 0.15×ActionModel
+  = 0.60×MCTS + 0.20×Reward + 0.10×Prior + 0.10×ActionModel
+  (2026-04-03 파라미터 튜닝: MCTS 가중치 0.45→0.60 상향)
         │
         ▼
   Final Decision (BUY_NOW / WAIT_SHORT / WAIT_LONG / HOLD / SKIP)
 ```
 
-## 10. 30일 실데이터 학습 결과 (2026-03-22)
+## 10. 실데이터 학습 결과
 
-### 10.1 학습 후 ActionModel 동작 변화
-
-ActionModel을 포함한 4-신호 블렌드가 달성한 결과:
+### 10.1 v3.0 학습 결과 (2026-03-22, 30일 데이터)
 
 | 지표 | 값 |
 |------|-----|
 | 방향정확도 (BUY vs WAIT) | **89.4%** |
 | 평균 보상 | **+0.0064** |
-| action_entropy | **1.459** (다양한 행동, 모드 붕괴 없음) |
-| win_rate (학습 중) | **75%** |
+| action_entropy | **1.459** |
 | 관망비율 | **78.8%** |
+| 게이트 | **7/7 PASS** |
 
-ActionModel이 하드코딩 utility_bias를 대체한 뒤, 에이전트는 기존보다 다양한 맥락에서 적응적 행동 분포를 출력합니다.
+### 10.2 v3.1 학습 결과 (2026-04-03, 42일 룩백, 적극 파라미터 튜닝)
 
-### 10.2 실제 행동 분포 (631 샘플 백테스트)
+파라미터 변경: 2000 스텝, MCTS 60%, 엔트로피 임계 0.45, abstain 게이트 ≤0.93
+
+| 지표 | 값 |
+|------|-----|
+| 샘플 수 (302 롤링 윈도우) | **302** |
+| 방향정확도 (BUY vs WAIT) | **89.1%** |
+| 평균 보상 | **+0.00172** |
+| 관망비율 | **93.38%** |
+| 평균 신뢰도 | **0.3728** |
+| 게이트 | **6/7 (BLOCKED — abstain 0.38% 초과)** |
+
+### 10.3 행동 분포 비교
 
 ```
-안전모드 적용 후 분포:
-  HOLD:       518개 (82.1%) ← 불확실 구간 보수적 처리
+v3.1 (2026-04-03, 302 샘플, MCTS 60%):
+  HOLD:       282개 (93.4%) ← MCTS 가중치 상향으로 보수적 강화
+  BUY_NOW:     11개  (3.6%)
+  WAIT_LONG:    6개  (2.0%)
+  WAIT_SHORT:   3개  (1.0%)
+
+v3.0 비교 (2026-03-22, 631 샘플, MCTS 45%):
+  HOLD:       518개 (82.1%)
   BUY_NOW:     45개  (7.1%)
   WAIT_SHORT:  38개  (6.0%)
   WAIT_LONG:   30개  (4.8%)
-
-원시(raw) 분포:
-  HOLD:       265개 (42.0%)
-  BUY_NOW:    134개 (21.2%)
-  WAIT_LONG:  105개 (16.6%)
-  WAIT_SHORT:  82개 (13.0%)
-  SKIP:        45개  (7.1%)
 ```
 
-원시 분포에서 BUY_NOW가 21.2%를 차지하지만, safe_mode를 거치면 고신뢰 BUY_NOW만 7.1%로 필터링됩니다.
+MCTS 가중치 0.45→0.60 상향 후 에이전트가 불확실 구간에서 더 보수적으로 행동. abstain 비율 78.8%→93.4% 증가는 이 변화의 직접적 결과입니다.
 
-### 10.3 릴리즈 정보
+### 10.4 릴리즈 이력
 
-- 체크포인트: `alphazero_model_agent_latest.pth` (227MB, `a_state_dict` 포함)
-- 릴리즈 태그: `release-agent-20260322-105138`
-- Dockerfile에 포함: `COPY alphazero_model_agent_latest.pth alphazero_model_agent_latest.pth`
-- Docker 배포 검증: backend:8000 + frontend:3000 정상 동작 확인
+| 버전 | 날짜 | 태그/상태 |
+|------|------|---------|
+| v3.0 | 2026-03-22 | `release-agent-20260322-105138` (게이트 7/7 PASS) |
+| v3.1 | 2026-04-03 | 재학습 완료, BLOCKED (abstain 게이트 미달) |
+| 현재 | 2026-04-08 | 다음 자동 재학습 대기 중 (2일 후) |

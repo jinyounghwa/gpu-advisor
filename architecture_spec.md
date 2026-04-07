@@ -1,8 +1,10 @@
 # AlphaZero-for-Trading Architecture Specification (Research Reference)
 
-> 이 문서는 **트레이딩 도메인 연구용 아키텍처 스펙**입니다.  
-> 현재 `gpu-advisor`의 운영 구현(실데이터 GPU 구매 의사결정)과는 입력 피처/액션 정의가 다를 수 있습니다.  
+> 이 문서는 **트레이딩 도메인 연구용 아키텍처 스펙**입니다.
+> 현재 `gpu-advisor`의 운영 구현(실데이터 GPU 구매 의사결정)과는 입력 피처/액션 정의가 다를 수 있습니다.
 > 운영 기준은 `README.md`, `CRAWLER_GUIDE.md`, `backend/simple_server.py`, `backend/agent/*`를 우선 참조하세요.
+>
+> **2026-04-08 운영 현황**: 47일 데이터 누적. 정책 블렌드 `0.60×MCTS + 0.20×Reward + 0.10×f-prior + 0.10×ActionModel` (이 문서 섹션 C/D는 7-action 트레이딩 스펙으로 실제 5-action GPU 구매 에이전트와 다름).
 
 ## 1. System Overview
 Adapting AlphaZero/MuZero for crypto trading requires shifting from perfect-information board games to partial-information stochastic markets.

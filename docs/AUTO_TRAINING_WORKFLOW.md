@@ -2,7 +2,8 @@
 
 ## 1. Objective
 
-> ✅ **2026-03-22 Completed**: 30-day data window achieved, auto train+evaluate+release pipeline ran successfully, release tag `release-agent-20260322-105138` pushed. Now in post-30d periodic retraining mode (every 7 days).
+> ✅ **2026-03-22 Completed**: 30-day data window achieved, release tag `release-agent-20260322-105138` pushed.
+> ⚠️ **2026-04-08 Current**: 47 days of data, retrained with MCTS 60% / entropy 0.45 / 2000 steps on 2026-04-03. Pipeline **BLOCKED** — abstain ratio 93.38% exceeds 93% gate. Next auto-retrain expected 2026-04-10 (5/7 days accumulated).
 
 This document explains how the production path now automates:
 

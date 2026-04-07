@@ -361,6 +361,8 @@ cat docs/reports/latest_data_status.json | python3 -m json.tool
 | 30일 이후 + 신규 7일 누적 | 재학습+평가+릴리즈 |
 | 30일 이후 + 누적 미달 | 드라이 체크만 |
 
+> **현재 상태 (2026-04-08)**: 47일 데이터 누적. 마지막 학습 2026-04-03 (5/7일 누적). 다음 자동 재학습 ~2026-04-10. 파이프라인 BLOCKED (abstain 게이트 93.38% > 93%).
+
 결과물:
 - `docs/reports/latest_release_report.{json,md}`
 - `docs/reports/latest_auto_training_status.{json,md}`
@@ -381,5 +383,5 @@ cat docs/reports/latest_data_status.json | python3 -m json.tool
 
 ---
 
-**작성/갱신:** 2026-03-15
+**작성/갱신:** 2026-04-08
 **프로젝트:** GPU Purchase Timing Advisor

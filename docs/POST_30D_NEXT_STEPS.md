@@ -3,12 +3,13 @@
 ## 1. Purpose
 This runbook defines what to do after GPU Advisor secures the **30-day data window** for the RL (AlphaZero/MuZero-style) production path.
 
-**Current Status (2026-03-22):**
-- 30-day window: **achieved** (30 files, 2026-02-21 → 2026-03-22)
-- All 7 quality gates: **PASS** (directional accuracy 89.4%, avg reward +0.0064)
-- Release tag: `release-agent-20260322-105138` pushed to remote
-- Model checkpoint: `alphazero_model_agent_latest.pth` (227MB)
-- Next auto-retrain: triggered when 7 more days of data accumulate
+**Current Status (2026-04-08):**
+- Data window: **47 days** (2026-02-21 → 2026-04-08)
+- Directional accuracy: **89.1%** / Avg reward: **+0.00172**
+- Quality gates: **6/7 — BLOCKED** (abstain 93.38% exceeds 93% threshold)
+- First release tag: `release-agent-20260322-105138` (2026-03-22, all 7 gates passed)
+- Last retrain: 2026-04-03 (MCTS 60%, entropy 0.45, 2000 steps)
+- Next auto-retrain: ~2026-04-10 (7-day interval, 5/7 days accumulated)
 
 Primary goals:
 - While `< 30 days`: keep daily collection + dry checks
