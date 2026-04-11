@@ -3,6 +3,7 @@
 일일 크롤링 실행 스크립트
 모든 크롤러를 순차적으로 실행하고 Feature 생성
 """
+
 import argparse
 import fcntl
 import sys
@@ -39,6 +40,8 @@ from crawlers.feature_engineer import FeatureEngineer
 from crawlers.auto_training import AutoTrainingConfig, run_auto_training_cycle
 from crawlers.release_report_fallback import write_fallback_release_report
 from crawlers.status_report import generate_daily_status_report
+from crawlers.wiki_updater import run_wiki_update
+
 logger = logging.getLogger(__name__)
 
 
@@ -172,6 +175,7 @@ def main(argv: list[str] | None = None):
     # 4. Feature Engineering (danawa 성공 시에만)
     feature_file = None
     if results["danawa"]:
+
         def step_feature():
             nonlocal feature_file
             engineer = FeatureEngineer(
@@ -194,12 +198,28 @@ def main(argv: list[str] | None = None):
     if feature_file:
         logger.info(f"  Feature 파일: {feature_file}")
 
+    wiki_result = {}
+    try:
+        wiki_result = run_wiki_update(
+            project_root=PROJECT_ROOT,
+            step_results=results,
+        )
+        if wiki_result.get("success"):
+            logger.info(
+                f"  위키 업데이트: {len(wiki_result.get('updated_files', []))}개 페이지 갱신"
+            )
+        else:
+            logger.warning(f"  위키 업데이트 건너뜀: {wiki_result.get('error')}")
+    except Exception as e:
+        logger.error(f"위키 업데이트 실패: {e}")
+
     try:
         reports = generate_daily_status_report(
             project_root=PROJECT_ROOT,
             step_results=results,
             feature_file=feature_file,
             run_started_at=run_started_at,
+            wiki_result=wiki_result,
         )
         logger.info(f"  상태 리포트(JSON): {reports['json_report']}")
         logger.info(f"  상태 리포트(MD): {reports['markdown_report']}")
@@ -225,12 +245,18 @@ def main(argv: list[str] | None = None):
 
             decision = automation_result.get("decision", {})
             pipeline_result = automation_result.get("pipeline_result", {})
-            pipeline_reports = pipeline_result.get("reports", {}) if isinstance(pipeline_result, dict) else {}
+            pipeline_reports = (
+                pipeline_result.get("reports", {}) if isinstance(pipeline_result, dict) else {}
+            )
             auto_reports = automation_result.get("automation_reports", {})
 
             logger.info(f"  자동화 action: {decision.get('action')} ({decision.get('reason')})")
-            logger.info(f"  누적 일수: {decision.get('current_min_days')} / 목표 {decision.get('target_days')}")
-            logger.info(f"  신규 누적일: {decision.get('newly_accumulated_days')} (기준 {decision.get('retrain_every_days')})")
+            logger.info(
+                f"  누적 일수: {decision.get('current_min_days')} / 목표 {decision.get('target_days')}"
+            )
+            logger.info(
+                f"  신규 누적일: {decision.get('newly_accumulated_days')} (기준 {decision.get('retrain_every_days')})"
+            )
             logger.info(f"  릴리즈 판정: {pipeline_result.get('status')}")
 
             logger.info(f"  자동화 리포트(JSON): {auto_reports.get('json_report')}")

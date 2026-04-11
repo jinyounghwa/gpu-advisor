@@ -41,6 +41,7 @@ def generate_daily_status_report(
     step_results: Dict[str, bool],
     feature_file: str | None,
     run_started_at: str,
+    wiki_result: Dict[str, Any] | None = None,
 ) -> Dict[str, str]:
     """Generate daily status reports from real crawled files."""
     now = datetime.now()
@@ -96,6 +97,11 @@ def generate_daily_status_report(
         "coverage": details,
         "ready_for_30d_training": ready_for_30d,
         "next_steps": next_steps,
+        "wiki_update": {
+            "success": wiki_result.get("success", False) if wiki_result else False,
+            "updated_files": wiki_result.get("updated_files", []) if wiki_result else [],
+            "error": wiki_result.get("error") if wiki_result else "not_run",
+        },
     }
 
     json_path = report_day_dir / f"data_status_{ts}.json"
@@ -162,6 +168,24 @@ def generate_daily_status_report(
                 "",
             ]
         )
+
+    wiki_update = wiki_result or {}
+    wiki_success = wiki_update.get("success", False)
+    wiki_files = wiki_update.get("updated_files", [])
+    wiki_error = wiki_update.get("error")
+    md_lines.extend(
+        [
+            "## 5) 위키 반영 내역 (Wiki Update)",
+            f"- 상태: {'✓ 성공' if wiki_success else '✗ 건너뜀'}",
+            f"- 업데이트된 페이지: {len(wiki_files)}개",
+        ]
+    )
+    if wiki_files:
+        for wf in wiki_files:
+            md_lines.append(f"  - `{wf}`")
+    if wiki_error:
+        md_lines.append(f"- 사유: {wiki_error}")
+    md_lines.append("")
 
     md_text = "\n".join(md_lines).strip() + "\n"
     md_path.write_text(md_text, encoding="utf-8")
