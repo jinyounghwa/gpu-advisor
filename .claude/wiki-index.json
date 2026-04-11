@@ -1,0 +1,428 @@
+{
+  "version": "1.0",
+  "generated_at": "/Users/younghwa.jin/Documents/gpu-advisor/.claude",
+  "pages": {
+    "analysis::market_sentiment": {
+      "path": "wiki/analysis/market_sentiment.md",
+      "title": "시장 감성 분석",
+      "summary": "| 감성 | 기사 수 |",
+      "category": "analysis",
+      "keywords": [
+        "총합",
+        "평균 감성 점수"
+      ],
+      "lines": 31
+    },
+    "analysis::price_trends": {
+      "path": "wiki/analysis/price_trends.md",
+      "title": "GPU 가격 트렌드 분석",
+      "summary": "| 모델 | 최저가 | 재고 | 판매자 |",
+      "category": "analysis",
+      "keywords": [
+        "100만원 이하",
+        "저재고 모델",
+        "품절 모델"
+      ],
+      "lines": 39
+    },
+    "concepts::alphazero": {
+      "path": "wiki/concepts/alphazero.md",
+      "title": "AlphaZero / MuZero 아키텍처",
+      "summary": "GPU Advisor는 DeepMind의 MuZero 아키텍처를 기반으로 GPU 구매 타이밍을 최적화합니다. 4개의 신경망이 협력하여 의사결정을 수행합니다.",
+      "category": "concepts",
+      "keywords": [
+        "5-loss joint optimization"
+      ],
+      "lines": 70
+    },
+    "concepts::feature_engineering": {
+      "path": "wiki/concepts/feature_engineering.md",
+      "title": "Feature Engineering — 256차원 상태 벡터",
+      "summary": "Raw JSON 데이터를 256차원 상태 벡터로 변환하는 파이프라인. AlphaZero 신경망의 입력으로 사용됩니다.",
+      "category": "concepts",
+      "keywords": [
+        "\ndata/raw/*.json → feature_engineer.py → data/processed/dataset/training_data_yyyy-mm-dd.json\n"
+      ],
+      "lines": 41
+    },
+    "concepts::market_indicators": {
+      "path": "wiki/concepts/market_indicators.md",
+      "title": "시장 지표 및 기술적 분석",
+      "summary": "Feature Engineering의 106차원 기술적 지표 부분을 구성하는 핵심 지표들입니다.",
+      "category": "concepts",
+      "keywords": [],
+      "lines": 40
+    },
+    "concepts::mcts": {
+      "path": "wiki/concepts/mcts.md",
+      "title": "MCTS (Monte Carlo Tree Search)",
+      "summary": "MCTS는 의사결정 문제에서 최적의 행동을 찾기 위한 휴리스틱 탐색 알고리즘입니다. GPU Advisor에서는 \"지금 구매할까, 기다릴까?\"를 결정하기 위해 사용됩니다.",
+      "category": "concepts",
+      "keywords": [
+        "\"지금 구매할까, 기다릴까?\"",
+        "backpropagation (역전파)",
+        "expansion (확장)",
+        "selection (선택)",
+        "simulation (롤아웃)"
+      ],
+      "lines": 36
+    },
+    "gpus::Arc_A770": {
+      "path": "wiki/gpus/Arc_A770.md",
+      "title": "Arc A770",
+      "summary": "| 항목 | 값 |",
+      "category": "gpus",
+      "keywords": [
+        "다나와 링크",
+        "제품명"
+      ],
+      "lines": 29
+    },
+    "gpus::Arc_B580": {
+      "path": "wiki/gpus/Arc_B580.md",
+      "title": "Arc B580",
+      "summary": "| 항목 | 값 |",
+      "category": "gpus",
+      "keywords": [
+        "다나와 링크",
+        "제품명"
+      ],
+      "lines": 29
+    },
+    "gpus::RTX_4060": {
+      "path": "wiki/gpus/RTX_4060.md",
+      "title": "RTX 4060",
+      "summary": "| 항목 | 값 |",
+      "category": "gpus",
+      "keywords": [
+        "다나와 링크",
+        "제품명"
+      ],
+      "lines": 29
+    },
+    "gpus::RTX_4060_Ti": {
+      "path": "wiki/gpus/RTX_4060_Ti.md",
+      "title": "RTX 4060 Ti",
+      "summary": "| 항목 | 값 |",
+      "category": "gpus",
+      "keywords": [
+        "다나와 링크",
+        "제품명"
+      ],
+      "lines": 29
+    },
+    "gpus::RTX_4070": {
+      "path": "wiki/gpus/RTX_4070.md",
+      "title": "RTX 4070",
+      "summary": "| 항목 | 값 |",
+      "category": "gpus",
+      "keywords": [
+        "다나와 링크",
+        "제품명"
+      ],
+      "lines": 29
+    },
+    "gpus::RTX_4070_Ti": {
+      "path": "wiki/gpus/RTX_4070_Ti.md",
+      "title": "RTX 4070 Ti",
+      "summary": "| 항목 | 값 |",
+      "category": "gpus",
+      "keywords": [
+        "다나와 링크",
+        "제품명"
+      ],
+      "lines": 29
+    },
+    "gpus::RTX_4080": {
+      "path": "wiki/gpus/RTX_4080.md",
+      "title": "RTX 4080",
+      "summary": "| 항목 | 값 |",
+      "category": "gpus",
+      "keywords": [
+        "다나와 링크",
+        "제품명"
+      ],
+      "lines": 29
+    },
+    "gpus::RTX_4090": {
+      "path": "wiki/gpus/RTX_4090.md",
+      "title": "RTX 4090",
+      "summary": "| 항목 | 값 |",
+      "category": "gpus",
+      "keywords": [
+        "다나와 링크",
+        "제품명"
+      ],
+      "lines": 29
+    },
+    "gpus::RTX_5050": {
+      "path": "wiki/gpus/RTX_5050.md",
+      "title": "RTX 5050",
+      "summary": "| 항목 | 값 |",
+      "category": "gpus",
+      "keywords": [
+        "다나와 링크",
+        "제품명"
+      ],
+      "lines": 29
+    },
+    "gpus::RTX_5060": {
+      "path": "wiki/gpus/RTX_5060.md",
+      "title": "RTX 5060",
+      "summary": "| 항목 | 값 |",
+      "category": "gpus",
+      "keywords": [
+        "다나와 링크",
+        "제품명"
+      ],
+      "lines": 29
+    },
+    "gpus::RTX_5060_Ti": {
+      "path": "wiki/gpus/RTX_5060_Ti.md",
+      "title": "RTX 5060 Ti",
+      "summary": "| 항목 | 값 |",
+      "category": "gpus",
+      "keywords": [
+        "다나와 링크",
+        "제품명"
+      ],
+      "lines": 29
+    },
+    "gpus::RTX_5070": {
+      "path": "wiki/gpus/RTX_5070.md",
+      "title": "RTX 5070",
+      "summary": "| 항목 | 값 |",
+      "category": "gpus",
+      "keywords": [
+        "다나와 링크",
+        "제품명"
+      ],
+      "lines": 29
+    },
+    "gpus::RTX_5070_Ti": {
+      "path": "wiki/gpus/RTX_5070_Ti.md",
+      "title": "RTX 5070 Ti",
+      "summary": "| 항목 | 값 |",
+      "category": "gpus",
+      "keywords": [
+        "다나와 링크",
+        "제품명"
+      ],
+      "lines": 29
+    },
+    "gpus::RTX_5080": {
+      "path": "wiki/gpus/RTX_5080.md",
+      "title": "RTX 5080",
+      "summary": "| 항목 | 값 |",
+      "category": "gpus",
+      "keywords": [
+        "다나와 링크",
+        "제품명"
+      ],
+      "lines": 29
+    },
+    "gpus::RTX_5090": {
+      "path": "wiki/gpus/RTX_5090.md",
+      "title": "RTX 5090",
+      "summary": "| 항목 | 값 |",
+      "category": "gpus",
+      "keywords": [
+        "다나와 링크",
+        "제품명"
+      ],
+      "lines": 28
+    },
+    "gpus::RX_6600": {
+      "path": "wiki/gpus/RX_6600.md",
+      "title": "RX 6600",
+      "summary": "| 항목 | 값 |",
+      "category": "gpus",
+      "keywords": [
+        "다나와 링크",
+        "제품명"
+      ],
+      "lines": 29
+    },
+    "gpus::RX_7600": {
+      "path": "wiki/gpus/RX_7600.md",
+      "title": "RX 7600",
+      "summary": "| 항목 | 값 |",
+      "category": "gpus",
+      "keywords": [
+        "다나와 링크",
+        "제품명"
+      ],
+      "lines": 29
+    },
+    "gpus::RX_7700_XT": {
+      "path": "wiki/gpus/RX_7700_XT.md",
+      "title": "RX 7700 XT",
+      "summary": "| 항목 | 값 |",
+      "category": "gpus",
+      "keywords": [
+        "다나와 링크",
+        "제품명"
+      ],
+      "lines": 29
+    },
+    "gpus::RX_7800_XT": {
+      "path": "wiki/gpus/RX_7800_XT.md",
+      "title": "RX 7800 XT",
+      "summary": "| 항목 | 값 |",
+      "category": "gpus",
+      "keywords": [
+        "다나와 링크",
+        "제품명"
+      ],
+      "lines": 29
+    },
+    "gpus::RX_7900_XTX": {
+      "path": "wiki/gpus/RX_7900_XTX.md",
+      "title": "RX 7900 XTX",
+      "summary": "| 항목 | 값 |",
+      "category": "gpus",
+      "keywords": [
+        "다나와 링크",
+        "제품명"
+      ],
+      "lines": 28
+    },
+    "gpus::RX_9060_XT": {
+      "path": "wiki/gpus/RX_9060_XT.md",
+      "title": "RX 9060 XT",
+      "summary": "| 항목 | 값 |",
+      "category": "gpus",
+      "keywords": [
+        "다나와 링크",
+        "제품명"
+      ],
+      "lines": 29
+    },
+    "gpus::RX_9070_XT": {
+      "path": "wiki/gpus/RX_9070_XT.md",
+      "title": "RX 9070 XT",
+      "summary": "| 항목 | 값 |",
+      "category": "gpus",
+      "keywords": [
+        "다나와 링크",
+        "제품명"
+      ],
+      "lines": 29
+    },
+    "index": {
+      "path": "wiki/index.md",
+      "title": "GPU Advisor Wiki — 인덱스",
+      "summary": "| 페이지 | 요약 | 업데이트 |",
+      "category": ".",
+      "keywords": [],
+      "lines": 68
+    },
+    "log": {
+      "path": "wiki/log.md",
+      "title": "GPU Advisor Wiki — 작업 로그",
+      "summary": "---",
+      "category": ".",
+      "keywords": [
+        "analysis/market_sentiment.md",
+        "analysis/price_trends.md",
+        "gpus/arc_a770.md",
+        "gpus/arc_b580.md",
+        "gpus/rtx_4060.md",
+        "gpus/rtx_4060_ti.md",
+        "gpus/rtx_4070.md",
+        "gpus/rtx_4070_ti.md",
+        "gpus/rtx_4080.md",
+        "gpus/rtx_4090.md"
+      ],
+      "lines": 78
+    },
+    "overview": {
+      "path": "wiki/overview.md",
+      "title": "GPU Advisor — 프로젝트 개요",
+      "summary": "\"이 GPU를 지금 살까, 기다릴까?\" — AlphaZero/MuZero 스타일 강화학습으로 GPU 최적 구매 타이밍을 결정하는 AI 에이전트.",
+      "category": ".",
+      "keywords": [
+        "\"이 gpu를 지금 살까, 기다릴까?\"",
+        "mcts 시뮬레이션",
+        "가치 예측",
+        "상태 표현",
+        "최종 추천"
+      ],
+      "lines": 19
+    },
+    "sources::danawa_data": {
+      "path": "wiki/sources/danawa_data.md",
+      "title": "다나와 GPU 가격 데이터",
+      "summary": "다나와danawa.com에서 매일 수집하는 GPU 가격 정보입니다.",
+      "category": "sources",
+      "keywords": [
+        "crawlers/danawa_crawler.py",
+        "data/raw/danawa/yyyy-mm-dd.json"
+      ],
+      "lines": 39
+    },
+    "sources::exchange_data": {
+      "path": "wiki/sources/exchange_data.md",
+      "title": "환율 데이터",
+      "summary": "GPU 가격에 영향을 미치는 주요 환율을 매일 수집합니다.",
+      "category": "sources",
+      "keywords": [
+        "crawlers/exchange_rate_crawler.py",
+        "data/raw/exchange/yyyy-mm-dd.json"
+      ],
+      "lines": 37
+    },
+    "sources::news_data": {
+      "path": "wiki/sources/news_data.md",
+      "title": "뉴스 감성 분석 데이터",
+      "summary": "Google News RSS에서 GPU 관련 뉴스를 수집하고 감성 분석을 수행합니다.",
+      "category": "sources",
+      "keywords": [
+        "crawlers/news_crawler.py",
+        "data/raw/news/yyyy-mm-dd.json"
+      ],
+      "lines": 49
+    }
+  },
+  "categories": {
+    "analysis": [
+      "analysis::market_sentiment",
+      "analysis::price_trends"
+    ],
+    "concepts": [
+      "concepts::alphazero",
+      "concepts::feature_engineering",
+      "concepts::market_indicators",
+      "concepts::mcts"
+    ],
+    "gpus": [
+      "gpus::Arc_A770",
+      "gpus::Arc_B580",
+      "gpus::RTX_4060",
+      "gpus::RTX_4060_Ti",
+      "gpus::RTX_4070",
+      "gpus::RTX_4070_Ti",
+      "gpus::RTX_4080",
+      "gpus::RTX_4090",
+      "gpus::RTX_5050",
+      "gpus::RTX_5060",
+      "gpus::RTX_5060_Ti",
+      "gpus::RTX_5070",
+      "gpus::RTX_5070_Ti",
+      "gpus::RTX_5080",
+      "gpus::RTX_5090",
+      "gpus::RX_6600",
+      "gpus::RX_7600",
+      "gpus::RX_7700_XT",
+      "gpus::RX_7800_XT",
+      "gpus::RX_7900_XTX",
+      "gpus::RX_9060_XT",
+      "gpus::RX_9070_XT"
+    ],
+    "sources": [
+      "sources::danawa_data",
+      "sources::exchange_data",
+      "sources::news_data"
+    ]
+  }
+}

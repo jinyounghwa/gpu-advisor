@@ -1,0 +1,49 @@
+{
+  "description": "Maps source code files to related wiki pages for context injection",
+  "mappings": {
+    "crawlers/feature_engineer.py": {
+      "wiki_pages": ["concepts::feature_engineering", "concepts::market_indicators"],
+      "purpose": "256D feature engineering from raw market data"
+    },
+    "crawlers/danawa_crawler.py": {
+      "wiki_pages": ["sources::danawa_data", "gpus"],
+      "purpose": "GPU price data collection"
+    },
+    "crawlers/exchange_crawler.py": {
+      "wiki_pages": ["sources::exchange_data"],
+      "purpose": "Currency exchange rate collection"
+    },
+    "crawlers/news_crawler.py": {
+      "wiki_pages": ["sources::news_data", "analysis::market_sentiment"],
+      "purpose": "Market news crawling with sentiment analysis"
+    },
+    "backend/simple_server.py": {
+      "wiki_pages": ["overview", "concepts::alphazero", "concepts::mcts"],
+      "purpose": "REST API server for purchase recommendations"
+    },
+    "backend/models/alphazero.py": {
+      "wiki_pages": ["concepts::alphazero", "concepts::mcts", "concepts::feature_engineering"],
+      "purpose": "AlphaZero/MuZero architecture implementation"
+    },
+    "backend/models/networks.py": {
+      "wiki_pages": ["concepts::alphazero"],
+      "purpose": "Neural network modules (h, g, f, a networks)"
+    },
+    "backend/mcts.py": {
+      "wiki_pages": ["concepts::mcts"],
+      "purpose": "Monte Carlo Tree Search algorithm"
+    },
+    "crawlers/auto_training.py": {
+      "wiki_pages": ["overview", "concepts::alphazero"],
+      "purpose": "Automatic training and release pipeline"
+    },
+    "crawlers/run_daily.py": {
+      "wiki_pages": ["sources::danawa_data", "sources::exchange_data", "sources::news_data", "concepts::feature_engineering"],
+      "purpose": "Daily crawling orchestration"
+    },
+    "crawlers/wiki_updater.py": {
+      "wiki_pages": ["overview", "analysis::price_trends", "analysis::market_sentiment"],
+      "purpose": "Automated wiki page updates"
+    }
+  }
+}
