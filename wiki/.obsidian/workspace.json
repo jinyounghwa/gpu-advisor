@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "analysis/market_sentiment.md",
+                "file": "sources/danawa_data.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "market_sentiment"
+              "title": "danawa_data"
             }
           }
         ]
@@ -185,17 +185,20 @@
   },
   "active": "560c3f15ba1609b7",
   "lastOpenFiles": [
-    "gpuadvicewiki/Welcome.md",
-    "concepts/feature_engineering.md",
+    "gpus/RX_7700_XT.md",
+    "gpus/RTX_5070_Ti.md",
+    "analysis/price_trends.md",
+    "sources/exchange_data.md",
+    "sources/danawa_data.md",
     "concepts/alphazero.md",
+    "concepts/feature_engineering.md",
+    "concepts/mcts.md",
+    "gpuadvicewiki/Welcome.md",
+    "index.md",
+    "analysis/market_sentiment.md",
     "overview.md",
     "log.md",
-    "index.md",
     "gpus/Arc_B580.md",
-    "analysis/market_sentiment.md",
-    "gpus/RX_7700_XT.md",
-    "sources/news_data.md",
-    "sources/danawa_data.md",
-    "analysis/price_trends.md"
+    "sources/news_data.md"
   ]
 }
