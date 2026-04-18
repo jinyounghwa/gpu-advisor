@@ -1,8 +1,8 @@
 {
   "config": {
     "target_days": 30,
-    "lookback_days": 14,
-    "num_simulations": 17,
+    "lookback_days": 30,
+    "num_simulations": 50,
     "num_steps": 500,
     "batch_size": 32,
     "learning_rate": 0.0001,
@@ -13,85 +13,117 @@
     "max_safe_override_ratio": 0.9,
     "min_action_entropy": 0.25,
     "min_uplift_vs_buy": 0.0,
-    "require_30d": false,
-    "run_training": false
+    "require_30d": true,
+    "run_training": true
   },
   "readiness": {
     "target_days": 30,
-    "current_min_days": 57,
+    "current_min_days": 56,
     "remaining_days": 0,
     "ready_for_target": true,
     "details": {
       "danawa": {
-        "dated_files": 60,
-        "range_days": 67,
+        "dated_files": 59,
+        "range_days": 66,
         "first_date": "2026-02-11",
-        "last_date": "2026-04-18"
+        "last_date": "2026-04-17"
       },
       "exchange": {
-        "dated_files": 57,
-        "range_days": 57,
+        "dated_files": 56,
+        "range_days": 56,
         "first_date": "2026-02-21",
-        "last_date": "2026-04-18"
+        "last_date": "2026-04-17"
       },
       "news": {
-        "dated_files": 57,
-        "range_days": 57,
+        "dated_files": 56,
+        "range_days": 56,
         "first_date": "2026-02-21",
-        "last_date": "2026-04-18"
+        "last_date": "2026-04-17"
       },
       "dataset": {
-        "dated_files": 57,
-        "range_days": 57,
+        "dated_files": 56,
+        "range_days": 56,
         "first_date": "2026-02-21",
-        "last_date": "2026-04-18"
+        "last_date": "2026-04-17"
       }
     }
   },
   "status": "pass",
+  "training": {
+    "status": "completed",
+    "latest_metric": {
+      "step": 500,
+      "episode": 10,
+      "timestamp": 1776351738.532075,
+      "elapsed_time": 28.83613896369934,
+      "loss": 0.5848,
+      "policy_loss": 1.1427,
+      "value_loss": 0.059,
+      "reward": 0.0128,
+      "entropy": 0.9485,
+      "prior_reg": 0.0752,
+      "tps": 17.6,
+      "vram_mb": 364.4,
+      "ram_mb": 487.8,
+      "cpu_percent": 0.0,
+      "learning_rate": 0.0001,
+      "grad_norm": 12.9545,
+      "win_rate": 0.5312,
+      "episode_length": 32,
+      "action_probs": [
+        0.1591,
+        0.1187,
+        0.2847,
+        0.4371,
+        0.0003
+      ],
+      "progress": 100.0
+    },
+    "checkpoint": "/Users/younghwa.jin/Documents/gpu-advisor/alphazero_model_agent_latest.pth"
+  },
   "evaluation": {
-    "samples": 276,
-    "date_from": "2026-04-04",
-    "date_to": "2026-04-18",
-    "avg_reward_per_decision": 0.006300438547295402,
-    "avg_reward_per_decision_raw": 0.006534936602327525,
-    "directional_accuracy_buy_vs_wait": 0.8405797101449275,
-    "directional_accuracy_buy_vs_wait_raw": 0.7608695652173914,
-    "abstain_ratio": 0.6739130434782609,
-    "safe_override_ratio": 0.3695652173913043,
-    "avg_confidence": 0.2810164494490811,
+    "samples": 627,
+    "date_from": "2026-03-18",
+    "date_to": "2026-04-17",
+    "avg_reward_per_decision": 0.004800727308864367,
+    "avg_reward_per_decision_raw": 0.005173687892709662,
+    "directional_accuracy_buy_vs_wait": 0.8532695374800638,
+    "directional_accuracy_buy_vs_wait_raw": 0.7687400318979266,
+    "abstain_ratio": 0.7177033492822966,
+    "safe_override_ratio": 0.35566188197767146,
+    "avg_confidence": 0.3012405764766806,
     "action_distribution": {
-      "HOLD": 186,
-      "WAIT_LONG": 63,
-      "BUY_NOW": 24,
-      "WAIT_SHORT": 3
+      "HOLD": 450,
+      "BUY_NOW": 54,
+      "WAIT_LONG": 113,
+      "WAIT_SHORT": 10
     },
     "raw_action_distribution": {
-      "WAIT_SHORT": 28,
-      "HOLD": 84,
-      "BUY_NOW": 48,
-      "WAIT_LONG": 81,
-      "SKIP": 35
+      "HOLD": 227,
+      "BUY_NOW": 115,
+      "WAIT_LONG": 165,
+      "SKIP": 56,
+      "WAIT_SHORT": 64
     },
-    "action_entropy": 0.8646925687789917,
-    "action_entropy_raw": 1.5200546979904175,
+    "action_entropy": 0.8240609765052795,
+    "action_entropy_raw": 1.4789049625396729,
     "mode_collapse": false,
     "mode_collapse_raw": false,
-    "std_reward": 0.04896620608757184,
-    "std_reward_raw": 0.049424287919150926,
+    "std_reward": 0.04087792736734515,
+    "std_reward_raw": 0.042090235443702106,
     "baseline": {
-      "always_buy_reward": -0.0026069771031965983,
-      "always_wait_reward": 0.0026069771031965983,
-      "always_hold_reward": -0.0013354391896537013,
-      "always_buy_accuracy": 0.12318840579710146,
-      "always_wait_accuracy": 0.8768115942028986
+      "always_buy_reward": -0.0012900559666692997,
+      "always_wait_reward": 0.0012900559666692997,
+      "always_hold_reward": -0.001019552894497294,
+      "always_buy_accuracy": 0.10207336523125997,
+      "always_wait_accuracy": 0.89792663476874
     },
-    "uplift_vs_always_buy": 0.008907415650492,
-    "uplift_raw_vs_always_buy": 0.009141913705524123,
-    "uplift_vs_always_wait": 0.0036934614440988036,
-    "uplift_raw_vs_always_wait": 0.0039279594991309275,
-    "uplift_vs_always_hold": 0.007635877736949103,
-    "uplift_raw_vs_always_hold": 0.007870375791981226
+    "uplift_vs_always_buy": 0.006090783275533666,
+    "uplift_raw_vs_always_buy": 0.006463743859378961,
+    "uplift_vs_always_wait": 0.003510671342195067,
+    "uplift_raw_vs_always_wait": 0.0038836319260403622,
+    "uplift_vs_always_hold": 0.005820280203361661,
+    "uplift_raw_vs_always_hold": 0.006193240787206956
   },
   "gates": {
     "accuracy_raw": true,
@@ -103,9 +135,9 @@
     "no_mode_collapse_raw": true
   },
   "next_steps": {
-    "generated_at": "2026-04-18T00:03:41.285325",
+    "generated_at": "2026-04-17T00:13:24.853619",
     "target_days": 30,
-    "current_min_days": 57,
+    "current_min_days": 56,
     "remaining_days": 0,
     "ready_for_target": true,
     "release_status": "pass",
@@ -117,7 +149,7 @@
         "order": 1,
         "id": "run_release_pipeline",
         "status": "completed",
-        "condition": "current_min_days=57 >= target_days=30",
+        "condition": "current_min_days=56 >= target_days=30",
         "command": "python3 backend/run_release_ready.py",
         "title_ko": "전체 릴리즈 파이프라인 실행",
         "title_en": "Run Full Release Pipeline",
