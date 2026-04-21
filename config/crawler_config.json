@@ -1,0 +1,51 @@
+{
+  "description": "크롤러 설정",
+  "danawa": {
+    "category_code": "112753",
+    "timeout_sec": 15,
+    "rate_limit_sec": 1,
+    "target_gpus": [
+      "RTX 5090",
+      "RTX 5080",
+      "RTX 5070 Ti",
+      "RTX 5070",
+      "RTX 5060 Ti",
+      "RTX 5060",
+      "RTX 5050",
+      "RTX 4090",
+      "RTX 4080",
+      "RTX 4070 Ti",
+      "RTX 4070",
+      "RTX 4060 Ti",
+      "RTX 4060",
+      "RX 9070 XT",
+      "RX 9060 XT",
+      "RX 7900 XTX",
+      "RX 7900 XT",
+      "RX 7800 XT",
+      "RX 7700 XT",
+      "RX 7600",
+      "RX 6600",
+      "Arc B580",
+      "Arc B570",
+      "Arc A770"
+    ],
+    "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "retry": {
+      "max_retries": 3,
+      "initial_delay_sec": 1.0,
+      "max_delay_sec": 30.0,
+      "backoff_factor": 2.0,
+      "jitter": true
+    }
+  },
+  "cache": {
+    "http_cache_dir": "data/cache/http",
+    "ttl_hours": 24,
+    "auto_clear_expired": true
+  },
+  "performance": {
+    "log_dir": "data/gpu-advisor/logs/performance",
+    "save_daily_report": true
+  }
+}

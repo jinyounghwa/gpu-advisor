@@ -1,6 +1,7 @@
 """
 다나와 GPU 가격 크롤러
 매일 GPU 가격 정보 수집
+재시도 로직 및 타임아웃 처리 포함
 """
 import requests
 from bs4 import BeautifulSoup
@@ -9,6 +10,9 @@ from datetime import datetime
 from pathlib import Path
 import time
 import logging
+from retry_utils import RetryConfig, RetryStats
+from http_cache import HTTPCacheManager
+from config_loader import get_loader
 
 logger = logging.getLogger(__name__)
 
@@ -20,52 +24,53 @@ class DanawaCrawler:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-        # 수집 대상 GPU 모델
-        self.target_gpus = [
-            "RTX 5090",
-            "RTX 5080",
-            "RTX 5070 Ti",
-            "RTX 5070",
-            "RTX 5060 Ti",
-            "RTX 5060",
-            "RTX 5050",
-            "RTX 4090",
-            "RTX 4080",
-            "RTX 4070 Ti",
-            "RTX 4070",
-            "RTX 4060 Ti",
-            "RTX 4060",
-            "RX 9070 XT",
-            "RX 9060 XT",
-            "RX 7900 XTX",
-            "RX 7900 XT",
-            "RX 7800 XT",
-            "RX 7700 XT",
-            "RX 7600",
-            "RX 6600",
-            "Arc B580",
-            "Arc B570",
-            "Arc A770",
-        ]
+        # 설정 로더
+        config = get_loader()
+        danawa_cfg = config.get_danawa_config()
+        retry_cfg = config.get_retry_config()
+        cache_cfg = config.get_cache_config()
 
-        # User-Agent
+        # 재시도 설정 (config에서 로드)
+        self.retry_config = RetryConfig(
+            max_retries=retry_cfg.get("max_retries", 3),
+            initial_delay=retry_cfg.get("initial_delay_sec", 1.0),
+            max_delay=retry_cfg.get("max_delay_sec", 30.0),
+            backoff_factor=retry_cfg.get("backoff_factor", 2.0),
+            jitter=retry_cfg.get("jitter", True),
+        )
+        self.retry_stats = RetryStats()
+
+        # HTTP 캐시 (config에서 로드)
+        self.http_cache = HTTPCacheManager(
+            cache_dir=Path(cache_cfg.get("http_cache_dir", "data/cache/http")),
+            ttl_hours=cache_cfg.get("ttl_hours", 24)
+        )
+
+        # 수집 대상 GPU 모델 (config에서 로드)
+        self.target_gpus = danawa_cfg.get("target_gpus", [])
+        if not self.target_gpus:
+            logger.warning("설정에서 target_gpus 로드 실패, 기본값 사용")
+
+        # User-Agent (config에서 로드)
+        user_agent = danawa_cfg.get("user_agent",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        )
         self.headers = {
-            "User-Agent": (
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/120.0.0.0 Safari/537.36"
-            ),
+            "User-Agent": user_agent,
             "Referer": "https://www.danawa.com/",
             "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         }
 
-    # 다나와 GPU 카테고리 코드
-    DANAWA_CATE = "112753"
+        # 다나와 GPU 카테고리 코드 (config에서 로드)
+        self.danawa_cate = danawa_cfg.get("category_code", "112753")
+        self.timeout = danawa_cfg.get("timeout_sec", 15)
 
     def search_gpu_price(self, gpu_model: str) -> dict | None:
         """
-        특정 GPU 모델의 최저가 검색 (다나와 실시간 크롤링)
+        특정 GPU 모델의 최저가 검색 (재시도 로직 포함)
 
         Args:
             gpu_model: GPU 모델명 (예: RTX 5060)
@@ -73,20 +78,42 @@ class DanawaCrawler:
         Returns:
             가격 정보 딕셔너리
         """
-        try:
-            result = self._crawl_danawa(gpu_model)
-            if result:
-                logger.info(f"✓ {gpu_model}: {result['lowest_price']:,}원 ({result['product_name']})")
-                return result
-            logger.warning(f"⚠ {gpu_model}: 크롤링 실패, 건너뜀")
-            return None
+        attempt = 0
+        last_error = None
 
-        except Exception as e:
-            logger.error(f"✗ {gpu_model} 크롤링 오류: {e}")
-            return None
+        for attempt in range(self.retry_config.max_retries + 1):
+            try:
+                result = self._crawl_danawa(gpu_model)
+                if result:
+                    self.retry_stats.record_attempt(success=True)
+                    logger.info(f"✓ {gpu_model}: {result['lowest_price']:,}원 ({result['product_name']})")
+                    return result
+                logger.warning(f"⚠ {gpu_model}: 데이터 미수집 (시도 {attempt + 1}/{self.retry_config.max_retries + 1})")
+                return None
+
+            except (requests.Timeout, requests.ConnectionError) as e:
+                last_error = e
+                if attempt == self.retry_config.max_retries:
+                    self.retry_stats.record_attempt(success=False, error=e)
+                    logger.error(f"✗ {gpu_model} 타임아웃 (최종 실패): {e}")
+                    return None
+
+                delay = self.retry_config.get_delay(attempt)
+                logger.warning(
+                    f"⚠ {gpu_model} 타임아웃 (시도 {attempt + 1}/{self.retry_config.max_retries + 1}): {delay:.1f}초 후 재시도"
+                )
+                time.sleep(delay)
+
+            except Exception as e:
+                last_error = e
+                self.retry_stats.record_attempt(success=False, error=e)
+                logger.error(f"✗ {gpu_model} 크롤링 오류: {e}")
+                return None
+
+        return None
 
     def _crawl_danawa(self, gpu_model: str) -> dict | None:
-        """다나와 검색 페이지에서 GPU 최저가 파싱"""
+        """다나와 검색 페이지에서 GPU 최저가 파싱 (캐시 지원)"""
         search_url = "https://search.danawa.com/dsearch.php"
         params = {
             "query": gpu_model,
@@ -94,7 +121,18 @@ class DanawaCrawler:
             "page": 1,
             "limit": 40,
         }
-        response = requests.get(search_url, params=params, headers=self.headers, timeout=15)
+
+        # HTTP 캐시 활용
+        response = self.http_cache.get_with_fallback(
+            search_url,
+            headers=self.headers,
+            params=params,
+            timeout=self.timeout
+        )
+
+        if response is None:
+            raise requests.RequestException("Failed to fetch and no cache available")
+
         response.raise_for_status()
         response.encoding = "utf-8"
 
@@ -126,7 +164,7 @@ class DanawaCrawler:
                 continue
 
             product_url = (
-                f"https://prod.danawa.com/info/?pcode={pcode}&cate={self.DANAWA_CATE}"
+                f"https://prod.danawa.com/info/?pcode={pcode}&cate={self.danawa_cate}"
             )
 
             # 가격: p.price_sect > a (텍스트: "6,148,990원")
@@ -178,12 +216,13 @@ class DanawaCrawler:
         return best
 
     def crawl_all(self) -> list:
-        """모든 GPU 모델 크롤링"""
+        """모든 GPU 모델 크롤링 (캐시 지원)"""
         logger.info("=" * 80)
         logger.info(f"다나와 GPU 가격 크롤링 시작 - {datetime.now()}")
         logger.info("=" * 80)
 
         results = []
+        self.retry_stats = RetryStats()  # 통계 초기화
 
         for gpu_model in self.target_gpus:
             product_info = self.search_gpu_price(gpu_model)
@@ -191,7 +230,22 @@ class DanawaCrawler:
                 results.append(product_info)
             time.sleep(1)  # 서버 부하 방지
 
+        # 재시도 통계 출력
+        retry_stats = self.retry_stats.summary()
         logger.info(f"\n✓ 총 {len(results)}개 제품 수집 완료")
+        logger.info(f"재시도 통계: 성공률 {retry_stats['success_rate']} "
+                   f"({retry_stats['successful']}/{retry_stats['total_attempts']}) "
+                   f"총 지연 {retry_stats['total_delay_sec']}초")
+
+        # 캐시 통계 출력
+        cache_stats = self.http_cache.stats()
+        logger.info(f"캐시 통계: {cache_stats['valid_cached']}개 유효, "
+                   f"{cache_stats['expired']}개 만료, "
+                   f"용량 {cache_stats['total_size_mb']:.2f}MB")
+
+        if retry_stats['recent_errors']:
+            logger.info(f"최근 에러: {retry_stats['recent_errors'][-1]['error_type']}")
+
         return results
 
     def save(self, data: list) -> str:

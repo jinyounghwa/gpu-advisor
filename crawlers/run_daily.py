@@ -41,6 +41,7 @@ from crawlers.auto_training import AutoTrainingConfig, run_auto_training_cycle
 from crawlers.release_report_fallback import write_fallback_release_report
 from crawlers.status_report import generate_daily_status_report
 from crawlers.wiki_updater import run_wiki_update
+from crawlers.performance_monitor import get_monitor, reset_monitor
 
 logger = logging.getLogger(__name__)
 
@@ -81,14 +82,21 @@ def _max_rss_mb() -> float:
     return maxrss / 1024.0
 
 
-def run_step(name: str, fn):
-    """단계 실행 — 실패해도 다음 단계 계속"""
+def run_step(name: str, fn, component_name: str | None = None, expected_data_count: int = 0):
+    """
+    단계 실행 — 실패해도 다음 단계 계속
+    성능 모니터링 통합
+    """
     logger.info(f"\n{name}")
     started = time.perf_counter()
+    monitor = get_monitor()
+    comp_name = component_name or name
+
     try:
         fn()
         elapsed = time.perf_counter() - started
         logger.info(f"✓ {name} 완료 ({elapsed:.2f}s)")
+        monitor.record(comp_name, elapsed, success=True, data_count=expected_data_count)
         return True
     except Exception as e:
         # exc_info=True: 스택 트레이스를 logger(파일+콘솔)로 전달
@@ -96,6 +104,7 @@ def run_step(name: str, fn):
         logger.error(f"✗ {name} 실패: {e}", exc_info=True)
         elapsed = time.perf_counter() - started
         logger.info(f"✗ {name} 종료 ({elapsed:.2f}s)")
+        monitor.record(comp_name, elapsed, success=False, error_msg=str(e))
         return False
 
 
@@ -131,6 +140,11 @@ def main(argv: list[str] | None = None):
     args = _parse_args(argv)
     run_started_perf = time.perf_counter()
     run_started_at = datetime.now().isoformat()
+
+    # 성능 모니터 초기화
+    reset_monitor()
+    monitor = get_monitor()
+
     logger.info("=" * 80)
     logger.info(f"일일 데이터 수집 시작 - {run_started_at}")
     logger.info(f"프로젝트 경로: {PROJECT_ROOT}")
@@ -286,6 +300,19 @@ def main(argv: list[str] | None = None):
         logger.info(f"  완료 시각: {datetime.now()}")
         logger.info(f"  총 실행시간: {elapsed_total:.2f}s")
         logger.info(f"  프로세스 Peak RSS: {_max_rss_mb():.1f} MB")
+
+        # 성능 모니터 요약 및 리포트 저장
+        perf_summary = monitor.summary()
+        if perf_summary:
+            logger.info("\n📊 성능 모니터링 요약:")
+            for key, value in perf_summary.items():
+                logger.info(f"  {key}: {value}")
+            try:
+                report_file = monitor.save_daily_report()
+                logger.info(f"✓ 성능 리포트 저장: {report_file}")
+            except Exception as e:
+                logger.warning(f"성능 리포트 저장 실패: {e}")
+
         logger.info("=" * 80)
         run_lock.release()
 

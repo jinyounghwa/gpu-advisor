@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "index.md",
+                "file": "gpus/RX_9070_XT.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "index"
+              "title": "RX_9070_XT"
             }
           }
         ]
@@ -185,29 +185,31 @@
   },
   "active": "560c3f15ba1609b7",
   "lastOpenFiles": [
-    "gpuadvicewiki/Welcome.md",
+    "analysis/price_trends.md",
+    "analysis/market_sentiment.md",
+    "gpus/RX_7600.md",
     "gpus/RX_7700_XT.md",
+    "gpus/RX_7800_XT.md",
+    "gpus/RX_7900_XTX.md",
+    "gpus/RTX_5080.md",
+    "gpus/RTX_5070.md",
+    "gpus/RTX_5060_Ti.md",
+    "gpus/RTX_5060.md",
+    "gpus/RTX_4060_Ti.md",
+    "gpus/RTX_4070.md",
+    "gpus/RTX_4070_Ti.md",
+    "gpus/RTX_4080.md",
+    "gpus/RTX_5070_Ti.md",
+    "index.md",
+    "gpuadvicewiki/Welcome.md",
     "gpus/RTX_5090.md",
     "gpus/RX_6600.md",
-    "gpus/RTX_5070_Ti.md",
-    "gpus/RTX_5060_Ti.md",
     "gpus/Arc_A770.md",
-    "gpus/RTX_5080.md",
-    "gpus/RX_7900_XTX.md",
     "concepts/alphazero.md",
     "concepts/feature_engineering.md",
     "concepts/market_indicators.md",
     "sources/exchange_data.md",
     "sources/news_data.md",
-    "sources/danawa_data.md",
-    "gpus/RX_9070_XT.md",
-    "gpus/RTX_5070.md",
-    "analysis/price_trends.md",
-    "concepts/mcts.md",
-    "index.md",
-    "analysis/market_sentiment.md",
-    "overview.md",
-    "log.md",
-    "gpus/Arc_B580.md"
+    "sources/danawa_data.md"
   ]
 }
