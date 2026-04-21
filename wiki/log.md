@@ -354,3 +354,29 @@
   - `overview.md`
   - `index.md`
 
+## [2026-04-21] ingest | 일일 데이터 위키 반영
+
+- 업데이트된 페이지: 22개
+  - `gpus/RTX_5090.md`
+  - `gpus/RTX_5070_Ti.md`
+  - `gpus/RTX_5070.md`
+  - `gpus/RTX_5050.md`
+  - `gpus/RTX_4090.md`
+  - `gpus/RTX_4080.md`
+  - `gpus/RTX_4070_Ti.md`
+  - `gpus/RTX_4070.md`
+  - `gpus/RTX_4060.md`
+  - `gpus/RX_9070_XT.md`
+  - `gpus/RX_9060_XT.md`
+  - `gpus/RX_7900_XTX.md`
+  - `gpus/RX_7800_XT.md`
+  - `gpus/RX_7700_XT.md`
+  - `gpus/RX_7600.md`
+  - `gpus/RX_6600.md`
+  - `gpus/Arc_B580.md`
+  - `gpus/Arc_A770.md`
+  - `analysis/price_trends.md`
+  - `analysis/market_sentiment.md`
+  - `overview.md`
+  - `index.md`
+
