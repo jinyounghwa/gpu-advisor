@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "gpus/RTX_5070_Ti.md",
+                "file": "index.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "RTX_5070_Ti"
+              "title": "index"
             }
           }
         ]
@@ -185,6 +185,13 @@
   },
   "active": "560c3f15ba1609b7",
   "lastOpenFiles": [
+    "gpuadvicewiki/Welcome.md",
+    "gpus/RX_7700_XT.md",
+    "gpus/RTX_5090.md",
+    "gpus/RX_6600.md",
+    "gpus/RTX_5070_Ti.md",
+    "gpus/RTX_5060_Ti.md",
+    "gpus/Arc_A770.md",
     "gpus/RTX_5080.md",
     "gpus/RX_7900_XTX.md",
     "concepts/alphazero.md",
@@ -193,15 +200,10 @@
     "sources/exchange_data.md",
     "sources/news_data.md",
     "sources/danawa_data.md",
-    "gpus/Arc_A770.md",
     "gpus/RX_9070_XT.md",
-    "gpus/RX_7700_XT.md",
     "gpus/RTX_5070.md",
-    "gpus/RTX_5060_Ti.md",
-    "gpus/RTX_5070_Ti.md",
     "analysis/price_trends.md",
     "concepts/mcts.md",
-    "gpuadvicewiki/Welcome.md",
     "index.md",
     "analysis/market_sentiment.md",
     "overview.md",
