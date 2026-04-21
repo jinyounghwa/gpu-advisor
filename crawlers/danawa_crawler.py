@@ -10,9 +10,9 @@ from datetime import datetime
 from pathlib import Path
 import time
 import logging
-from retry_utils import RetryConfig, RetryStats
-from http_cache import HTTPCacheManager
-from config_loader import get_loader
+from crawlers.retry_utils import RetryConfig, RetryStats
+from crawlers.http_cache import HTTPCacheManager
+from crawlers.config_loader import get_loader
 
 logger = logging.getLogger(__name__)
 
