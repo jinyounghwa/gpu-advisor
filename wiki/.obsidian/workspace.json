@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "gpus/RX_9070_XT.md",
+                "file": "overview.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "RX_9070_XT"
+              "title": "overview"
             }
           }
         ]
@@ -185,6 +185,8 @@
   },
   "active": "560c3f15ba1609b7",
   "lastOpenFiles": [
+    "index.md",
+    "gpus/RX_9070_XT.md",
     "analysis/price_trends.md",
     "analysis/market_sentiment.md",
     "gpus/RX_7600.md",
@@ -200,7 +202,6 @@
     "gpus/RTX_4070_Ti.md",
     "gpus/RTX_4080.md",
     "gpus/RTX_5070_Ti.md",
-    "index.md",
     "gpuadvicewiki/Welcome.md",
     "gpus/RTX_5090.md",
     "gpus/RX_6600.md",
@@ -209,7 +210,6 @@
     "concepts/feature_engineering.md",
     "concepts/market_indicators.md",
     "sources/exchange_data.md",
-    "sources/news_data.md",
-    "sources/danawa_data.md"
+    "sources/news_data.md"
   ]
 }

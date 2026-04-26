@@ -1,19 +1,19 @@
 {
-  "generated_at": "2026-04-26T00:00:49.484955",
-  "run_started_at": "2026-04-26T00:00:01.404296",
-  "date": "2026-04-26",
+  "generated_at": "2026-04-25T00:01:51.827323",
+  "run_started_at": "2026-04-25T00:00:01.256046",
+  "date": "2026-04-25",
   "steps": {
     "danawa": true,
     "exchange": true,
     "news": true,
     "feature": true
   },
-  "feature_file": "/Users/younghwa.jin/Documents/gpu-advisor/data/processed/dataset/training_data_2026-04-26.json",
+  "feature_file": "/Users/younghwa.jin/Documents/gpu-advisor/data/processed/dataset/training_data_2026-04-25.json",
   "today_files": {
-    "danawa": "/Users/younghwa.jin/Documents/gpu-advisor/data/raw/danawa/2026-04-26.json",
-    "exchange": "/Users/younghwa.jin/Documents/gpu-advisor/data/raw/exchange/2026-04-26.json",
-    "news": "/Users/younghwa.jin/Documents/gpu-advisor/data/raw/news/2026-04-26.json",
-    "dataset": "/Users/younghwa.jin/Documents/gpu-advisor/data/processed/dataset/training_data_2026-04-26.json"
+    "danawa": "/Users/younghwa.jin/Documents/gpu-advisor/data/raw/danawa/2026-04-25.json",
+    "exchange": "/Users/younghwa.jin/Documents/gpu-advisor/data/raw/exchange/2026-04-25.json",
+    "news": "/Users/younghwa.jin/Documents/gpu-advisor/data/raw/news/2026-04-25.json",
+    "dataset": "/Users/younghwa.jin/Documents/gpu-advisor/data/processed/dataset/training_data_2026-04-25.json"
   },
   "today_exists": {
     "danawa": true,
@@ -23,35 +23,35 @@
   },
   "coverage": {
     "danawa": {
-      "dated_files": 68,
-      "range_days": 75,
+      "dated_files": 67,
+      "range_days": 74,
       "first_date": "2026-02-11",
-      "last_date": "2026-04-26"
+      "last_date": "2026-04-25"
     },
     "exchange": {
-      "dated_files": 65,
-      "range_days": 65,
+      "dated_files": 64,
+      "range_days": 64,
       "first_date": "2026-02-21",
-      "last_date": "2026-04-26"
+      "last_date": "2026-04-25"
     },
     "news": {
-      "dated_files": 65,
-      "range_days": 65,
+      "dated_files": 64,
+      "range_days": 64,
       "first_date": "2026-02-21",
-      "last_date": "2026-04-26"
+      "last_date": "2026-04-25"
     },
     "dataset": {
-      "dated_files": 65,
-      "range_days": 65,
+      "dated_files": 64,
+      "range_days": 64,
       "first_date": "2026-02-21",
-      "last_date": "2026-04-26"
+      "last_date": "2026-04-25"
     }
   },
   "ready_for_30d_training": true,
   "next_steps": {
-    "generated_at": "2026-04-26T00:00:49.487245",
+    "generated_at": "2026-04-25T00:01:51.829695",
     "target_days": 30,
-    "current_min_days": 65,
+    "current_min_days": 64,
     "remaining_days": 0,
     "ready_for_target": true,
     "release_status": null,
@@ -63,7 +63,7 @@
         "order": 1,
         "id": "run_release_pipeline",
         "status": "ready",
-        "condition": "current_min_days=65 >= target_days=30",
+        "condition": "current_min_days=64 >= target_days=30",
         "command": "python3 backend/run_release_ready.py",
         "title_ko": "전체 릴리즈 파이프라인 실행",
         "title_en": "Run Full Release Pipeline",
