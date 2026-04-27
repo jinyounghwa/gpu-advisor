@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "overview.md",
+                "file": "index.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "overview"
+              "title": "index"
             }
           }
         ]
@@ -185,6 +185,9 @@
   },
   "active": "560c3f15ba1609b7",
   "lastOpenFiles": [
+    "sources/danawa_data.md",
+    "sources/news_data.md",
+    "overview.md",
     "index.md",
     "gpus/RX_9070_XT.md",
     "analysis/price_trends.md",
@@ -207,9 +210,6 @@
     "gpus/RX_6600.md",
     "gpus/Arc_A770.md",
     "concepts/alphazero.md",
-    "concepts/feature_engineering.md",
-    "concepts/market_indicators.md",
-    "sources/exchange_data.md",
-    "sources/news_data.md"
+    "concepts/feature_engineering.md"
   ]
 }
