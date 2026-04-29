@@ -1,30 +1,30 @@
 # 시장 감성 분석
 
-> 마지막 업데이트: 2026-04-28
+> 마지막 업데이트: 2026-04-29
 
 ## 감성 분포
 
 | 감성 | 기사 수 |
 |------|---------|
-| 긍정 | 11 |
-| 부정 | 1 |
-| 중립 | 20 |
-| **총합** | 32 |
+| 긍정 | 9 |
+| 부정 | 6 |
+| 중립 | 19 |
+| **총합** | 34 |
 
-**평균 감성 점수**: 0.31 (긍정)
+**평균 감성 점수**: 0.09 (중립)
 
 ## 주요 뉴스 헤드라인
 
 - 🟢 [Tom's Hardware] GPU price tracking 2026: Lowest price on every graphics card from Nvidia, AMD, and Intel today — here are the best deals during the AI-driven pricing crisis - Tom's Hardware
+- ⚪ [Wccftech] Australia Buyers Pay Just 9.5% More For GPUs While US Shoppers Get Hit With 22% RAMpocalypse Premium - Wccftech
+- 🟢 [PC Gamer] Graphics card price watch: We're tracking the lowest prices and the best GPU deals for Nvidia, AMD, and Intel cards - PC Gamer
+- ⚪ [Tech in Asia] India cuts Nvidia GPU prices in latest AI compute tender - Tech in Asia
+- ⚪ [Tom's Hardware] The GeForce RTX 30-series upgrade matrix — does your Ampere GPU need an upgrade in 2026? - Tom's Hardware
+- 🟢 [Notebookcheck] Deal | This QHD-capable 16 GB AMD Radeon GPU is less than $500 and is selling out fast - Notebookcheck
 - 🟢 [PC Gamer] The RX 9070 remains my pick for best graphics card, but in the budget market Nvidia's RTX 5050 gets the nod - PC Gamer
-- ⚪ [Business Insider] Why Nvidia GPU prices are 'going nuts,' according to one CEO - Business Insider
-- ⚪ [Yahoo Finance] Brace yourself: Nvidia and AMD GPU prices may rise as top AIBs adjust costs - Yahoo Finance
-- 🟢 [TechRadar] The best graphics card in 2026: our top tested picks for all budgets - TechRadar
-- ⚪ [Notebookcheck] AMD Radeon Graphics (Ryzen 7000) GPU - Benchmarks and Specs - Notebookcheck
-- ⚪ [Phoronix] AMD VPE 2.0 Support Merged For Mesa 26.2 - Phoronix
-- 🟢 [PC Gamer] Team red's best mid-range graphics card is the most affordable its been in months - PC Gamer
-- ⚪ [AMD] Run Hermes Agent Locally On AMD Ryzen™ AI Max+ Processors and Radeon™ GPUs - AMD
-- ⚪ [Tom's Hardware] Intel has reportedly cancelled discrete gaming GPUs for the upcoming Xe3P Arc "Celestial" family — gaming GPU remains uncertain even for the next-gen Xe4 "Druid" lineup that lands in 2027 - Tom's Hardware
+- ⚪ [AMD] Day-0 Support for Baidu ERNIE-Image on AMD GPUs - AMD
+- ⚪ [DSOGaming] Aphelion Benchmarks & PC Performance Analysis - DSOGaming
+- ⚪ [HotHardware] Intel Arc Roadmap Leak Raises Question Over Future Gaming GPUs - HotHardware
 
 ---
 [[index|← 인덱스로 돌아가기]]
