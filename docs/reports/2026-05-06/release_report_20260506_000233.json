@@ -18,80 +18,80 @@
   },
   "readiness": {
     "target_days": 30,
-    "current_min_days": 76,
+    "current_min_days": 75,
     "remaining_days": 0,
     "ready_for_target": true,
     "details": {
       "danawa": {
-        "dated_files": 79,
-        "range_days": 86,
+        "dated_files": 78,
+        "range_days": 85,
         "first_date": "2026-02-11",
-        "last_date": "2026-05-07"
+        "last_date": "2026-05-06"
       },
       "exchange": {
-        "dated_files": 76,
-        "range_days": 76,
+        "dated_files": 75,
+        "range_days": 75,
         "first_date": "2026-02-21",
-        "last_date": "2026-05-07"
+        "last_date": "2026-05-06"
       },
       "news": {
-        "dated_files": 76,
-        "range_days": 76,
+        "dated_files": 75,
+        "range_days": 75,
         "first_date": "2026-02-21",
-        "last_date": "2026-05-07"
+        "last_date": "2026-05-06"
       },
       "dataset": {
-        "dated_files": 76,
-        "range_days": 76,
+        "dated_files": 75,
+        "range_days": 75,
         "first_date": "2026-02-21",
-        "last_date": "2026-05-07"
+        "last_date": "2026-05-06"
       }
     }
   },
   "status": "pass",
   "evaluation": {
-    "samples": 283,
-    "date_from": "2026-04-23",
-    "date_to": "2026-05-07",
-    "avg_reward_per_decision": 0.001972057799551689,
-    "avg_reward_per_decision_raw": 0.004088444566022508,
-    "directional_accuracy_buy_vs_wait": 0.8480565371024735,
-    "directional_accuracy_buy_vs_wait_raw": 0.7632508833922261,
-    "abstain_ratio": 0.7208480565371025,
-    "safe_override_ratio": 0.4028268551236749,
-    "avg_confidence": 0.2861931838068783,
+    "samples": 281,
+    "date_from": "2026-04-22",
+    "date_to": "2026-05-06",
+    "avg_reward_per_decision": 0.0005785342228156912,
+    "avg_reward_per_decision_raw": 0.0012935227543090348,
+    "directional_accuracy_buy_vs_wait": 0.8434163701067615,
+    "directional_accuracy_buy_vs_wait_raw": 0.7473309608540926,
+    "abstain_ratio": 0.697508896797153,
+    "safe_override_ratio": 0.40569395017793597,
+    "avg_confidence": 0.28348808358839844,
     "action_distribution": {
-      "HOLD": 204,
-      "WAIT_LONG": 38,
-      "WAIT_SHORT": 7,
-      "BUY_NOW": 34
+      "HOLD": 196,
+      "BUY_NOW": 38,
+      "WAIT_LONG": 43,
+      "WAIT_SHORT": 4
     },
     "raw_action_distribution": {
-      "HOLD": 90,
-      "WAIT_LONG": 67,
-      "WAIT_SHORT": 41,
-      "SKIP": 23,
-      "BUY_NOW": 62
+      "HOLD": 82,
+      "WAIT_SHORT": 32,
+      "BUY_NOW": 69,
+      "WAIT_LONG": 71,
+      "SKIP": 27
     },
-    "action_entropy": 0.851657509803772,
-    "action_entropy_raw": 1.5219401121139526,
+    "action_entropy": 0.8696161508560181,
+    "action_entropy_raw": 1.5243128538131714,
     "mode_collapse": false,
     "mode_collapse_raw": false,
-    "std_reward": 0.014856878254984635,
-    "std_reward_raw": 0.022962005115509183,
+    "std_reward": 0.011524982429967906,
+    "std_reward_raw": 0.016784065985867465,
     "baseline": {
-      "always_buy_reward": -0.0021017428661948443,
-      "always_wait_reward": 0.0021017428661948443,
-      "always_hold_reward": -0.0008439854417161365,
-      "always_buy_accuracy": 0.06007067137809187,
-      "always_wait_accuracy": 0.9399293286219081
+      "always_buy_reward": -0.001016571420842548,
+      "always_wait_reward": 0.001016571420842548,
+      "always_hold_reward": -0.0006794446495398403,
+      "always_buy_accuracy": 0.05693950177935943,
+      "always_wait_accuracy": 0.9430604982206405
     },
-    "uplift_vs_always_buy": 0.004073800665746533,
-    "uplift_raw_vs_always_buy": 0.006190187432217352,
-    "uplift_vs_always_wait": -0.00012968506664315545,
-    "uplift_raw_vs_always_wait": 0.0019867016998276633,
-    "uplift_vs_always_hold": 0.0028160432412678254,
-    "uplift_raw_vs_always_hold": 0.004932430007738645
+    "uplift_vs_always_buy": 0.0015951056436582392,
+    "uplift_raw_vs_always_buy": 0.002310094175151583,
+    "uplift_vs_always_wait": -0.0004380371980268569,
+    "uplift_raw_vs_always_wait": 0.00027695133346648674,
+    "uplift_vs_always_hold": 0.0012579788723555314,
+    "uplift_raw_vs_always_hold": 0.0019729674038488753
   },
   "gates": {
     "accuracy_raw": true,
@@ -103,9 +103,9 @@
     "no_mode_collapse_raw": true
   },
   "next_steps": {
-    "generated_at": "2026-05-07T00:03:24.545825",
+    "generated_at": "2026-05-06T00:02:33.357535",
     "target_days": 30,
-    "current_min_days": 76,
+    "current_min_days": 75,
     "remaining_days": 0,
     "ready_for_target": true,
     "release_status": "pass",
@@ -117,7 +117,7 @@
         "order": 1,
         "id": "run_release_pipeline",
         "status": "completed",
-        "condition": "current_min_days=76 >= target_days=30",
+        "condition": "current_min_days=75 >= target_days=30",
         "command": "python3 backend/run_release_ready.py",
         "title_ko": "전체 릴리즈 파이프라인 실행",
         "title_en": "Run Full Release Pipeline",
