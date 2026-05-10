@@ -1,9 +1,9 @@
 {
   "config": {
     "target_days": 30,
-    "lookback_days": 30,
-    "num_simulations": 50,
-    "num_steps": 2000,
+    "lookback_days": 14,
+    "num_simulations": 17,
+    "num_steps": 500,
     "batch_size": 32,
     "learning_rate": 0.0001,
     "seed": 42,
@@ -13,8 +13,8 @@
     "max_safe_override_ratio": 0.9,
     "min_action_entropy": 0.25,
     "min_uplift_vs_buy": 0.0,
-    "require_30d": true,
-    "run_training": true
+    "require_30d": false,
+    "run_training": false
   },
   "readiness": {
     "target_days": 30,
@@ -49,81 +49,49 @@
     }
   },
   "status": "pass",
-  "training": {
-    "status": "completed",
-    "latest_metric": {
-      "step": 2000,
-      "episode": 40,
-      "timestamp": 1778417768.748655,
-      "elapsed_time": 135.5437469482422,
-      "loss": -0.6304,
-      "policy_loss": 0.3109,
-      "value_loss": 0.0124,
-      "reward": 0.0042,
-      "entropy": 0.4485,
-      "prior_reg": 0.035,
-      "tps": 17.6,
-      "vram_mb": 364.4,
-      "ram_mb": 554.5,
-      "cpu_percent": 0.0,
-      "learning_rate": 0.0001,
-      "grad_norm": 8.5986,
-      "win_rate": 0.7188,
-      "episode_length": 32,
-      "action_probs": [
-        0.1756,
-        0.1251,
-        0.1211,
-        0.5781,
-        0.0
-      ],
-      "progress": 100.0
-    },
-    "checkpoint": "/Users/younghwa.jin/Documents/gpu-advisor/alphazero_model_agent_latest.pth"
-  },
   "evaluation": {
-    "samples": 581,
-    "date_from": "2026-04-10",
+    "samples": 282,
+    "date_from": "2026-04-26",
     "date_to": "2026-05-10",
-    "avg_reward_per_decision": 0.005384175206843858,
-    "avg_reward_per_decision_raw": 0.005384676933801485,
-    "directional_accuracy_buy_vs_wait": 0.8726333907056799,
-    "directional_accuracy_buy_vs_wait_raw": 0.7934595524956971,
-    "abstain_ratio": 0.7263339070567987,
-    "safe_override_ratio": 0.306368330464716,
-    "avg_confidence": 0.4071672293103397,
+    "avg_reward_per_decision": 0.0028028958509075715,
+    "avg_reward_per_decision_raw": 0.003092587333110928,
+    "directional_accuracy_buy_vs_wait": 0.8049645390070922,
+    "directional_accuracy_buy_vs_wait_raw": 0.7411347517730497,
+    "abstain_ratio": 0.6702127659574468,
+    "safe_override_ratio": 0.3900709219858156,
+    "avg_confidence": 0.2964669807566226,
     "action_distribution": {
-      "HOLD": 422,
-      "WAIT_SHORT": 9,
-      "WAIT_LONG": 84,
-      "BUY_NOW": 66
+      "HOLD": 189,
+      "WAIT_LONG": 50,
+      "BUY_NOW": 38,
+      "WAIT_SHORT": 5
     },
     "raw_action_distribution": {
-      "HOLD": 244,
-      "WAIT_LONG": 129,
-      "WAIT_SHORT": 48,
-      "BUY_NOW": 114,
-      "SKIP": 46
+      "BUY_NOW": 60,
+      "WAIT_LONG": 79,
+      "HOLD": 79,
+      "WAIT_SHORT": 36,
+      "SKIP": 28
     },
-    "action_entropy": 0.8234890103340149,
-    "action_entropy_raw": 1.4248425960540771,
+    "action_entropy": 0.9164929389953613,
+    "action_entropy_raw": 1.5343120098114014,
     "mode_collapse": false,
     "mode_collapse_raw": false,
-    "std_reward": 0.03402455614570183,
-    "std_reward_raw": 0.03496406079036211,
+    "std_reward": 0.023982192893086063,
+    "std_reward_raw": 0.03292882056084736,
     "baseline": {
-      "always_buy_reward": -0.00022011430765149557,
-      "always_wait_reward": 0.00022011430765149557,
-      "always_hold_reward": -0.0010486228812746586,
-      "always_buy_accuracy": 0.08605851979345955,
-      "always_wait_accuracy": 0.9139414802065404
+      "always_buy_reward": 0.00041238274283994573,
+      "always_wait_reward": -0.00041238274283994573,
+      "always_hold_reward": -0.0011483144610390356,
+      "always_buy_accuracy": 0.10283687943262411,
+      "always_wait_accuracy": 0.8971631205673759
     },
-    "uplift_vs_always_buy": 0.005604289514495354,
-    "uplift_raw_vs_always_buy": 0.0056047912414529805,
-    "uplift_vs_always_wait": 0.005164060899192362,
-    "uplift_raw_vs_always_wait": 0.005164562626149989,
-    "uplift_vs_always_hold": 0.006432798088118516,
-    "uplift_raw_vs_always_hold": 0.006433299815076144
+    "uplift_vs_always_buy": 0.002390513108067626,
+    "uplift_raw_vs_always_buy": 0.0026802045902709825,
+    "uplift_vs_always_wait": 0.003215278593747517,
+    "uplift_raw_vs_always_wait": 0.0035049700759508737,
+    "uplift_vs_always_hold": 0.003951210311946608,
+    "uplift_raw_vs_always_hold": 0.004240901794149964
   },
   "gates": {
     "accuracy_raw": true,
@@ -135,7 +103,7 @@
     "no_mode_collapse_raw": true
   },
   "next_steps": {
-    "generated_at": "2026-05-10T22:06:35.547943",
+    "generated_at": "2026-05-10T00:03:27.228542",
     "target_days": 30,
     "current_min_days": 79,
     "remaining_days": 0,
