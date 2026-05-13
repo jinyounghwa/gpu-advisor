@@ -12,6 +12,8 @@ from typing import Dict, List, Tuple, Any, TypedDict
 import numpy as np
 
 from .gpu_purchase_agent import GPUPurchaseAgent
+from .rewards import calculate_reward
+from .data_loader import AgentDataLoader
 
 
 class BaselineResult(TypedDict):
@@ -54,51 +56,15 @@ class AgentEvaluator:
     def __init__(self, project_root: Path, agent: GPUPurchaseAgent):
         self.project_root = project_root
         self.agent = agent
-        self.dataset_dir = project_root / "data" / "processed" / "dataset"
-        self.raw_danawa_dir = project_root / "data" / "raw" / "danawa"
+        self.data_loader = AgentDataLoader(project_root)
 
-    def _load_processed(self) -> Dict[str, Dict[str, np.ndarray]]:
-        out: Dict[str, Dict[str, np.ndarray]] = {}
-        for f in sorted(self.dataset_dir.glob("training_data_*.json")):
-            date = f.stem.replace("training_data_", "")
-            with open(f, "r", encoding="utf-8") as fp:
-                rows = json.load(fp)
-            out[date] = {
-                row["gpu_model"]: np.asarray(row["state_vector"], dtype=np.float32)
-                for row in rows
-            }
-        return out
 
-    def _load_prices(self) -> Dict[str, Dict[str, float]]:
-        out: Dict[str, Dict[str, float]] = {}
-        for f in sorted(self.raw_danawa_dir.glob("*.json")):
-            date = f.stem
-            try:
-                with open(f, "r", encoding="utf-8") as fp:
-                    data = json.load(fp)
-                out[date] = {
-                    p["chipset"]: float(p["lowest_price"])
-                    for p in data.get("products", [])
-                }
-            except Exception:
-                continue
-        return out
 
-    @staticmethod
-    def _reward_for_action(action: str, pct_change: float) -> float:
-        if action == "BUY_NOW":
-            return pct_change
-        if action in {"WAIT_SHORT", "WAIT_LONG"}:
-            return -pct_change
-        if action == "HOLD":
-            return -abs(pct_change) * 0.1
-        if action == "SKIP":
-            return -abs(pct_change) * 0.15
-        return 0.0
+
 
     def run(self, lookback_days: int = 30) -> EvaluationResult:
-        processed = self._load_processed()
-        prices = self._load_prices()
+        processed = self.data_loader.load_processed_by_date()
+        prices = self.data_loader.load_prices_by_date()
         dates = sorted(set(processed.keys()) & set(prices.keys()))
         if len(dates) < 2:
             raise ValueError("Need at least 2 aligned days for evaluation")
@@ -133,8 +99,8 @@ class AgentEvaluator:
             for model in shared:
                 delta = (p1[model] - p0[model]) / max(p0[model], 1.0)
                 decision = self.agent.decide_from_state(model, states[model], d0)
-                reward_raw = self._reward_for_action(decision.raw_action, float(delta))
-                reward = self._reward_for_action(decision.action, float(delta))
+                reward_raw = calculate_reward(decision.raw_action, float(delta))
+                reward = calculate_reward(decision.action, float(delta))
                 cumulative_reward_raw += reward_raw
                 cumulative_reward += reward
                 all_rewards_raw.append(reward_raw)
@@ -157,9 +123,9 @@ class AgentEvaluator:
                     correct_buy_vs_wait_raw += 1
 
                 # Baselines
-                r_buy = self._reward_for_action("BUY_NOW", float(delta))
-                r_wait = self._reward_for_action("WAIT_SHORT", float(delta))
-                r_hold = self._reward_for_action("HOLD", float(delta))
+                r_buy = calculate_reward("BUY_NOW", float(delta))
+                r_wait = calculate_reward("WAIT_SHORT", float(delta))
+                r_hold = calculate_reward("HOLD", float(delta))
                 baseline_buy_rewards.append(r_buy)
                 baseline_wait_rewards.append(r_wait)
                 baseline_hold_rewards.append(r_hold)

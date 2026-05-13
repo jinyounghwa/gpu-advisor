@@ -14,6 +14,7 @@ from typing import Any, Dict, Optional
 from .fine_tuner import AgentFineTuner
 from .gpu_purchase_agent import GPUPurchaseAgent
 from .evaluator import AgentEvaluator
+from .quality_gates import check_quality_gates, QualityGateConfig
 from .next_steps import build_post_30d_next_steps
 
 
@@ -26,14 +27,30 @@ class PipelineConfig:
     batch_size: int = 32
     learning_rate: float = 1e-4
     seed: int = 42
+    quality_gates: QualityGateConfig = None  # defaults to QualityGateConfig() when None
+    require_30d: bool = True
+    run_training: bool = True
+
+    # Legacy per-field overrides (kept for API backward compat)
     min_accuracy: float = 0.55
     min_avg_reward: float = 0.0
     max_abstain_ratio: float = 0.93
     max_safe_override_ratio: float = 0.90
     min_action_entropy: float = 0.25
     min_uplift_vs_buy: float = 0.0
-    require_30d: bool = True
-    run_training: bool = True
+
+    def resolve_quality_gates(self) -> QualityGateConfig:
+        """Return QualityGateConfig, preferring explicit config or falling back to individual fields."""
+        if self.quality_gates is not None:
+            return self.quality_gates
+        return QualityGateConfig(
+            min_accuracy=self.min_accuracy,
+            min_avg_reward=self.min_avg_reward,
+            max_abstain_ratio=self.max_abstain_ratio,
+            max_safe_override_ratio=self.max_safe_override_ratio,
+            min_action_entropy=self.min_action_entropy,
+            min_uplift_vs_buy=self.min_uplift_vs_buy,
+        )
 
 
 class AgentReleasePipeline:
@@ -113,15 +130,8 @@ class AgentReleasePipeline:
         return metrics
 
     def quality_gates(self, metrics: Dict[str, Any], cfg: PipelineConfig) -> Dict[str, bool]:
-        return {
-            "accuracy_raw": metrics["directional_accuracy_buy_vs_wait_raw"] >= cfg.min_accuracy,
-            "reward_raw": metrics["avg_reward_per_decision_raw"] > cfg.min_avg_reward,
-            "abstain": metrics["abstain_ratio"] <= cfg.max_abstain_ratio,
-            "safe_override": metrics.get("safe_override_ratio", 1.0) <= cfg.max_safe_override_ratio,
-            "action_entropy_raw": metrics.get("action_entropy_raw", 0.0) >= cfg.min_action_entropy,
-            "uplift_raw_vs_buy": metrics.get("uplift_raw_vs_always_buy", -1e9) >= cfg.min_uplift_vs_buy,
-            "no_mode_collapse_raw": not bool(metrics.get("mode_collapse_raw", True)),
-        }
+        qcfg = cfg.resolve_quality_gates()
+        return check_quality_gates(metrics, qcfg)
 
     def write_report(self, payload: Dict[str, Any]) -> Dict[str, str]:
         now = datetime.now()

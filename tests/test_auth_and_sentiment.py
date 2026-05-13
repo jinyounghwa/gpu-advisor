@@ -29,13 +29,15 @@ def _mock_agent():
 
 
 def test_jwt_token_auth_flow(monkeypatch):
-    import backend.simple_server as server
+    from backend.server.app import app, security_config
+    from backend.server.dependencies import get_gpu_agent, set_gpu_agent
+    from backend.security import AuthMode
 
-    monkeypatch.setattr(server, "get_gpu_agent", lambda: _mock_agent())
-    monkeypatch.setattr(server.security_config, "auth_mode", server.AuthMode.JWT)
-    monkeypatch.setattr(server.security_config, "users", {"tester": "secret"})
+    monkeypatch.setattr("backend.server.dependencies.get_gpu_agent", lambda: _mock_agent())
+    monkeypatch.setattr(security_config, "auth_mode", AuthMode.JWT)
+    monkeypatch.setattr(security_config, "users", {"tester": "secret"})
 
-    client = TestClient(server.app)
+    client = TestClient(app)
 
     token_resp = client.post(
         "/api/auth/token",
@@ -45,11 +47,11 @@ def test_jwt_token_auth_flow(monkeypatch):
     assert token_resp.status_code == 200
     token = token_resp.json()["access_token"]
 
-    denied = client.post("/api/ask", json={"model_name": "RTX 4090"})
+    denied = client.post("/api/agent/ask", json={"model_name": "RTX 4090"})
     assert denied.status_code == 401
 
     ok = client.post(
-        "/api/ask",
+        "/api/agent/ask",
         json={"model_name": "RTX 4090"},
         headers={"Authorization": f"Bearer {token}"},
     )
@@ -58,7 +60,7 @@ def test_jwt_token_auth_flow(monkeypatch):
 
 def test_sentiment_rule_backend(monkeypatch):
     monkeypatch.setenv("GPU_ADVISOR_SENTIMENT_BACKEND", "rule")
-    from backend.api.sentiment.analyzer import NewsSentimentAnalyzer
+    from backend.agent.sentiment.analyzer import NewsSentimentAnalyzer
 
     analyzer = NewsSentimentAnalyzer()
     result = analyzer.aggregate(

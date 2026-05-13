@@ -16,7 +16,6 @@ from dataclasses import replace
 
 # 프로젝트 루트 절대경로 (cron 환경에서도 안전)
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
-sys.path.insert(0, str(PROJECT_ROOT))
 
 # 로그 디렉토리 절대경로로 보장
 LOG_DIR = PROJECT_ROOT / "logs"

@@ -1,4 +1,4 @@
-from .gpu_purchase_agent import GPUPurchaseAgent
+from .gpu_purchase_agent import GPUPurchaseAgent, AgentConfig
 from .fine_tuner import AgentFineTuner
 from .evaluator import AgentEvaluator
 from .release_pipeline import AgentReleasePipeline, PipelineConfig

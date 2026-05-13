@@ -22,6 +22,8 @@ from ..models.representation_network import RepresentationNetwork
 from ..models.dynamics_network import DynamicsNetwork
 from ..models.prediction_network import PredictionNetwork
 from ..models.action_model import ActionModel
+from .rewards import calculate_reward
+from .data_loader import AgentDataLoader
 
 
 @dataclass
@@ -43,8 +45,7 @@ class AgentFineTuner:
         self.project_root = project_root
         self.base_checkpoint = base_checkpoint or (project_root / "alphazero_model.pth")
         self.output_checkpoint = output_checkpoint or (project_root / "alphazero_model_agent_latest.pth")
-        self.dataset_dir = project_root / "data" / "processed" / "dataset"
-        self.raw_danawa_dir = project_root / "data" / "raw" / "danawa"
+        self.data_loader = AgentDataLoader(project_root)
 
         self.device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
         self.samples: List[TransitionSample] = []
@@ -94,33 +95,7 @@ class AgentFineTuner:
         if a_state is not None:
             self.a.load_state_dict(a_state)
 
-    def _load_processed_by_date(self) -> Dict[str, Dict[str, np.ndarray]]:
-        files = sorted(self.dataset_dir.glob("training_data_*.json"))
-        if len(files) < 2:
-            raise ValueError("Need at least 2 processed daily datasets for transition training")
-        by_date: Dict[str, Dict[str, np.ndarray]] = {}
-        for f in files:
-            date = f.stem.replace("training_data_", "")
-            with open(f, "r", encoding="utf-8") as fp:
-                rows = json.load(fp)
-            model_map: Dict[str, np.ndarray] = {}
-            for row in rows:
-                model_map[row["gpu_model"]] = np.asarray(row["state_vector"], dtype=np.float32)
-            by_date[date] = model_map
-        return by_date
 
-    def _load_prices_by_date(self) -> Dict[str, Dict[str, float]]:
-        prices: Dict[str, Dict[str, float]] = {}
-        for f in sorted(self.raw_danawa_dir.glob("*.json")):
-            date = f.stem
-            try:
-                with open(f, "r", encoding="utf-8") as fp:
-                    data = json.load(fp)
-                products = data.get("products", [])
-                prices[date] = {p["chipset"]: float(p["lowest_price"]) for p in products}
-            except Exception:
-                continue
-        return prices
 
     def _action_from_delta(self, pct_change: float) -> int:
         # Positive future price change means buying now was better than waiting.
@@ -142,42 +117,13 @@ class AgentFineTuner:
             return 1  # WAIT_SHORT
         return 3  # HOLD
 
-    @staticmethod
-    def _reward_for_action(action: int, pct_change: float) -> float:
-        """
-        행동 조건부 보상 함수 (AgentEvaluator._reward_for_action과 동일 로직, int 행동 코드 사용).
 
-        Dynamics Network g(s, a) → (s', reward)의 reward 헤드가
-        action-conditioned reward를 학습하도록 한다.
-
-        ※ 기존 버그:
-            reward = pct_change (action 무관)
-            → WAIT_LONG 샘플(pct ≤ -0.02)에 음수 보상이 들어감
-            → Dynamics Network가 "WAIT 행동 = 항상 나쁨"으로 학습
-            → MCTS 시뮬레이션에서 WAIT_SHORT / WAIT_LONG 회피, BUY_NOW로 쏠림
-
-        ※ 수정:
-            BUY_NOW  → pct_change          : 가격이 오르면 매수가 맞았음 (양수)
-            WAIT_*   → -pct_change         : 가격이 내리면 대기가 맞았음 (양수)
-            HOLD     → -abs(pct) * 0.1     : 불확실성 비용 최소
-            SKIP     → -abs(pct) * 0.15    : 기회비용 (HOLD보다 소폭 높음)
-
-        결과: 모든 레이블 샘플(BUY/WAIT/HOLD)에서 reward ≥ 0.
-              MCTS가 올바른 방향의 행동을 선호하도록 학습됨.
-        """
-        if action == 0:  # BUY_NOW
-            return pct_change
-        if action in {1, 2}:  # WAIT_SHORT, WAIT_LONG
-            return -pct_change
-        if action == 3:  # HOLD
-            return -abs(pct_change) * 0.1
-        if action == 4:  # SKIP
-            return -abs(pct_change) * 0.15
-        return 0.0
 
     def _build_transition_dataset(self) -> None:
-        processed = self._load_processed_by_date()
-        prices = self._load_prices_by_date()
+        processed = self.data_loader.load_processed_by_date()
+        prices = self.data_loader.load_prices_by_date()
+        if len(processed) < 2:
+            raise ValueError("Need at least 2 processed daily datasets for transition training")
         dates = sorted(processed.keys())
 
         samples: List[TransitionSample] = []
@@ -195,7 +141,7 @@ class AgentFineTuner:
                 price1 = p1[model]
                 pct_change = (price1 - price0) / price0
                 action = self._action_from_delta(pct_change)
-                reward = float(np.clip(self._reward_for_action(action, pct_change), -1.0, 1.0))
+                reward = float(np.clip(calculate_reward(action, pct_change), -1.0, 1.0))
                 value_target = float(np.tanh(pct_change * 8.0))
                 samples.append(
                     TransitionSample(

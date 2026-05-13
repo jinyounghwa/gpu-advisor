@@ -20,6 +20,7 @@ from ..models.dynamics_network import DynamicsNetwork
 from ..models.prediction_network import PredictionNetwork
 from ..models.mcts_engine import MCTSConfig, MCTSEngine
 from ..models.action_model import ActionModel
+from .data_loader import AgentDataLoader
 
 
 ACTION_LABELS = {
@@ -29,6 +30,39 @@ ACTION_LABELS = {
     3: "HOLD",
     4: "SKIP",
 }
+
+
+@dataclass
+class AgentConfig:
+    """Runtime configuration for GPUPurchaseAgent with sensible defaults."""
+    num_simulations: int = 120
+    min_confidence: float = 0.25
+    max_entropy: float = 1.58
+
+    # Policy calibration blending weights (must sum to ~1.0)
+    mcts_weight: float = 0.60
+    reward_weight: float = 0.20
+    prior_weight: float = 0.10
+    utility_weight: float = 0.10
+
+    # Anti-collapse regularizer
+    min_entropy_target: float = 0.45
+    max_entropy_blend_alpha: float = 0.55
+
+    # Reward-based policy temperature
+    reward_temperature: float = 1.2
+
+    # Heuristic utility temperature (fallback when ActionModel absent)
+    heuristic_temperature: float = 0.8
+
+    # Confidence threshold for deterministic (argmax) vs stochastic sampling
+    argmax_confidence_threshold: float = 0.75
+
+    # Minimum probability floor for calibrated policy
+    prob_floor: float = 0.02
+
+    # News feature start index in state vector
+    news_start: int = 80
 
 
 @dataclass
@@ -54,21 +88,30 @@ class GPUPurchaseAgent:
         self,
         project_root: Path | None = None,
         checkpoint_path: Path | None = None,
-        num_simulations: int = 120,
-        min_confidence: float = 0.25,
-        max_entropy: float = 1.58,
+        config: AgentConfig | None = None,
+        # Legacy kwargs kept for backward compatibility
+        num_simulations: int | None = None,
+        min_confidence: float | None = None,
+        max_entropy: float | None = None,
     ):
         backend_root = Path(__file__).resolve().parents[1]
         self.project_root = project_root or backend_root.parent
         latest_ckpt = self.project_root / "alphazero_model_agent_latest.pth"
         default_ckpt = latest_ckpt if latest_ckpt.exists() else (self.project_root / "alphazero_model.pth")
         self.checkpoint_path = checkpoint_path or default_ckpt
-        self.dataset_dir = self.project_root / "data" / "processed" / "dataset"
+        self.data_loader = AgentDataLoader(self.project_root)
+
+        # Merge legacy kwargs into config
+        cfg = config or AgentConfig()
+        if num_simulations is not None:
+            cfg = AgentConfig(**{**cfg.__dict__, "num_simulations": num_simulations})
+        if min_confidence is not None:
+            cfg = AgentConfig(**{**cfg.__dict__, "min_confidence": min_confidence})
+        if max_entropy is not None:
+            cfg = AgentConfig(**{**cfg.__dict__, "max_entropy": max_entropy})
+        self.config = cfg
 
         self.device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-        self.num_simulations = num_simulations
-        self.min_confidence = min_confidence
-        self.max_entropy = max_entropy
 
         self.representation_network: RepresentationNetwork | None = None
         self.dynamics_network: DynamicsNetwork | None = None
@@ -146,25 +189,22 @@ class GPUPurchaseAgent:
             self.action_model.load_state_dict(a_state)
             self.action_model.eval()
 
-        mcts_config = MCTSConfig(num_simulations=self.num_simulations)
+        mcts_config = MCTSConfig(num_simulations=self.config.num_simulations)
         self.mcts = MCTSEngine(mcts_config, latent_dim=latent_dim, action_dim=action_dim)
 
-    def _latest_dataset_path(self) -> Path:
-        dated_files = sorted(self.dataset_dir.glob("training_data_*.json"))
-        if dated_files:
-            return dated_files[-1]
-        fallback = self.dataset_dir / "training_data.json"
-        if fallback.exists():
-            return fallback
-        raise FileNotFoundError("No processed training dataset file found")
+
 
     def _refresh_dataset_cache(self, force: bool = False) -> None:
-        dataset_path = self._latest_dataset_path()
+        try:
+            dataset_path = self.data_loader.get_latest_dataset_path()
+        except FileNotFoundError:
+            return
+
         mtime = dataset_path.stat().st_mtime_ns
         if not force and mtime == self._dataset_mtime_ns:
             return
-        with open(dataset_path, "r", encoding="utf-8") as f:
-            self._dataset_rows = json.load(f)
+            
+        self._dataset_rows = self.data_loader.load_latest_dataset()
         self._dataset_mtime_ns = mtime
         self._models_cache = [row["gpu_model"] for row in self._dataset_rows]
 
@@ -258,7 +298,7 @@ class GPUPurchaseAgent:
         reward_centered = reward_arr - reward_arr.mean()
         reward_scale = max(float(reward_centered.std()), 1e-6)
         reward_scaled = reward_centered / reward_scale
-        reward_policy = np.exp(reward_scaled / 1.2)
+        reward_policy = np.exp(reward_scaled / self.config.reward_temperature)
         reward_policy = reward_policy / reward_policy.sum()
 
         if self.action_prior is not None and len(self.action_prior) == len(mcts_probs_np):
@@ -292,34 +332,36 @@ class GPUPurchaseAgent:
                 utility_bias[2] = +0.9 * max(over_ma - 0.02, 0.0) + 0.4 * trend_up  # WAIT_LONG
                 utility_bias[3] = +0.2 * (trend_up + trend_down)  # HOLD
                 utility_bias[4] = +0.8 * max(over_ma - 0.05, 0.0)  # SKIP
-            util_policy = np.exp(utility_bias / 0.8)
+            util_policy = np.exp(utility_bias / self.config.heuristic_temperature)
             util_policy = util_policy / util_policy.sum()
 
         calibrated = (
-            0.60 * mcts_probs_np
-            + 0.20 * reward_policy
-            + 0.10 * prior_policy
-            + 0.10 * util_policy
+            self.config.mcts_weight * mcts_probs_np
+            + self.config.reward_weight * reward_policy
+            + self.config.prior_weight * prior_policy
+            + self.config.utility_weight * util_policy
         )
-        calibrated = np.maximum(calibrated, 0.02)
+        calibrated = np.maximum(calibrated, self.config.prob_floor)
         calibrated = calibrated / calibrated.sum()
 
         # Anti-collapse regularizer: enforce minimum action entropy.
         # ※ 수정: 기존 prior_policy(경험적 행동 분포)로 평탄화하면 훈련 데이터 편향을 강화함.
         #   예: HOLD가 60%인 prior_policy로 평탄화 시 모든 붕괴 상황이 HOLD 쪽으로 수렴.
         #   균등 분포(uniform)로 평탄화하여 어느 방향으로도 편향 없이 엔트로피를 회복.
-        min_entropy_target = 0.45
         ent_now = float(-(calibrated * np.log(calibrated + 1e-10)).sum())
-        if ent_now < min_entropy_target:
-            alpha = min(0.55, (min_entropy_target - ent_now) / max(min_entropy_target, 1e-6))
+        if ent_now < self.config.min_entropy_target:
+            alpha = min(
+                self.config.max_entropy_blend_alpha,
+                (self.config.min_entropy_target - ent_now) / max(self.config.min_entropy_target, 1e-6),
+            )
             uniform = np.ones(len(calibrated), dtype=np.float32) / len(calibrated)
             calibrated = (1.0 - alpha) * calibrated + alpha * uniform
-            calibrated = np.maximum(calibrated, 0.02)
+            calibrated = np.maximum(calibrated, self.config.prob_floor)
             calibrated = calibrated / calibrated.sum()
 
         argmax_idx = int(np.argmax(calibrated))
         argmax_conf = float(calibrated[argmax_idx])
-        if argmax_conf < 0.75:
+        if argmax_conf < self.config.argmax_confidence_threshold:
             sampled_idx = self._deterministic_sample(calibrated, f"{gpu_model}|{data_date}")
             best_action_idx = sampled_idx
         else:
@@ -332,13 +374,13 @@ class GPUPurchaseAgent:
         safe_reason = None
         action = raw_action
 
-        if confidence < self.min_confidence:
+        if confidence < self.config.min_confidence:
             safe_mode = True
-            safe_reason = f"low_confidence<{self.min_confidence:.2f}"
+            safe_reason = f"low_confidence<{self.config.min_confidence:.2f}"
             action = "HOLD"
-        elif entropy > self.max_entropy:
+        elif entropy > self.config.max_entropy:
             safe_mode = True
-            safe_reason = f"high_entropy>{self.max_entropy:.2f}"
+            safe_reason = f"high_entropy>{self.config.max_entropy:.2f}"
             action = "HOLD"
 
         action_probs = {
@@ -356,7 +398,7 @@ class GPUPurchaseAgent:
             action_probs=action_probs,
             expected_rewards=expected_rewards,
             date=data_date,
-            simulations=self.num_simulations,
+            simulations=self.config.num_simulations,
             safe_mode=safe_mode,
             safe_reason=safe_reason,
         )
@@ -392,8 +434,8 @@ class GPUPurchaseAgent:
         return {
             "checkpoint_path": str(self.checkpoint_path),
             "device": str(self.device),
-            "num_simulations": self.num_simulations,
-            "min_confidence": self.min_confidence,
-            "max_entropy": self.max_entropy,
+            "num_simulations": self.config.num_simulations,
+            "min_confidence": self.config.min_confidence,
+            "max_entropy": self.config.max_entropy,
             "meta": self.model_meta,
         }
