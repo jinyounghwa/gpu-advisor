@@ -93,3 +93,15 @@ temp/
 
 backend_pid.txt
 frontend_pid.txt
+
+# Obsidian default vault (empty template)
+wiki/gpuadvicewiki/
+
+# Legacy docs (consolidated into wiki/)
+wiki.md
+feasibility_report.md
+GPU_PURCHASE_ADVISOR_REPORT.md
+종합_프로젝트_보고서.md
+
+# Initial model checkpoint (superseded by _latest)
+alphazero_model.pth

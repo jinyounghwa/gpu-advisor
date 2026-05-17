@@ -1015,3 +1015,16 @@
   - `overview.md`
   - `index.md`
 
+
+## [2026-05-15] lint | 프로젝트 불필요 파일 정리
+
+- **캐시/임시 파일 삭제**: `__pycache__/` (전체), `.pytest_cache/`, `.ruff_cache/`, `.DS_Store`, `frontend_pid.txt`, `gpu_advisor.egg-info/`
+- **구형 모델 삭제**: `alphazero_model.pth` (72MB 초기 체크포인트, `alphazero_model_agent_latest.pth`로 대체됨)
+- **빈 Obsidian vault 삭제**: `wiki/gpuadvicewiki/` (Welcome.md만 있는 빈 템플릿)
+- **루트 중복/구형 문서 삭제**:
+  - `wiki.md` → `wiki/` 디렉토리로 통합됨
+  - `feasibility_report.md` → 초기 타당성 검토 (내용 구버전)
+  - `GPU_PURCHASE_ADVISOR_REPORT.md` → 2026-02-14 초기 평가 보고서
+  - `종합_프로젝트_보고서.md` → 초기 종합 보고서
+- `.gitignore`에 삭제 파일 패턴 추가 (재생성 방지)
+- 영향받은 페이지: `log.md`, `index.md`
