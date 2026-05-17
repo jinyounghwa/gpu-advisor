@@ -43,7 +43,7 @@ class AgentFineTuner:
         output_checkpoint: Optional[Path] = None,
     ):
         self.project_root = project_root
-        self.base_checkpoint = base_checkpoint or (project_root / "alphazero_model.pth")
+        self.base_checkpoint = base_checkpoint or (project_root / "alphazero_model_agent_latest.pth")
         self.output_checkpoint = output_checkpoint or (project_root / "alphazero_model_agent_latest.pth")
         self.data_loader = AgentDataLoader(project_root)
 
