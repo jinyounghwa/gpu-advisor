@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "gpus/RX_7700_XT.md",
+                "file": "gpus/RTX_5070.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "RX_7700_XT"
+              "title": "RTX_5070"
             }
           }
         ]
@@ -185,14 +185,14 @@
   },
   "active": "560c3f15ba1609b7",
   "lastOpenFiles": [
-    "gpus/RTX_5070_Ti.md",
     "gpus/RTX_5060_Ti.md",
+    "gpus/RTX_5070_Ti.md",
+    "index.md",
+    "gpus/RX_7700_XT.md",
     "gpus/RTX_4090.md",
     "gpus/RTX_4070_Ti.md",
-    "index.md",
     "sources/danawa_data.md",
     "gpus/RX_7900_XTX.md",
-    "gpus/RX_7700_XT.md",
     "gpus/RX_9060_XT.md",
     "gpus/RX_9070_XT.md",
     "gpus/RX_7600.md",
