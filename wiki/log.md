@@ -5,6 +5,18 @@
 
 ---
 
+## [2026-05-26] update | AlphaZero 모델 수동 강제 재학습 완료
+
+- 95일간 축적된 실제 마켓 데이터를 바탕으로 AlphaZero 모델 강제 재학습(2000 steps)을 수행함
+- 평가 데이터 윈도우: 95일 확보 (2026-02-21 ~ 2026-05-26)
+- 7개 품질 게이트 검증: PASS
+- 주요 지표 성과:
+  - 방향 정확도 (Directional Accuracy): 92.99%
+  - 평균 의사결정 보상 (Avg Reward): +0.00588
+  - 관망 비율 (Abstain Ratio): 83.91%
+  - 액션 엔트로피 (Action Entropy): 0.6040
+- 영향받은 페이지: `index.md`, `log.md`
+
 ## [2026-04-11] initialize | 위키 초기 생성
 
 - wiki/ 디렉토리 구조 생성 (gpus/, concepts/, analysis/, sources/)
@@ -1211,6 +1223,95 @@
 
 - 업데이트된 페이지: 26개
   - `gpus/RTX_5090.md`
+  - `gpus/RTX_5080.md`
+  - `gpus/RTX_5070_Ti.md`
+  - `gpus/RTX_5070.md`
+  - `gpus/RTX_5060_Ti.md`
+  - `gpus/RTX_5060.md`
+  - `gpus/RTX_5050.md`
+  - `gpus/RTX_4090.md`
+  - `gpus/RTX_4080.md`
+  - `gpus/RTX_4070_Ti.md`
+  - `gpus/RTX_4070.md`
+  - `gpus/RTX_4060_Ti.md`
+  - `gpus/RTX_4060.md`
+  - `gpus/RX_9070_XT.md`
+  - `gpus/RX_9060_XT.md`
+  - `gpus/RX_7900_XTX.md`
+  - `gpus/RX_7800_XT.md`
+  - `gpus/RX_7700_XT.md`
+  - `gpus/RX_7600.md`
+  - `gpus/RX_6600.md`
+  - `gpus/Arc_B580.md`
+  - `gpus/Arc_A770.md`
+  - `analysis/price_trends.md`
+  - `analysis/market_sentiment.md`
+  - `overview.md`
+  - `index.md`
+
+## [2026-05-24] ingest | 일일 데이터 위키 반영
+
+- 업데이트된 페이지: 26개
+  - `gpus/RTX_5090.md`
+  - `gpus/RTX_5080.md`
+  - `gpus/RTX_5070_Ti.md`
+  - `gpus/RTX_5070.md`
+  - `gpus/RTX_5060_Ti.md`
+  - `gpus/RTX_5060.md`
+  - `gpus/RTX_5050.md`
+  - `gpus/RTX_4090.md`
+  - `gpus/RTX_4080.md`
+  - `gpus/RTX_4070_Ti.md`
+  - `gpus/RTX_4070.md`
+  - `gpus/RTX_4060_Ti.md`
+  - `gpus/RTX_4060.md`
+  - `gpus/RX_9070_XT.md`
+  - `gpus/RX_9060_XT.md`
+  - `gpus/RX_7900_XTX.md`
+  - `gpus/RX_7800_XT.md`
+  - `gpus/RX_7700_XT.md`
+  - `gpus/RX_7600.md`
+  - `gpus/RX_6600.md`
+  - `gpus/Arc_B580.md`
+  - `gpus/Arc_A770.md`
+  - `analysis/price_trends.md`
+  - `analysis/market_sentiment.md`
+  - `overview.md`
+  - `index.md`
+
+## [2026-05-25] ingest | 일일 데이터 위키 반영
+
+- 업데이트된 페이지: 26개
+  - `gpus/RTX_5090.md`
+  - `gpus/RTX_5080.md`
+  - `gpus/RTX_5070_Ti.md`
+  - `gpus/RTX_5070.md`
+  - `gpus/RTX_5060_Ti.md`
+  - `gpus/RTX_5060.md`
+  - `gpus/RTX_5050.md`
+  - `gpus/RTX_4090.md`
+  - `gpus/RTX_4080.md`
+  - `gpus/RTX_4070_Ti.md`
+  - `gpus/RTX_4070.md`
+  - `gpus/RTX_4060_Ti.md`
+  - `gpus/RTX_4060.md`
+  - `gpus/RX_9070_XT.md`
+  - `gpus/RX_9060_XT.md`
+  - `gpus/RX_7900_XTX.md`
+  - `gpus/RX_7800_XT.md`
+  - `gpus/RX_7700_XT.md`
+  - `gpus/RX_7600.md`
+  - `gpus/RX_6600.md`
+  - `gpus/Arc_B580.md`
+  - `gpus/Arc_A770.md`
+  - `analysis/price_trends.md`
+  - `analysis/market_sentiment.md`
+  - `overview.md`
+  - `index.md`
+
+## [2026-05-26] ingest | 일일 데이터 위키 반영
+
+- 업데이트된 페이지: 25개
   - `gpus/RTX_5080.md`
   - `gpus/RTX_5070_Ti.md`
   - `gpus/RTX_5070.md`

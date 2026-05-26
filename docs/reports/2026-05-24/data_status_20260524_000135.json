@@ -1,19 +1,19 @@
 {
-  "generated_at": "2026-05-26T00:01:36.047658",
-  "run_started_at": "2026-05-26T00:00:01.509383",
-  "date": "2026-05-26",
+  "generated_at": "2026-05-24T00:01:35.684468",
+  "run_started_at": "2026-05-24T00:00:02.650065",
+  "date": "2026-05-24",
   "steps": {
     "danawa": true,
     "exchange": true,
     "news": true,
     "feature": true
   },
-  "feature_file": "/Users/younghwa.jin/Documents/gpu-advisor/data/processed/dataset/training_data_2026-05-26.json",
+  "feature_file": "/Users/younghwa.jin/Documents/gpu-advisor/data/processed/dataset/training_data_2026-05-24.json",
   "today_files": {
-    "danawa": "/Users/younghwa.jin/Documents/gpu-advisor/data/raw/danawa/2026-05-26.json",
-    "exchange": "/Users/younghwa.jin/Documents/gpu-advisor/data/raw/exchange/2026-05-26.json",
-    "news": "/Users/younghwa.jin/Documents/gpu-advisor/data/raw/news/2026-05-26.json",
-    "dataset": "/Users/younghwa.jin/Documents/gpu-advisor/data/processed/dataset/training_data_2026-05-26.json"
+    "danawa": "/Users/younghwa.jin/Documents/gpu-advisor/data/raw/danawa/2026-05-24.json",
+    "exchange": "/Users/younghwa.jin/Documents/gpu-advisor/data/raw/exchange/2026-05-24.json",
+    "news": "/Users/younghwa.jin/Documents/gpu-advisor/data/raw/news/2026-05-24.json",
+    "dataset": "/Users/younghwa.jin/Documents/gpu-advisor/data/processed/dataset/training_data_2026-05-24.json"
   },
   "today_exists": {
     "danawa": true,
@@ -23,35 +23,35 @@
   },
   "coverage": {
     "danawa": {
-      "dated_files": 95,
-      "range_days": 105,
+      "dated_files": 93,
+      "range_days": 103,
       "first_date": "2026-02-11",
-      "last_date": "2026-05-26"
+      "last_date": "2026-05-24"
     },
     "exchange": {
-      "dated_files": 92,
-      "range_days": 95,
+      "dated_files": 90,
+      "range_days": 93,
       "first_date": "2026-02-21",
-      "last_date": "2026-05-26"
+      "last_date": "2026-05-24"
     },
     "news": {
-      "dated_files": 92,
-      "range_days": 95,
+      "dated_files": 90,
+      "range_days": 93,
       "first_date": "2026-02-21",
-      "last_date": "2026-05-26"
+      "last_date": "2026-05-24"
     },
     "dataset": {
-      "dated_files": 92,
-      "range_days": 95,
+      "dated_files": 90,
+      "range_days": 93,
       "first_date": "2026-02-21",
-      "last_date": "2026-05-26"
+      "last_date": "2026-05-24"
     }
   },
   "ready_for_30d_training": true,
   "next_steps": {
-    "generated_at": "2026-05-26T00:01:36.051373",
+    "generated_at": "2026-05-24T00:01:35.687096",
     "target_days": 30,
-    "current_min_days": 95,
+    "current_min_days": 93,
     "remaining_days": 0,
     "ready_for_target": true,
     "release_status": null,
@@ -63,7 +63,7 @@
         "order": 1,
         "id": "run_release_pipeline",
         "status": "ready",
-        "condition": "current_min_days=95 >= target_days=30",
+        "condition": "current_min_days=93 >= target_days=30",
         "command": "python3 backend/run_release_ready.py",
         "title_ko": "전체 릴리즈 파이프라인 실행",
         "title_en": "Run Full Release Pipeline",
@@ -108,6 +108,7 @@
   "wiki_update": {
     "success": true,
     "updated_files": [
+      "gpus/RTX_5090.md",
       "gpus/RTX_5080.md",
       "gpus/RTX_5070_Ti.md",
       "gpus/RTX_5070.md",
