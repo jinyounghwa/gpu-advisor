@@ -1,0 +1,163 @@
+{
+  "config": {
+    "target_days": 30,
+    "lookback_days": 14,
+    "num_simulations": 17,
+    "num_steps": 500,
+    "batch_size": 32,
+    "learning_rate": 0.0001,
+    "seed": 42,
+    "quality_gates": null,
+    "require_30d": false,
+    "run_training": false,
+    "min_accuracy": 0.55,
+    "min_avg_reward": 0.0,
+    "max_abstain_ratio": 0.93,
+    "max_safe_override_ratio": 0.9,
+    "min_action_entropy": 0.25,
+    "min_uplift_vs_buy": 0.0
+  },
+  "readiness": {
+    "target_days": 30,
+    "current_min_days": 97,
+    "remaining_days": 0,
+    "ready_for_target": true,
+    "details": {
+      "danawa": {
+        "dated_files": 97,
+        "range_days": 107,
+        "first_date": "2026-02-11",
+        "last_date": "2026-05-28"
+      },
+      "exchange": {
+        "dated_files": 94,
+        "range_days": 97,
+        "first_date": "2026-02-21",
+        "last_date": "2026-05-28"
+      },
+      "news": {
+        "dated_files": 94,
+        "range_days": 97,
+        "first_date": "2026-02-21",
+        "last_date": "2026-05-28"
+      },
+      "dataset": {
+        "dated_files": 94,
+        "range_days": 97,
+        "first_date": "2026-02-21",
+        "last_date": "2026-05-28"
+      }
+    }
+  },
+  "status": "pass",
+  "evaluation": {
+    "samples": 302,
+    "date_from": "2026-05-11",
+    "date_to": "2026-05-28",
+    "avg_reward_per_decision": 0.003011366946890859,
+    "avg_reward_per_decision_raw": 0.00036062304802617957,
+    "directional_accuracy_buy_vs_wait": 0.8874172185430463,
+    "directional_accuracy_buy_vs_wait_raw": 0.8145695364238411,
+    "abstain_ratio": 0.8741721854304636,
+    "safe_override_ratio": 0.4304635761589404,
+    "avg_confidence": 0.3666315884517934,
+    "action_distribution": {
+      "HOLD": 264,
+      "BUY_NOW": 12,
+      "WAIT_SHORT": 9,
+      "WAIT_LONG": 17
+    },
+    "raw_action_distribution": {
+      "HOLD": 134,
+      "WAIT_SHORT": 47,
+      "BUY_NOW": 42,
+      "SKIP": 29,
+      "WAIT_LONG": 50
+    },
+    "action_entropy": 0.5123836398124695,
+    "action_entropy_raw": 1.447174310684204,
+    "mode_collapse": false,
+    "mode_collapse_raw": false,
+    "std_reward": 0.01806028770386311,
+    "std_reward_raw": 0.053738029186685674,
+    "baseline": {
+      "always_buy_reward": -0.004217900793624958,
+      "always_wait_reward": 0.004217900793624958,
+      "always_hold_reward": -0.0012142681020637339,
+      "always_buy_accuracy": 0.11258278145695365,
+      "always_wait_accuracy": 0.8874172185430463
+    },
+    "uplift_vs_always_buy": 0.007229267740515817,
+    "uplift_raw_vs_always_buy": 0.004578523841651138,
+    "uplift_vs_always_wait": -0.0012065338467340996,
+    "uplift_raw_vs_always_wait": -0.003857277745598779,
+    "uplift_vs_always_hold": 0.004225635048954592,
+    "uplift_raw_vs_always_hold": 0.0015748911500899135
+  },
+  "gates": {
+    "accuracy_raw": true,
+    "reward_raw": true,
+    "abstain": true,
+    "safe_override": true,
+    "action_entropy_raw": true,
+    "uplift_raw_vs_buy": true,
+    "no_mode_collapse_raw": true
+  },
+  "next_steps": {
+    "generated_at": "2026-05-28T00:03:35.076726",
+    "target_days": 30,
+    "current_min_days": 97,
+    "remaining_days": 0,
+    "ready_for_target": true,
+    "release_status": "pass",
+    "release_reason": null,
+    "summary_ko": "30일 데이터 윈도우가 확보되었습니다. 이제 학습-평가-릴리즈 게이트를 실행하고 pass/blocked 결과에 따라 후속 단계를 진행하세요.",
+    "summary_en": "The 30-day data window is ready. Run train-evaluate-release gates and proceed according to pass/blocked outcomes.",
+    "steps": [
+      {
+        "order": 1,
+        "id": "run_release_pipeline",
+        "status": "completed",
+        "condition": "current_min_days=97 >= target_days=30",
+        "command": "python3 backend/run_release_ready.py",
+        "title_ko": "전체 릴리즈 파이프라인 실행",
+        "title_en": "Run Full Release Pipeline",
+        "detail_ko": "실학습 포함 파이프라인을 실행해 최신 체크포인트와 게이트 판정을 만듭니다.",
+        "detail_en": "Run full pipeline (with training) to produce latest checkpoint and gate decision."
+      },
+      {
+        "order": 2,
+        "id": "review_release_report",
+        "status": "completed",
+        "condition": "after pipeline run",
+        "command": "cat docs/reports/latest_release_report.md",
+        "title_ko": "최신 릴리즈 리포트 검토",
+        "title_en": "Review Latest Release Report",
+        "detail_ko": "게이트 실패 항목(accuracy/reward/uplift 등)을 확인해 수정 대상을 식별합니다.",
+        "detail_en": "Inspect failed gates (accuracy/reward/uplift, etc.) and identify fix targets."
+      },
+      {
+        "order": 3,
+        "id": "blocked_retrain_loop",
+        "status": "optional",
+        "condition": "release_status=pass",
+        "command": "python3 backend/run_release_ready.py --steps 1000 --lookback-days 30",
+        "title_ko": "Blocked 시 재학습 루프",
+        "title_en": "Retraining Loop for Blocked Result",
+        "detail_ko": "blocked이면 스텝/피처/정책 가중치를 조정하고 파이프라인을 재실행합니다.",
+        "detail_en": "If blocked, adjust steps/features/policy weights and re-run the release pipeline."
+      },
+      {
+        "order": 4,
+        "id": "tag_release_candidate",
+        "status": "ready",
+        "condition": "release_status=pass",
+        "command": "python3 backend/run_release_ready.py --tag --push-tag",
+        "title_ko": "Pass 시 릴리즈 태그 생성",
+        "title_en": "Create Release Tag on Pass",
+        "detail_ko": "게이트가 pass면 태그를 만들고 원격 저장소에 푸시해 배포 후보를 고정합니다.",
+        "detail_en": "If gates pass, create/push a tag to lock a deployable release candidate."
+      }
+    ]
+  }
+}
