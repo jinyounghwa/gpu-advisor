@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-06T00:02:47.363801",
+  "generated_at": "2026-06-05T00:03:34.972101",
   "summary_ko": "자동 학습 조건 미충족이므로 평가/리포트 루틴만 실행되었습니다.",
   "summary_en": "Training condition was not met, so evaluation/report routine ran only.",
   "config": {
@@ -16,33 +16,33 @@
   },
   "readiness": {
     "target_days": 30,
-    "current_min_days": 106,
+    "current_min_days": 105,
     "remaining_days": 0,
     "ready_for_target": true,
     "details": {
       "danawa": {
-        "dated_files": 106,
-        "range_days": 116,
+        "dated_files": 105,
+        "range_days": 115,
         "first_date": "2026-02-11",
-        "last_date": "2026-06-06"
+        "last_date": "2026-06-05"
       },
       "exchange": {
-        "dated_files": 103,
-        "range_days": 106,
+        "dated_files": 102,
+        "range_days": 105,
         "first_date": "2026-02-21",
-        "last_date": "2026-06-06"
+        "last_date": "2026-06-05"
       },
       "news": {
-        "dated_files": 103,
-        "range_days": 106,
+        "dated_files": 102,
+        "range_days": 105,
         "first_date": "2026-02-21",
-        "last_date": "2026-06-06"
+        "last_date": "2026-06-05"
       },
       "dataset": {
-        "dated_files": 103,
-        "range_days": 106,
+        "dated_files": 102,
+        "range_days": 105,
         "first_date": "2026-02-21",
-        "last_date": "2026-06-06"
+        "last_date": "2026-06-05"
       }
     }
   },
@@ -50,11 +50,11 @@
     "action": "release_check",
     "reason": "waiting_for_more_data_for_retrain",
     "target_days": 30,
-    "current_min_days": 106,
+    "current_min_days": 105,
     "ready_for_target": true,
-    "dataset_last_date": "2026-06-06",
+    "dataset_last_date": "2026-06-05",
     "last_trained_data_date": "2026-06-02",
-    "newly_accumulated_days": 4,
+    "newly_accumulated_days": 3,
     "retrain_every_days": 7
   },
   "execution": {
@@ -82,80 +82,80 @@
     },
     "readiness": {
       "target_days": 30,
-      "current_min_days": 106,
+      "current_min_days": 105,
       "remaining_days": 0,
       "ready_for_target": true,
       "details": {
         "danawa": {
-          "dated_files": 106,
-          "range_days": 116,
+          "dated_files": 105,
+          "range_days": 115,
           "first_date": "2026-02-11",
-          "last_date": "2026-06-06"
+          "last_date": "2026-06-05"
         },
         "exchange": {
-          "dated_files": 103,
-          "range_days": 106,
+          "dated_files": 102,
+          "range_days": 105,
           "first_date": "2026-02-21",
-          "last_date": "2026-06-06"
+          "last_date": "2026-06-05"
         },
         "news": {
-          "dated_files": 103,
-          "range_days": 106,
+          "dated_files": 102,
+          "range_days": 105,
           "first_date": "2026-02-21",
-          "last_date": "2026-06-06"
+          "last_date": "2026-06-05"
         },
         "dataset": {
-          "dated_files": 103,
-          "range_days": 106,
+          "dated_files": 102,
+          "range_days": 105,
           "first_date": "2026-02-21",
-          "last_date": "2026-06-06"
+          "last_date": "2026-06-05"
         }
       }
     },
     "status": "pass",
     "evaluation": {
       "samples": 302,
-      "date_from": "2026-05-23",
-      "date_to": "2026-06-06",
-      "avg_reward_per_decision": 0.002292426426652326,
-      "avg_reward_per_decision_raw": 0.0021961403924322283,
-      "directional_accuracy_buy_vs_wait": 0.9172185430463576,
-      "directional_accuracy_buy_vs_wait_raw": 0.8311258278145696,
-      "abstain_ratio": 0.9205298013245033,
-      "safe_override_ratio": 0.423841059602649,
-      "avg_confidence": 0.37967064400988965,
+      "date_from": "2026-05-22",
+      "date_to": "2026-06-05",
+      "avg_reward_per_decision": 0.0020227825628658853,
+      "avg_reward_per_decision_raw": 0.0019037775047793554,
+      "directional_accuracy_buy_vs_wait": 0.9139072847682119,
+      "directional_accuracy_buy_vs_wait_raw": 0.847682119205298,
+      "abstain_ratio": 0.9172185430463576,
+      "safe_override_ratio": 0.4105960264900662,
+      "avg_confidence": 0.37736057932523126,
       "action_distribution": {
-        "HOLD": 278,
-        "WAIT_LONG": 7,
-        "BUY_NOW": 12,
-        "WAIT_SHORT": 5
+        "HOLD": 277,
+        "WAIT_LONG": 6,
+        "WAIT_SHORT": 6,
+        "BUY_NOW": 13
       },
       "raw_action_distribution": {
-        "WAIT_LONG": 57,
-        "HOLD": 150,
-        "SKIP": 25,
-        "BUY_NOW": 42,
-        "WAIT_SHORT": 28
+        "HOLD": 153,
+        "WAIT_SHORT": 34,
+        "WAIT_LONG": 54,
+        "BUY_NOW": 37,
+        "SKIP": 24
       },
-      "action_entropy": 0.35954588651657104,
-      "action_entropy_raw": 1.3633908033370972,
+      "action_entropy": 0.3703663945198059,
+      "action_entropy_raw": 1.3566665649414062,
       "mode_collapse": false,
       "mode_collapse_raw": false,
-      "std_reward": 0.013887943665721126,
-      "std_reward_raw": 0.015405352827717291,
+      "std_reward": 0.013032027427027982,
+      "std_reward_raw": 0.01488009803060614,
       "baseline": {
-        "always_buy_reward": -0.0003090557587198659,
-        "always_wait_reward": 0.0003090557587198659,
-        "always_hold_reward": -0.0004143517023837736,
+        "always_buy_reward": -0.00042219218308796406,
+        "always_wait_reward": 0.00042219218308796406,
+        "always_hold_reward": -0.0004256653448205834,
         "always_buy_accuracy": 0.076158940397351,
         "always_wait_accuracy": 0.9238410596026491
       },
-      "uplift_vs_always_buy": 0.002601482185372192,
-      "uplift_raw_vs_always_buy": 0.002505196151152094,
-      "uplift_vs_always_wait": 0.00198337066793246,
-      "uplift_raw_vs_always_wait": 0.0018870846337123623,
-      "uplift_vs_always_hold": 0.0027067781290360995,
-      "uplift_raw_vs_always_hold": 0.002610492094816002
+      "uplift_vs_always_buy": 0.0024449747459538494,
+      "uplift_raw_vs_always_buy": 0.0023259696878673193,
+      "uplift_vs_always_wait": 0.0016005903797779212,
+      "uplift_raw_vs_always_wait": 0.0014815853216913913,
+      "uplift_vs_always_hold": 0.002448447907686469,
+      "uplift_raw_vs_always_hold": 0.0023294428495999387
     },
     "gates": {
       "accuracy_raw": true,
@@ -167,9 +167,9 @@
       "no_mode_collapse_raw": true
     },
     "next_steps": {
-      "generated_at": "2026-06-06T00:02:47.209705",
+      "generated_at": "2026-06-05T00:03:34.864351",
       "target_days": 30,
-      "current_min_days": 106,
+      "current_min_days": 105,
       "remaining_days": 0,
       "ready_for_target": true,
       "release_status": "pass",
@@ -181,7 +181,7 @@
           "order": 1,
           "id": "run_release_pipeline",
           "status": "completed",
-          "condition": "current_min_days=106 >= target_days=30",
+          "condition": "current_min_days=105 >= target_days=30",
           "command": "python3 backend/run_release_ready.py",
           "title_ko": "전체 릴리즈 파이프라인 실행",
           "title_en": "Run Full Release Pipeline",
@@ -224,15 +224,50 @@
       ]
     },
     "reports": {
-      "report_dir": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-06-06",
-      "json_report": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-06-06/release_report_20260606_000247.json",
-      "markdown_report": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-06-06/release_report_20260606_000247.md",
+      "report_dir": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-06-05",
+      "json_report": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-06-05/release_report_20260605_000334.json",
+      "markdown_report": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-06-05/release_report_20260605_000334.md",
       "latest_json": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/latest_release_report.json",
       "latest_markdown": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/latest_release_report.md"
     }
   },
   "state_path": "/Users/younghwa.jin/Documents/gpu-advisor/data/processed/auto_training_state.json",
   "state_before": {
+    "updated_at": "2026-06-04T00:03:27.109096",
+    "last_action": "release_check",
+    "last_reason": "waiting_for_more_data_for_retrain",
+    "last_pipeline_status": "pass",
+    "last_decision": {
+      "action": "release_check",
+      "reason": "waiting_for_more_data_for_retrain",
+      "target_days": 30,
+      "current_min_days": 104,
+      "ready_for_target": true,
+      "dataset_last_date": "2026-06-04",
+      "last_trained_data_date": "2026-06-02",
+      "newly_accumulated_days": 2,
+      "retrain_every_days": 7
+    },
+    "last_pipeline_reports": {
+      "report_dir": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-06-04",
+      "json_report": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-06-04/release_report_20260604_000326.json",
+      "markdown_report": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-06-04/release_report_20260604_000326.md",
+      "latest_json": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/latest_release_report.json",
+      "latest_markdown": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/latest_release_report.md"
+    },
+    "last_trained_data_date": "2026-06-02",
+    "last_training_run_at": "2026-06-02T00:13:41.573382",
+    "retraining_completion": {
+      "timestamp": "2026-04-21T16:47:00",
+      "data_range": "2026-04-17 ~ 2026-04-21",
+      "training_steps": 2000,
+      "final_loss": 0.042,
+      "model_size_mb": 217,
+      "previous_model_size_mb": 72,
+      "dataset_samples": 750
+    }
+  },
+  "state_after": {
     "updated_at": "2026-06-05T00:03:34.972101",
     "last_action": "release_check",
     "last_reason": "waiting_for_more_data_for_retrain",
@@ -252,41 +287,6 @@
       "report_dir": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-06-05",
       "json_report": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-06-05/release_report_20260605_000334.json",
       "markdown_report": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-06-05/release_report_20260605_000334.md",
-      "latest_json": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/latest_release_report.json",
-      "latest_markdown": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/latest_release_report.md"
-    },
-    "last_trained_data_date": "2026-06-02",
-    "last_training_run_at": "2026-06-02T00:13:41.573382",
-    "retraining_completion": {
-      "timestamp": "2026-04-21T16:47:00",
-      "data_range": "2026-04-17 ~ 2026-04-21",
-      "training_steps": 2000,
-      "final_loss": 0.042,
-      "model_size_mb": 217,
-      "previous_model_size_mb": 72,
-      "dataset_samples": 750
-    }
-  },
-  "state_after": {
-    "updated_at": "2026-06-06T00:02:47.363801",
-    "last_action": "release_check",
-    "last_reason": "waiting_for_more_data_for_retrain",
-    "last_pipeline_status": "pass",
-    "last_decision": {
-      "action": "release_check",
-      "reason": "waiting_for_more_data_for_retrain",
-      "target_days": 30,
-      "current_min_days": 106,
-      "ready_for_target": true,
-      "dataset_last_date": "2026-06-06",
-      "last_trained_data_date": "2026-06-02",
-      "newly_accumulated_days": 4,
-      "retrain_every_days": 7
-    },
-    "last_pipeline_reports": {
-      "report_dir": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-06-06",
-      "json_report": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-06-06/release_report_20260606_000247.json",
-      "markdown_report": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/2026-06-06/release_report_20260606_000247.md",
       "latest_json": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/latest_release_report.json",
       "latest_markdown": "/Users/younghwa.jin/Documents/gpu-advisor/docs/reports/latest_release_report.md"
     },
