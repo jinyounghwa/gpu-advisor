@@ -185,6 +185,9 @@
   },
   "active": "560c3f15ba1609b7",
   "lastOpenFiles": [
+    "무제 1.md",
+    "gpus/RTX_5060.md",
+    "무제.md",
     "gpus/RTX_5060_Ti.md",
     "gpus/RTX_5070_Ti.md",
     "gpus/RTX_5080.md",
@@ -199,7 +202,6 @@
     "gpus/RX_9060_XT.md",
     "gpus/RX_9070_XT.md",
     "gpus/RX_7600.md",
-    "gpus/RTX_5060.md",
     "sources/news_data.md",
     "overview.md",
     "analysis/price_trends.md",
@@ -208,8 +210,6 @@
     "gpus/RTX_4060_Ti.md",
     "gpus/RTX_4070.md",
     "gpus/RTX_4080.md",
-    "gpuadvicewiki/Welcome.md",
-    "gpus/RTX_5090.md",
-    "gpus/RX_6600.md"
+    "gpuadvicewiki/Welcome.md"
   ]
 }
