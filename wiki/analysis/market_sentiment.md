@@ -1,30 +1,30 @@
 # 시장 감성 분석
 
-> 마지막 업데이트: 2026-06-30
+> 마지막 업데이트: 2026-07-02
 
 ## 감성 분포
 
 | 감성 | 기사 수 |
 |------|---------|
 | 긍정 | 11 |
-| 부정 | 4 |
-| 중립 | 22 |
+| 부정 | 5 |
+| 중립 | 21 |
 | **총합** | 37 |
 
-**평균 감성 점수**: 0.19 (긍정)
+**평균 감성 점수**: 0.16 (긍정)
 
 ## 주요 뉴스 헤드라인
 
 - ⚪ [Tom's Hardware] GPU price tracking 2026 — Lowest price on every graphics card from Nvidia, AMD, and Intel today - Tom's Hardware
-- 🟢 [pcgamer.com] Graphics card price watch: We're tracking the lowest prices and the best GPU deals for Nvidia, AMD, and Intel cards - pcgamer.com
-- ⚪ [The Information] AWS Raises Prices for Some Nvidia Compute by 20% - The Information
-- 🟢 [Tom's Hardware] Best Amazon Prime Day gaming GPU deals you can still get 2026 — deals on Nvidia, AMD, and Intel graphics cards - Tom's Hardware
-- 🟢 [NVIDIA Newsroom] NVIDIA and Microsoft Reinvent Windows PCs for the Age of Personal AI - NVIDIA Newsroom
-- ⚪ [TechPowerUp] AMD's FSR 4.1 Performance on RDNA 3 Notably Slower than FSR 3.1 - TechPowerUp
-- 🟢 [PC Guide] All white ASUS Prime AMD Radeon RX 9070 XT drops near its cheapest ever price in limited time Prime Day deal - PC Guide
-- ⚪ [PCMag] Beat High GPU Prices With the GIGABYTE AMD Radeon RX 9070 GRE GAMING OC 12G - PCMag
-- ⚪ [VideoCardz.com] Radeon RX 9070 XT surprisingly drops to $549 at Walmart, now $50 below MSRP - VideoCardz.com
-- 🟢 [Wccftech] AMD Radeon RX 9070 GRE 12 GB GPU Launched: 48 “RDNA 4” Cores, Up To 22% Faster Than 5060 Ti, & Priced at $549 - Wccftech
+- ⚪ [Mashable] Nvidia resurrects older graphics cards as RAM demands impact tech prices - Mashable
+- 🟢 [PC Gamer] Graphics card price watch: We're tracking the lowest prices and the best GPU deals for Nvidia, AMD, and Intel cards - PC Gamer
+- ⚪ [The Information] Why GPU Server Prices Are Unpredictable - The Information
+- 🟢 [Tom's Hardware] Best gaming GPU deals 2026 — deals on Nvidia, AMD, and Intel graphics cards - Tom's Hardware
+- ⚪ [TechPowerUp] AMD to Raise Radeon GPU Kit Prices by 10% in July - TechPowerUp
+- ⚪ [Wccftech] AMD Radeon GPUs Can Now Run NVIDIA PhysX Games With 3x Boost Thanks To ZLUDA, Without Requiring A Dedicated PhysX GPU - Wccftech
+- 🟢 [Phoronix] RADV & RadeonSI Drivers See New Fixes For AMD GCN 1.0/1.1 GPUs - Phoronix
+- ⚪ [OC3D] AMD improves FSR 4.1 on RDNA 3 GPUs with AMD Software 26.6.4 - OC3D
+- 🟢 [TechRadar] AMD's Radeon GPU prices could be increasing this July — if you want a new GPU or gaming PC, you should probably act now - TechRadar
 
 ---
 [[index|← 인덱스로 돌아가기]]
