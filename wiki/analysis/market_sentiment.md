@@ -1,30 +1,30 @@
 # 시장 감성 분석
 
-> 마지막 업데이트: 2026-07-17
+> 마지막 업데이트: 2026-07-18
 
 ## 감성 분포
 
 | 감성 | 기사 수 |
 |------|---------|
-| 긍정 | 10 |
+| 긍정 | 8 |
 | 부정 | 2 |
-| 중립 | 23 |
-| **총합** | 35 |
+| 중립 | 28 |
+| **총합** | 38 |
 
-**평균 감성 점수**: 0.21 (긍정)
+**평균 감성 점수**: 0.14 (긍정)
 
 ## 주요 뉴스 헤드라인
 
 - ⚪ [Tom's Hardware] GPU price tracking 2026 — Lowest price on every graphics card from Nvidia, AMD, and Intel today - Tom's Hardware
-- ⚪ [Kavout | AI] Why are NVIDIA H100 GPU rental prices surging by 40% - Kavout | AI
+- ⚪ [Wccftech] NVIDIA GeForce RTX 50 SUPER GPUs Have Reportedly Arrived At AIBs, But Are On Hold Due To Undecided Memory Prices - Wccftech
+- ⚪ [The Information] Nobody is Immune From the Nvidia GPU Crunch - The Information
 - ⚪ [tech-insider.org] Gaming GPU Prices Surge: RTX 5090 Nears $3,000 [2026] - tech-insider.org
-- ⚪ [PC Gamer] These are the cheapest prices for every current gen GPU worth buying - PC Gamer
-- ⚪ [IGN] Amazon Has the Lowest Price on a GeForce RTX 5070 Graphics Card That I've Seen So Far This Year - IGN
-- ⚪ [TechPowerUp] AMD FSR Multi-Frame Generation With Up to 8x Mode in Development - TechPowerUp
+- ⚪ [Kavout | AI] Why are NVIDIA H100 GPU rental prices surging by 40% - Kavout | AI
 - ⚪ [Club386] The best graphics cards without 12V-2×6 connectors - Club386
-- ⚪ [XDA] The RX 9070 XT almost had my money, but one Nvidia feature changed my mind - XDA
-- ⚪ [Tom's Hardware] AMD FSR Multi-Frame Generation with 8x mode spotted — experimental driver settings could hint at FSR's next evolution - Tom's Hardware
-- 🟢 [TechPowerUp] AMD Radeon RX 9070 GRE Drops to $499 on Newegg - TechPowerUp
+- ⚪ [GameGPU] The impact of undervolting on thermal management and performance Radeon RX 9070 GRE - GameGPU
+- ⚪ [Wccftech] AMD Radeon Drivers Silently Add Multi Frame Generation “MFG 8x”, Ray Regeneration, and Neural Radiance Overrides, Hinting At A Bigger FSR Push - Wccftech
+- ⚪ [Tom's Hardware] AMD RX 9070 GRE collapses to $499 to save 1440p gaming — RDNA 4 price slips 9% to steal a piece of Nvidia's mid-range pie - Tom's Hardware
+- ⚪ [Engadget] AMD Radeon RX 9070 GRE Review: A Cheaper GPU For A Wildly Expensive Era - Engadget
 
 ---
 [[index|← 인덱스로 돌아가기]]
