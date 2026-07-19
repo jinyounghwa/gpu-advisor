@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.gpu-advisor.auto-commit</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/younghwa.jin/Documents/gpu-advisor/scripts/auto_commit_push.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/younghwa.jin/Documents/gpu-advisor</string>
+
+    <!-- 매일 새벽 1시 실행 (자정 크롤링 완료 후) -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>1</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <!-- ~/Documents는 macOS TCC 보호 대상이라 launchd가 열 수 없음 → ~/Library/Logs 사용 -->
+    <key>StandardOutPath</key>
+    <string>/Users/younghwa.jin/Library/Logs/gpu-advisor/auto-commit.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/younghwa.jin/Library/Logs/gpu-advisor/auto-commit.log</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>
