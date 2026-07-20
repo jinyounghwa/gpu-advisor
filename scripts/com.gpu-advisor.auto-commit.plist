@@ -5,10 +5,11 @@
     <key>Label</key>
     <string>com.gpu-advisor.auto-commit</string>
 
+    <!-- TCC 때문에 /bin/bash 직접 실행 불가 → FDA 있는 python3 경유 (daily-crawl과 동일 패턴) -->
     <key>ProgramArguments</key>
     <array>
-        <string>/bin/bash</string>
-        <string>/Users/younghwa.jin/Documents/gpu-advisor/scripts/auto_commit_push.sh</string>
+        <string>/usr/local/bin/python3</string>
+        <string>/Users/younghwa.jin/Documents/gpu-advisor/scripts/run_auto_commit.py</string>
     </array>
 
     <key>WorkingDirectory</key>
